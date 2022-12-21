@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
 
-import imp
 import time
 import keyboard as kb2
 import speech_recognition as sr
@@ -42,6 +41,7 @@ User32 = ctypes.WinDLL('User32.dll')
 from win32gui import GetWindowText, GetCursorPos, WindowFromPoint, GetForegroundWindow, GetWindowRect, GetCaretPos
 from AddNewWord import AddNewWordsClass
 from WordManager import wordManagerClass
+from LoadWords import wordsList,englaList,EnglishwordsList
 
 
 # ++++++++++++++++global variables ====================
@@ -76,10 +76,6 @@ def initGlobal():
     shiftKeyBlocked = False
     keysBlocked = True
 
-
-# ================================================
-
-from LoadWords import wordsList,englaList,EnglishwordsList
 
 
 ahkScript = "global pinedState := 0 \nreviousXPos := 0\npreviousYPos := 0\nSetTimer, setPos, 100\nsetPos:\nglobal pinedState\nif pinedState = 0\n{\n	WinGetActiveTitle, wintitle\n	WinGetPos, perant_X, perant_Y,,, %wintitle%\n	position_X := A_CaretX + perant_X\n	position_Y := A_CaretY + perant_Y\n	if position_X != previousXPos and position_Y != previousYPos\n		WinMove, Nms_completer,, position_X, position_Y\n		previousXPos = %position_X%\n		previousYPos = %position_Y%\n}\nIfWinNotExist, Nms Voice pad\n{\n	ExitApp\n}\nreturn\nF23::\nglobal pinedState\nif pinedState = 0\n{\n	pinedState = 1\n	return\n}\nif pinedState = 1\n{\n	pinedState = 0\n}\nreturn\nF12::\nExitApp"
@@ -1178,7 +1174,6 @@ class Ui(QtWidgets.QMainWindow):
         self.wordThread_.themeSignal.connect(self.listClass.changeTheme)
         self.word_signal.connect(self.wordThread_.run)
         self.initThread_signal.connect(self.wordThread_.initFunc)
-        # self.wordThread_.start()
 
         ahk.run_script(ahkScript, blocking=False)
         self.wordManagerClass = wordManagerClass()
@@ -1186,11 +1181,6 @@ class Ui(QtWidgets.QMainWindow):
 
         self.loadAbbribiations()
 
-        # self.loopThread = loopThroughListThread()
-        # self.loopThread.matchedWordsSignal.connect(self.listClass.populateWords)
-        # # self.newCherecterIspressed.connect(self.loopThread.newCharecterIsPressedStateChange)
-        # self.word_signal.connect(self.loopThread.updateWord)
-        # self.loopThread.start()
 
     def loadAbbribiations(self):
         try:
