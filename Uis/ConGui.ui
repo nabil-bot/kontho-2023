@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>696</width>
+    <height>374</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Nms Unicode to Bijoy conveter</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../NMs Keybord/Imgs/Converter logo for main.png</normaloff>../NMs Keybord/Imgs/Converter logo for main.png</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(105, 171, 216);
+</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QPushButton" name="Open_text_pushButton">
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+ padding-top:2px;
+	font: 10pt &quot;MS Shell Dlg 2l&quot;;
+ color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+
+border:1px solid rgb(253, 254, 254);
+
+border-radius:5px;
+}
+QPushButton:hover{
+color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
+ background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
+
+}
+
+QPushButton:pressed{
+background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
+
+}</string>
+     </property>
+     <property name="text">
+      <string>Open text file</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../NMs Keybord/Imgs/Actions-document-open-folder-icon.png</normaloff>../NMs Keybord/Imgs/Actions-document-open-folder-icon.png</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QPushButton" name="Paste_pushButton">
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+ padding-top:2px;
+	font: 10pt &quot;MS Shell Dlg 2l&quot;;
+ color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+
+border:1px solid rgb(253, 254, 254);
+
+border-radius:5px;
+}
+QPushButton:hover{
+color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
+ background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
+
+}
+
+QPushButton:pressed{
+background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
+
+}</string>
+     </property>
+     <property name="text">
+      <string>Paste Unicode</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../NMs Keybord/Imgs/kisspng-computer-icons-copying-cut-copy-and-paste-clipbo-paste-icon-free-download-png-and-vector-5c5f67badec551.8477141515497563469125.png</normaloff>../NMs Keybord/Imgs/kisspng-computer-icons-copying-cut-copy-and-paste-clipbo-paste-icon-free-download-png-and-vector-5c5f67badec551.8477141515497563469125.png</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QPushButton" name="Convert_pushButton">
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+ padding-top:2px;
+	font: 10pt &quot;MS Shell Dlg 2l&quot;;
+ color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+
+border:1px solid rgb(253, 254, 254);
+
+border-radius:5px;
+}
+QPushButton:hover{
+color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
+ background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
+
+}
+
+QPushButton:pressed{
+background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
+
+}</string>
+     </property>
+     <property name="text">
+      <string>Convert to Bijoy</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../NMs Keybord/Imgs/Conveter_PNG.png</normaloff>../NMs Keybord/Imgs/Conveter_PNG.png</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3">
+    <widget class="QPushButton" name="Copy_pushButton">
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+ padding-top:2px;
+	font: 10pt &quot;MS Shell Dlg 2l&quot;;
+ color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+
+border:1px solid rgb(253, 254, 254);
+
+border-radius:5px;
+}
+QPushButton:hover{
+color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
+ background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
+
+}
+
+QPushButton:pressed{
+background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
+
+}</string>
+     </property>
+     <property name="text">
+      <string>Copy converted</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../NMs Keybord/Imgs/copy.png</normaloff>../NMs Keybord/Imgs/copy.png</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="4">
+    <widget class="QPushButton" name="Clear_pushButton">
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+ padding-top:2px;
+	font: 10pt &quot;MS Shell Dlg 2l&quot;;
+ color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+
+border:1px solid rgb(253, 254, 254);
+
+border-radius:5px;
+}
+QPushButton:hover{
+color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
+ background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
+
+}
+
+QPushButton:pressed{
+background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
+
+}</string>
+     </property>
+     <property name="text">
+      <string>Clear all text</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../NMs Keybord/Imgs/PngItem_4040102.png</normaloff>../NMs Keybord/Imgs/PngItem_4040102.png</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="5">
+    <widget class="QTextEdit" name="Unicode_TextEdit">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>130</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>220</height>
+      </size>
+     </property>
+     <property name="cursor" stdset="0">
+      <cursorShape>IBeamCursor</cursorShape>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QTextEdit{
+	
+	font: 13pt  &quot;./Fonts/Kalpurush&quot; , &quot;Kalpurush&quot; ;
+	background-color: rgb(255, 255, 255);
+	border-bottom: 2px solid;
+
+	border-bottom-color: qlineargradient(spread:reflect, x1:0, y1:0.477, x2:0, y2:1, stop:0 rgba(97, 97, 97, 255), stop:1 rgba(255, 255, 255, 255));
+	border-radius: 5px;
+
+}
+QMenu{
+	font: 10pt &quot;MS Shell Dlg 2&quot;;
+	
+	background-color: rgb(207, 207, 207);
+}
+QScrollBar {
+    border: none;
+    width: 10px;
+	background-color: rgb(172, 172, 172);
+}
+
+QScrollBar::handle {
+	background-color: rgb(2, 175, 255);
+    min-width: 4px;
+	min-height: 5px;
+	border:none;
+	border-radius: 2px;
+
+}</string>
+     </property>
+     <property name="acceptRichText">
+      <bool>false</bool>
+     </property>
+     <property name="placeholderText">
+      <string>Paste or write Unicode text here </string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="5">
+    <widget class="QTextEdit" name="Bijoy_textEdit">
+     <property name="minimumSize">
+      <size>
+       <width>538</width>
+       <height>140</height>
+      </size>
+     </property>
+     <property name="cursor" stdset="0">
+      <cursorShape>IBeamCursor</cursorShape>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QTextEdit{
+	
+	background-color: rgb(255, 255, 255);
+	border-bottom: 2px solid;
+
+	border-bottom-color: qlineargradient(spread:reflect, x1:0, y1:0.477, x2:0, y2:1, stop:0 rgba(97, 97, 97, 255), stop:1 rgba(255, 255, 255, 255));
+	border-radius: 5px;
+
+	
+	font: 14pt  &quot;Kalpurush ANSI&quot; ;
+
+
+}
+QMenu{
+	font: 10pt &quot;MS Shell Dlg 2&quot;;
+	
+	background-color: rgb(207, 207, 207);
+}
+
+QScrollBar {
+    border: none;
+    width: 10px;
+	background-color: rgb(172, 172, 172);
+}
+
+QScrollBar::handle {
+	background-color: rgb(2, 175, 255);
+    min-width: 4px;
+	min-height: 5px;
+	border:none;
+	border-radius: 2px;
+
+}</string>
+     </property>
+     <property name="acceptRichText">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label">
+     <property name="styleSheet">
+      <string notr="true">color: rgb(0, 0, 0);
+background : transparent;
+	font: 8pt &quot;MS Shell Dlg 2l&quot;;</string>
+     </property>
+     <property name="text">
+      <string>Developed by Nabil Mustofa</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="4">
+    <widget class="QLabel" name="label_2">
+     <property name="styleSheet">
+      <string notr="true">color: rgb(0, 0, 0);
+background : transparent;
+	font: 8pt &quot;MS Shell Dlg 2l&quot;;</string>
+     </property>
+     <property name="text">
+      <string>Use Kalpurush ANSI font</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

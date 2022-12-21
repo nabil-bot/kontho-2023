@@ -1,0 +1,4 @@
+ht::How to 
+outro.::এই ভিডিও টি এ আই অটোমেশন এর মাধ্যমে তৈরি করা। দেশ বিদেশের বিভিন্ন পত্রিকার ট্রেন্ডিং খবর, পড়ার বদলে এভাবেই অডিও আকারে শুনতে সাথে থাকুন আমাদের।
+nd20.::nadulbrown2020@gmail.com
+newsdes.::this is description for news scraper bangla yt channel 
