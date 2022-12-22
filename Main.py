@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+from glob import glob
 import time
 import keyboard as kb2
 import speech_recognition as sr
@@ -57,6 +58,8 @@ keysBlocked = True
 completorTraegered = False 
 ruledOut = False
 
+
+
 def initGlobal():
     global previous_word 
     global formar_previous_word 
@@ -66,6 +69,7 @@ def initGlobal():
     global englishWordSofar 
     global shiftKeyBlocked 
     global keysBlocked
+    global ruledOut
     
     previous_word = ""
     formar_previous_word = ""
@@ -75,7 +79,7 @@ def initGlobal():
     englishWordSofar = ""
     shiftKeyBlocked = False
     keysBlocked = True
-
+    ruledOut = False 
 
 
 ahkScript = "global pinedState := 0 \nreviousXPos := 0\npreviousYPos := 0\nSetTimer, setPos, 100\nsetPos:\nglobal pinedState\nif pinedState = 0\n{\n	WinGetActiveTitle, wintitle\n	WinGetPos, perant_X, perant_Y,,, %wintitle%\n	position_X := A_CaretX + perant_X\n	position_Y := A_CaretY + perant_Y\n	if position_X != previousXPos and position_Y != previousYPos\n		WinMove, Nms_completer,, position_X, position_Y\n		previousXPos = %position_X%\n		previousYPos = %position_Y%\n}\nIfWinNotExist, Nms Voice pad\n{\n	ExitApp\n}\nreturn\nF23::\nglobal pinedState\nif pinedState = 0\n{\n	pinedState = 1\n	return\n}\nif pinedState = 1\n{\n	pinedState = 0\n}\nreturn\nF12::\nExitApp"
@@ -290,8 +294,7 @@ class Main_recognation(QtCore.QThread):
 
         self.terminate()
         
-           
-
+        
 class whileThreadClass(QtCore.QThread):	
     any_signal = QtCore.pyqtSignal(str)
     def __init__(self, lang, UANSI_pos, taking_cmd, micIndex , micName, energy, pause, phrase ,non_speaking_duration , parent=None):
@@ -639,7 +642,7 @@ class WhileloopThroughListThread(QtCore.QThread):
     def run(self):
         while self.is_running:
             global wordSofar
-            if self.preWord != wordSofar:   
+            if self.preWord != wordSofar and wordSofar not in ["", " "]:   
                 self.newCherecterIspressed.emit(True)
                 # self.newCharecterState = False
                 
@@ -726,22 +729,13 @@ class wordThread(QtCore.QThread):
     matched_Word_signal = QtCore.pyqtSignal(list)
     hideSignal = QtCore.pyqtSignal(str)
     themeSignal = QtCore.pyqtSignal(str)
-    # similarTheredIsRunwningSignal = QtCore.pyqtSignal(bool)
+
     newCherecterIspressed = QtCore.pyqtSignal(bool)
     initSignal = QtCore.pyqtSignal(str)
     ruledOutSig = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(wordThread, self).__init__()
-        self.is_running = True
-        self.ruledOut = False
-        self.ruledOutSimi = False
-        self.similarTheredIsRunning = False
-        self.dicThreadIsRunning = False
-        self.preWord = ""
-        self.ruledOutEngla = False
-
-        # self.loopThread = loopThroughListThread()
 
         self.whileLoopThread = WhileloopThroughListThread()
         self.whileLoopThread.matchedWordsSignal.connect(self.addSimiWordsFunc)
@@ -750,40 +744,21 @@ class wordThread(QtCore.QThread):
         self.initSignal.connect(self.whileLoopThread.initFunc)
         self.newCherecterIspressed.connect(self.whileLoopThread.newCharecterIsPressedStateChange)
         self.ruledOutSig.connect(self.whileLoopThread.initFunc)
-
         self.whileLoopThread.start()
 
-
-    def run(self, wordSofar = "", englishWordSofar_local = "", currentLang = ""):
-        
-        # self.currentLang = currentLang
-
-        # if self.similarTheredIsRunning == True or self.dicThreadIsRunning == True:    
-        #     self.newCherecterIspressed.emit(True)
-        self.wordSofar = wordSofar
-        self.englishWordSofar = englishWordSofar_local
-        
-
+    def run(self):
         if wordSofar in ["", " "]:
             return
-        try:
-            self.hideSignal.emit("show")    
-            return
+        self.hideSignal.emit("show")    
 
-        except Exception as e:
-            print(traceback.format_exc()) 
-    
-    # def ruledOutSignalReciver(self, state):
-    #     self.ruledOut = state
-    #     self.themeSignal.emit("yellow")
     def dicThreadReturnFunc(self, matchedWords):
         self.matched_Word_signal.emit(matchedWords) 
         self.dicThreadIsRunning = False
 
     def addSimiWordsFunc(self, simiWords):
         self.matchedWords = []
-        self.matchedWords.append(self.englishWordSofar)
-        self.matchedWords.append(self.wordSofar)
+        self.matchedWords.append(englishWordSofar)
+        # self.matchedWords.append(wordSofar)
         for w in simiWords:
             self.matchedWords.append(w)
         self.matched_Word_signal.emit(self.matchedWords)     
@@ -853,11 +828,17 @@ class listViewClass(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot(list)
     def populateWords(self, words):
         # self.show()
-        self.listWidget.clear()
-        self.listWidget.addItems(words)
-        self.currentRow = 0
-        self.listWidget.setFixedSize(self.listWidget.sizeHintForColumn(0) + 10 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 2 * self.listWidget.frameWidth())   
-        # self.GetCaretPosInWindow()
+        global wordSofar
+
+        if wordSofar not in ["", " "]:
+            self.showHideFunc("show")
+            self.listWidget.clear()
+            self.listWidget.addItems(words)
+            self.currentRow = 0
+            self.listWidget.setFixedSize(self.listWidget.sizeHintForColumn(0) + 10 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 2 * self.listWidget.frameWidth())   
+        else:
+            self.showHideFunc("hide")
+
     @QtCore.pyqtSlot(list)
     def populateSimilarWords(self, simiWords):
         self.listWidget.addItems(simiWords)
@@ -867,7 +848,6 @@ class listViewClass(QtWidgets.QMainWindow):
         if self.isHidden() == False:    
             self.listWidget.clear()
             self.showHideFunc("hide")
-            # print("green them called!")
     def showHideFunc(self, sig):
         if sig == "show":
             if self.isHidden() == True:
@@ -975,10 +955,10 @@ class listViewClass(QtWidgets.QMainWindow):
         self.clicked = True
         return QWidget.mouseMoveEvent(self, event) 
 class Ui(QtWidgets.QMainWindow):
-    word_signal = pyqtSignal(str, str, str)
-    initThread_signal = pyqtSignal(str)
+    # word_signal = pyqtSignal(str, str, str)
+    # initThread_signal = pyqtSignal(str)
 
-    newCherecterIspressed = QtCore.pyqtSignal(bool)
+    # newCherecterIspressed = QtCore.pyqtSignal(bool)
     def __init__(self):
         super(Ui, self).__init__() 
         uic.loadUi('.//Uis//Main_GUI.ui', self) 
@@ -1117,8 +1097,7 @@ class Ui(QtWidgets.QMainWindow):
         Kontho_icon.addPixmap(QtGui.QPixmap(".//Uis//Imgs//Kontho png.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.About.setIcon(Kontho_icon)
         self.About.triggered.connect(self.About_nms)
-        # self.current_version = self.Settings_menu.addAction('Current Version')
-        # self.current_version.triggered.connect(self.current_version_check)
+
         self.help_options = self.Settings_menu.addMenu('Help')
         self.help_options.addAction("Banglish Layout Map")
         self.help_options.triggered.connect(self.openBanglishLayout)
@@ -1127,12 +1106,7 @@ class Ui(QtWidgets.QMainWindow):
         self.Wav_to_Text_button.clicked.connect(self.Open_Wave_to_text_generator)
         self.Stop_btn.clicked.connect(self.Stop_thread)
         self.init_animation()
-        # self.wave_shortCut = QShortcut(QKeySequence('Ctrl+Shift+w'), self)
-        # self.wave_shortCut.activated.connect(self.Open_Wave_to_text_generator)        
-        # self.dance_shortcut = QShortcut(QKeySequence('Ctrl+Alt+Shift+d'), self)
-        # self.dance_shortcut.activated.connect(self.Dance_Movement)
-        # self.mic_shortCut = QShortcut(QKeySequence('Ctrl+Shift+z'), self)
-        # self.mic_shortCut.activated.connect(self.Mic_pressed)
+    
         self.dance_time = QTimer()
         self.dance_time.timeout.connect(self.aro_button_clicked)
 
@@ -1159,11 +1133,12 @@ class Ui(QtWidgets.QMainWindow):
 
         self.Doc_pad = Script_pad.Ui_nms_pad()
         self.lastActiveWindow = ""
-        self.firstTime = True
 
         
         self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
         self.listener.start()
+
+        print(self.listener.running)
 
         self.MouseListener = mouse.Listener(on_click = self.on_click)
         self.MouseListener.start()
@@ -1172,8 +1147,8 @@ class Ui(QtWidgets.QMainWindow):
         self.wordThread_.matched_Word_signal.connect(self.listClass.populateWords)
         self.wordThread_.hideSignal.connect(self.listClass.showHideFunc)
         self.wordThread_.themeSignal.connect(self.listClass.changeTheme)
-        self.word_signal.connect(self.wordThread_.run)
-        self.initThread_signal.connect(self.wordThread_.initFunc)
+        # self.word_signal.connect(self.wordThread_.run)
+        # self.initThread_signal.connect(self.wordThread_.initFunc)
 
         ahk.run_script(ahkScript, blocking=False)
         self.wordManagerClass = wordManagerClass()
@@ -1209,41 +1184,24 @@ class Ui(QtWidgets.QMainWindow):
     def trim(self, l):
         global wordSofar
         self.listener.stop()
+        # print(self.listener.running)
+
         wordSofar = wordSofar[:-l]
         for i in range(l):  
             kb.tap(Key.backspace)
         self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
         self.listener.start()
+        # print(self.listener.running)
+
     def on_press(self, key):
         # print(f"{key} =====")
-        global wordSofar 
         global englishWordSofar
+        global wordSofar
         global previous_word
         global formar_previous_word
-
-        if self.current_language == "English":
-            
-            if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
-                self.initialize()
-                self.initThread_signal.emit("init")
-                return
-            if str(key) == "Key.backspace":
-                if wordSofar != "":    
-                    if len(wordSofar) > 1:   
-                        englishWordSofar = englishWordSofar[:-1]
-                    else:
-                        self.initialize() 
-                return        
-            if str(key) in ["Key.down", "Key.up","Key.space","Key.enter"]:
-                self.initialize() 
-                return
-            stringKey = (str(key)).replace("'", "")
-            englishWordSofar += stringKey
-            # print(englishWordSofar)
-            # self.word_signal.emit(englishWordSofar, englishWordSofar, "english")
-            return
+        global previous_formar_previous_word
         try: 
-            if str(key) == "Key.shift": # and self.shiftKeyBlocked == False
+            if str(key) == "Key.shift":
                 for i in self.keysToUnlock:
                     try: 
                         kb2.unblock_key(i)
@@ -1265,13 +1223,12 @@ class Ui(QtWidgets.QMainWindow):
                 return
             if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
                 self.initialize()
-                self.initThread_signal.emit("init")
+                # self.initThread_signal.emit("init")
             if str(key) == "Key.backspace":
                 if wordSofar != "":    
                     if len(wordSofar) > 1:   
                         wordSofar = wordSofar[:-1]
                         englishWordSofar = englishWordSofar[:-1]
-                        self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
                     else:
                         self.initialize() 
             if str(key) in ["Key.down", "Key.up", "Key.enter"]:
@@ -1611,18 +1568,17 @@ class Ui(QtWidgets.QMainWindow):
             if stringKey == "Z":
                 bnglaKey== "্য"   
             if bnglaKey != "" or stringKey == "o":
-                if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
-                    self.Doc_pad.activateWindow()
+                # if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
+                #     self.Doc_pad.activateWindow()
                 kb.type(str(bnglaKey))
                 
                 wordSofar += str(bnglaKey)
-                self.formar_previous_formar_previous_word = self.previous_formar_previous_word
-                self.previous_formar_previous_word = formar_previous_word
+                
                 formar_previous_word = previous_word
                 previous_word = stringKey
                 englishWordSofar += stringKey
 
-                self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
+                # self.word_signal.emit('')
                 
                  
         except Exception as e:
@@ -1651,19 +1607,7 @@ class Ui(QtWidgets.QMainWindow):
                 for i in [28, 72, 80]:
                     kb2.block_key(i)
     def initialize(self):
-        global wordSofar
-        global englishWordSofar
-        global previous_word
-        global formar_previous_word
-        global ruledOut 
-        
-        previous_word = ""
-        wordSofar = ""
-        englishWordSofar = ""
-        formar_previous_word = ""
-        self.previous_formar_previous_word = ""
-        self.formar_previous_formar_previous_word = "" 
-        ruledOut = False 
+        initGlobal()
         self.listClass.initSelf()
     def ShowWordManager(self):
         try:
@@ -2321,23 +2265,6 @@ class Ui(QtWidgets.QMainWindow):
         self.Lang_Button.setGeometry(QRect(29, 2, 72, 24))
         self.progressBar.setGeometry(QRect(29, 2, 72, 24))
 
-        # icon2 = QtGui.QIcon()
-        # icon2.addPixmap(QtGui.QPixmap(".//Imgs//Right aro for main.png"))
-        # self.Aro_btn.setIcon(icon2)
-        # self.Aro_btn_2.setIcon(icon2)
-
-
-        # self.AroBtn_anim = QPropertyAnimation(self.Aro_btn, b"geometry")
-        # self.AroBtn_anim.setDuration(250)
-        # self.AroBtn_anim.setStartValue(QRect(238, 2, 25,25))
-        # self.AroBtn_anim.setEndValue(QRect(121, 2, 25,25))
-        # self.AroBtn_anim.start()
-
-        # self.AroBtn_anim2 = QPropertyAnimation(self.Aro_btn_2, b"geometry")
-        # self.AroBtn_anim2.setDuration(250)
-        # self.AroBtn_anim2.setStartValue(QRect(238, 2, 25,25))
-        # self.AroBtn_anim2.setEndValue(QRect(121, 2, 25,25))
-        # self.AroBtn_anim2.start()
 
         self.Main_anim = QPropertyAnimation(self.frame, b"geometry")
         self.Main_anim.setEasingCurve(QEasingCurve.Linear)
@@ -2389,23 +2316,7 @@ class Ui(QtWidgets.QMainWindow):
         self.CloseBtn_anim.setStartValue(QRect(121, 2, 25,25))
         self.CloseBtn_anim.setEndValue(QRect(238, 2, 25,25))
         self.CloseBtn_anim.start()
-        # icon2 = QtGui.QIcon()
-        # icon2.addPixmap(QtGui.QPixmap(".//Imgs//Left aro for main.png"))
-        # self.Aro_btn.setIcon(icon2)
-        # self.Aro_btn_2.setIcon(icon2)
-
-
-        # self.AroBtn_anim = QPropertyAnimation(self.Aro_btn, b"geometry")
-        # self.AroBtn_anim.setDuration(200)
-        # self.AroBtn_anim.setStartValue(QRect(121, 2, 25,25))
-        # self.AroBtn_anim.setEndValue(QRect(238, 2, 25,25))
-        # self.AroBtn_anim.start()
-
-        # self.AroBtn_anim_2 = QPropertyAnimation(self.Aro_btn_2, b"geometry")
-        # self.AroBtn_anim_2.setDuration(200)
-        # self.AroBtn_anim_2.setStartValue(QRect(121, 2, 25,25))
-        # self.AroBtn_anim_2.setEndValue(QRect(238, 2, 25,25))
-        # self.AroBtn_anim_2.start()
+        
         self.DocpadBtn_anim = QPropertyAnimation(self.ScriptPad_btn, b"geometry")
         self.DocpadBtn_anim.setEasingCurve(QEasingCurve.Linear)
         self.DocpadBtn_anim.setDuration(150)
@@ -2609,6 +2520,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = Ui()
     ex2 = Ui_Splash()
-    ex.show()
-    # ex2.show()
+    # ex.show()
+    ex2.show()
     sys.exit(app.exec_())

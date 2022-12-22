@@ -27,23 +27,13 @@ from LoadWords import wordsList,englaList,EnglishwordsList
 from ahk import AHK
 ahk = AHK()
 import traceback
-
-# with io.open('BanglishList.txt', "r", encoding="utf-8") as BAW:
-#     BanglishList = (BAW.read()).split("|") 
-# with io.open('EnglishWords.txt', "r", encoding="utf-8") as BAW:
-#     EnglishWords = (BAW.read()).split("|") 
-# with io.open('BanglishList.txt', "r", encoding="utf-8") as wordTxt:
-#     wordsSTR = wordTxt.read()
-# wordsList = wordsSTR.split("|")    
+ 
 def similarity_ration_btween(first_string, second_string):
     temp = difflib.SequenceMatcher(None,first_string , second_string)
     return temp.ratio()    
 User32 = ctypes.WinDLL('User32.dll')
 
 greenStyleSheet = 'QPushButton{\n	font:  12pt "MS Shell Dlg 2";\n color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));\nbackground-color: qlineargradient(spread:pad, x1:1, y1:1, x2:1, y2:0, stop:0 rgba(62, 255, 41, 255), stop:1 rgba(5, 240, 255, 255));\nborder:2px solid rgb(0, 187, 255);\nborder-radius:5px;\n}\nQPushButton:hover{\ncolor: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));\n background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(9, 198, 250, 200));\nborder:1px solid rgb(0, 187, 255);}\nQPushButton:pressed{\nbackground-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\\n"\n}'
-
-
-
 
 
 class similarityThread(QtCore.QThread):
