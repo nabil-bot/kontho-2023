@@ -1,26 +1,23 @@
 # -*- coding:utf-8 -*-
 
-from ast import Str
-# from json.tool import main
 from PyQt5 import QtWidgets, uic
 import sys
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QGroupBox
 from PyQt5.QtCore import Qt, QSettings, pyqtSignal
 from PyQt5 import QtCore
-# import pyautogui
 import ctypes
 from PyQt5.QtGui import QPainter, QColor 
 from pynput.keyboard import Controller, Key
 from pynput import mouse
 from PyQt5.QtWidgets import QWidget
-keyboard = Controller()
+kb = Controller()
 import difflib
 import io
 import os
 import threading
 import winsound
 from win32gui import GetWindowText, GetCursorPos, WindowFromPoint
-from Main import similarityThread, wordThread
+import Main
 from LoadWords import wordsList,englaList,EnglishwordsList
 
 
@@ -28,20 +25,22 @@ from ahk import AHK
 ahk = AHK()
 import traceback
  
+User32 = ctypes.WinDLL('User32.dll')
+
 def similarity_ration_btween(first_string, second_string):
     temp = difflib.SequenceMatcher(None,first_string , second_string)
     return temp.ratio()    
-User32 = ctypes.WinDLL('User32.dll')
+
 
 greenStyleSheet = 'QPushButton{\n	font:  12pt "MS Shell Dlg 2";\n color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));\nbackground-color: qlineargradient(spread:pad, x1:1, y1:1, x2:1, y2:0, stop:0 rgba(62, 255, 41, 255), stop:1 rgba(5, 240, 255, 255));\nborder:2px solid rgb(0, 187, 255);\nborder-radius:5px;\n}\nQPushButton:hover{\ncolor: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));\n background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(9, 198, 250, 200));\nborder:1px solid rgb(0, 187, 255);}\nQPushButton:pressed{\nbackground-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\\n"\n}'
 
 
-class similarityThread(QtCore.QThread):
+class similarityThreadForOsk(QtCore.QThread):
     mostMatchedWords = QtCore.pyqtSignal(list)
     ruledOutSimiSignal = QtCore.pyqtSignal(bool)            # call preventer signal 1
     similarTheredIsRunningSignal = QtCore.pyqtSignal(bool, bool, str)  # call preventer signal 2
     def __init__(self, BanglaWordsofar = ""):
-        super(similarityThread, self).__init__()
+        super(similarityThreadForOsk, self).__init__()
         self.is_running = True
         
         self.BanglaWordsofar = BanglaWordsofar
@@ -140,13 +139,13 @@ class BanglawordThread(QtCore.QThread):
                     self.ruledOut = True 
 
             if self.ruledOut == True and self.ruledOutSimi == False and self.similarTheredIsRunning == False:  # and self.similarTheredIsRunning == False
-                self.similarityThread = similarityThread(BanglaWord)
-                self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-                self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
-                self.similarityThread.similarTheredIsRunningSignal.connect(self.similarTheredIsRunningStateChange)
+                self.similarityThreadForOsk = similarityThreadForOsk(BanglaWord)
+                self.similarityThreadForOsk.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
+                self.similarityThreadForOsk.mostMatchedWords.connect(self.addSimiWordsFunc)
+                self.similarityThreadForOsk.similarTheredIsRunningSignal.connect(self.similarTheredIsRunningStateChange)
                 self.similarTheredIsRunning = True
-                self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
-                self.similarityThread.start()
+                self.newCherecterIspressed.connect(self.similarityThreadForOsk.newCharecterIsPressedStateChange)
+                self.similarityThreadForOsk.start()
             self.matched_Word_signal.emit(self.matchedWords)
 
 
@@ -161,20 +160,20 @@ class BanglawordThread(QtCore.QThread):
     def similarTheredIsRunningStateChange(self, state, state2, englishWordSofar):
         self.similarTheredIsRunning = state
         if state == False and state2 == True:
-            self.similarityThread = similarityThread(englishWordSofar)
-            self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-            self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
-            self.similarityThread.similarTheredIsRunningSignal.connect(self.similarTheredIsRunningStateChange)
+            self.similarityThreadForOsk = similarityThreadForOsk(englishWordSofar)
+            self.similarityThreadForOsk.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
+            self.similarityThreadForOsk.mostMatchedWords.connect(self.addSimiWordsFunc)
+            self.similarityThreadForOsk.similarTheredIsRunningSignal.connect(self.similarTheredIsRunningStateChange)
             self.similarTheredIsRunning = True
-            self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
-            self.similarityThread.start()
+            self.newCherecterIspressed.connect(self.similarityThreadForOsk.newCharecterIsPressedStateChange)
+            self.similarityThreadForOsk.start()
 
     def ruledOutSimiStateChange(self, state):
         self.ruledOutSimi = state
         self.similarTheredIsRunning = False
         
         # try:    
-        #     self.similarityThread.stop()
+        #     self.similarityThreadForOsk.stop()
         # except Exception:
         #     pass 
 
@@ -183,7 +182,7 @@ class BanglawordThread(QtCore.QThread):
         self.ruledOutSimi = False
         self.similarTheredIsRunning = False
         try:    
-            self.similarityThread.stop()
+            self.similarityThreadForOsk.stop()
         except Exception:
             pass    
 
@@ -219,7 +218,7 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.SFXcheckBox.clicked.connect(self.sfxStatechanged)
         self.CurrentWord = ""
         self.RecomendationList = []
-        self.banglaRecomendationBtns = [self.RB1,self.RB2,self.RB3,self.RB4,self.RB5,self.RB6,self.RB7,self.RB8,self.RB9, self.RB10]
+        self.RecomendationBtns = [self.RB1,self.RB2,self.RB3,self.RB4,self.RB5,self.RB6,self.RB7,self.RB8,self.RB9, self.RB10]
         self.numDic = {'1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯','0':'০',}
 
         self.emojiLoaded = False
@@ -344,94 +343,98 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.pushButton_184.clicked.connect(lambda:self.logIn("@"))
         self.pushButton_196.clicked.connect(lambda:self.logIn("("))
         self.pushButton.clicked.connect(lambda:self.logIn(")"))
-# /banglakeyboard connectors =========================== 
+
         self.pushButton_201.clicked.connect(self.spaceClicked)
         self.pushButton_198.clicked.connect(self.tabClicked)            
-        self.pushButton_64.clicked.connect(self.tabClicked)
         self.pushButton_199.clicked.connect(self.BackSpaceClicked)
-        self.pushButton_33.clicked.connect(self.BackSpaceClicked)
         self.pushButton_200.clicked.connect(self.deleteClicked)
-        self.pushButton_78.clicked.connect(self.deleteClicked)
         self.pushButton_197.clicked.connect(self.EnterClicked)
-        self.pushButton_47.clicked.connect(self.EnterClicked)
-        self.pushButton_20.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_20.text())))
-        self.pushButton_21.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_21.text())))
-        self.pushButton_22.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_22.text())))
-        self.pushButton_23.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_23.text())))
-        self.pushButton_24.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_24.text())))
-        self.pushButton_25.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_25.text())))
-        self.pushButton_26.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_26.text())))
-        self.pushButton_27.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_27.text())))
-        self.pushButton_28.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_28.text())))
-        self.pushButton_29.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_29.text())))
-        self.pushButton_30.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_30.text())))
-        self.pushButton_31.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_31.text())))
-        self.pushButton_32.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_32.text())))
-        self.pushButton_65.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_65.text())))
-        self.pushButton_66.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_66.text())))
-        self.pushButton_67.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_67.text())))
-        self.pushButton_68.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_68.text())))
-        self.pushButton_69.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_69.text())))
-        self.pushButton_70.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_70.text())))
-        self.pushButton_71.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_71.text())))
-        self.pushButton_72.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_72.text())))
-        self.pushButton_73.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_73.text())))
-        self.pushButton_74.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_74.text())))
-        self.pushButton_75.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_75.text())))
-        self.pushButton_76.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_76.text())))
-        self.pushButton_77.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_77.text())))
-        self.pushButton_36.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_36.text())))
-        self.pushButton_37.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_37.text())))
-        self.pushButton_38.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_87.text())))
-        self.pushButton_39.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_39.text())))
-        self.pushButton_40.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_40.text())))
-        self.pushButton_41.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_41.text())))
-        self.pushButton_42.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_42.text())))
-        self.pushButton_43.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_43.text())))
-        self.pushButton_44.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_44.text())))
-        self.pushButton_45.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_45.text())))
-        self.pushButton_46.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_46.text())))
-        self.pushButton_84.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_84.text())))
-        self.pushButton_102.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_102.text())))
-        self.pushButton_106.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_106.text())))
-        self.pushButton_107.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_107.text())))
-        self.pushButton_108.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_108.text())))
-        self.pushButton_109.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_109.text())))
-        self.pushButton_110.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_110.text())))
-        self.pushButton_111.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_111.text())))
-        self.pushButton_112.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_112.text())))
-        self.pushButton_113.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_113.text())))       
-        self.pushButton_38.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_38.text())))     
-        self.pushButton_114.clicked.connect(lambda: keyboard.tap(Key.up))
-        self.pushButton_54.clicked.connect(lambda: keyboard.tap(Key.left))
-        self.pushButton_55.clicked.connect(lambda: keyboard.tap(Key.down))
-        self.pushButton_56.clicked.connect(lambda: keyboard.tap(Key.right))
-        self.pushButton_48.clicked.connect(lambda: keyboard.tap(Key.home))
-        self.pushButton_116.clicked.connect(lambda: keyboard.tap(Key.end))
-        self.pushButton_19.clicked.connect(self.escFunc)
-        self.pushButton_52.clicked.connect(self.spaceClicked)
+# /banglakeyboard connectors =========================== 
+        # english keyboard Connectors =====================..>>
+        
+        # self.pushButton_33.clicked.connect(self.BackSpaceClicked)
+        # self.pushButton_78.clicked.connect(self.deleteClicked)
+        # self.pushButton_47.clicked.connect(self.EnterClicked)
+        # self.pushButton_64.clicked.connect(self.tabClicked)
+        # self.pushButton_19.clicked.connect(self.escFunc)
+        # self.pushButton_52.clicked.connect(self.spaceClicked)
+        # self.pushButton_20.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_20.text())))
+        # self.pushButton_21.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_21.text())))
+        # self.pushButton_22.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_22.text())))
+        # self.pushButton_23.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_23.text())))
+        # self.pushButton_24.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_24.text())))
+        # self.pushButton_25.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_25.text())))
+        # self.pushButton_26.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_26.text())))
+        # self.pushButton_27.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_27.text())))
+        # self.pushButton_28.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_28.text())))
+        # self.pushButton_29.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_29.text())))
+        # self.pushButton_30.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_30.text())))
+        # self.pushButton_31.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_31.text())))
+        # self.pushButton_32.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_32.text())))
+        # self.pushButton_65.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_65.text())))
+        # self.pushButton_66.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_66.text())))
+        # self.pushButton_67.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_67.text())))
+        # self.pushButton_68.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_68.text())))
+        # self.pushButton_69.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_69.text())))
+        # self.pushButton_70.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_70.text())))
+        # self.pushButton_71.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_71.text())))
+        # self.pushButton_72.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_72.text())))
+        # self.pushButton_73.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_73.text())))
+        # self.pushButton_74.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_74.text())))
+        # self.pushButton_75.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_75.text())))
+        # self.pushButton_76.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_76.text())))
+        # self.pushButton_77.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_77.text())))
+        # self.pushButton_36.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_36.text())))
+        # self.pushButton_37.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_37.text())))
+        # self.pushButton_38.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_87.text())))
+        # self.pushButton_39.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_39.text())))
+        # self.pushButton_40.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_40.text())))
+        # self.pushButton_41.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_41.text())))
+        # self.pushButton_42.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_42.text())))
+        # self.pushButton_43.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_43.text())))
+        # self.pushButton_44.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_44.text())))
+        # self.pushButton_45.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_45.text())))
+        # self.pushButton_46.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_46.text())))
+        # self.pushButton_84.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_84.text())))
+        # self.pushButton_102.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_102.text())))
+        # self.pushButton_106.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_106.text())))
+        # self.pushButton_107.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_107.text())))
+        # self.pushButton_108.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_108.text())))
+        # self.pushButton_109.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_109.text())))
+        # self.pushButton_110.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_110.text())))
+        # self.pushButton_111.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_111.text())))
+        # self.pushButton_112.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_112.text())))
+        # self.pushButton_113.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_113.text())))       
+        # self.pushButton_38.clicked.connect(lambda: self.engishLogIn(str(self.pushButton_38.text())))     
+        # self.pushButton_114.clicked.connect(lambda: kb.tap(Key.up))
+        # self.pushButton_54.clicked.connect(lambda: kb.tap(Key.left))
+        # self.pushButton_55.clicked.connect(lambda: kb.tap(Key.down))
+        # self.pushButton_56.clicked.connect(lambda: kb.tap(Key.right))
+        # self.pushButton_48.clicked.connect(lambda: kb.tap(Key.home))
+        # self.pushButton_116.clicked.connect(lambda: kb.tap(Key.end))
+        
         # functions ==========================================================
-        self.pushButton_2.clicked.connect(lambda: keyboard.tap(Key.f1))
-        self.pushButton_3.clicked.connect(lambda: keyboard.tap(Key.f2))
-        self.pushButton_18.clicked.connect(lambda: keyboard.tap(Key.f3))
-        self.pushButton_17.clicked.connect(lambda: keyboard.tap(Key.f4))
-        self.pushButton_16.clicked.connect(lambda: keyboard.tap(Key.f5))
-        self.pushButton_15.clicked.connect(lambda: keyboard.tap(Key.f6))
-        self.pushButton_14.clicked.connect(lambda: keyboard.tap(Key.f7))
-        self.pushButton_13.clicked.connect(lambda: keyboard.tap(Key.f8))
-        self.pushButton_12.clicked.connect(lambda: keyboard.tap(Key.f9))
-        self.pushButton_11.clicked.connect(lambda: keyboard.tap(Key.f10))
-        self.pushButton_10.clicked.connect(lambda: keyboard.tap(Key.f11))
-        self.pushButton_9.clicked.connect(lambda: keyboard.tap(Key.f12))
+        self.pushButton_2.clicked.connect(lambda: kb.tap(Key.f1))
+        self.pushButton_3.clicked.connect(lambda: kb.tap(Key.f2))
+        self.pushButton_18.clicked.connect(lambda: kb.tap(Key.f3))
+        self.pushButton_17.clicked.connect(lambda: kb.tap(Key.f4))
+        self.pushButton_16.clicked.connect(lambda: kb.tap(Key.f5))
+        self.pushButton_15.clicked.connect(lambda: kb.tap(Key.f6))
+        self.pushButton_14.clicked.connect(lambda: kb.tap(Key.f7))
+        self.pushButton_13.clicked.connect(lambda: kb.tap(Key.f8))
+        self.pushButton_12.clicked.connect(lambda: kb.tap(Key.f9))
+        self.pushButton_11.clicked.connect(lambda: kb.tap(Key.f10))
+        self.pushButton_10.clicked.connect(lambda: kb.tap(Key.f11))
+        self.pushButton_9.clicked.connect(lambda: kb.tap(Key.f12))
         
         # /function ==========================================================
         self.changeStatedStylesheet = "background-color: qradialgradient(spread:reflect, cx:0.5, cy:0.5, radius:1.197, fx:0.489, fy:0.5, stop:0 rgba(255, 255, 255, 255), stop:1 rgba(72, 173, 255, 255));"
         # media controll =====================================================
-        self.pushButton_8.clicked.connect(lambda: keyboard.tap(Key.media_volume_down))
-        self.pushButton_7.clicked.connect(lambda: keyboard.tap(Key.media_volume_up))
-        self.pushButton_6.clicked.connect(lambda: keyboard.tap(Key.media_previous))
-        self.pushButton_5.clicked.connect(lambda: keyboard.tap(Key.media_play_pause))
-        self.pushButton_4.clicked.connect(lambda: keyboard.tap(Key.media_next))
+        self.pushButton_8.clicked.connect(lambda: kb.tap(Key.media_volume_down))
+        self.pushButton_7.clicked.connect(lambda: kb.tap(Key.media_volume_up))
+        self.pushButton_6.clicked.connect(lambda: kb.tap(Key.media_previous))
+        self.pushButton_5.clicked.connect(lambda: kb.tap(Key.media_play_pause))
+        self.pushButton_4.clicked.connect(lambda: kb.tap(Key.media_next))
         # /media controll   ===================================================
         
         self.pushButton_35.clicked.connect(self.CapsClicked)
@@ -500,17 +503,17 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.MouseListener.start()
         
         self.BanglawordThread = BanglawordThread()
-        self.BanglawordThread.matched_Word_signal.connect(self.populateBanglaWords)
+        self.BanglawordThread.matched_Word_signal.connect(self.populateWords)
         self.bangla_word_signal.connect(self.BanglawordThread.run)
         self.initBanglaThread_signal.connect(self.BanglawordThread.initFunc)
         self.BanglawordThread.start()
 
 
-        self.wordThread_ = wordThread()
-        self.wordThread_.matched_Word_signal.connect(self.populateBanglaWords)
-        self.word_signal.connect(self.wordThread_.run)
-        self.initThread_signal.connect(self.wordThread_.initFunc)
-        self.wordThread_.start()
+        # self.wordThread_ = wordThread()
+        # self.wordThread_.matched_Word_signal.connect(self.populateWords)
+        # self.word_signal.connect(self.wordThread_.run)
+        # self.initThread_signal.connect(self.wordThread_.initFunc)
+        # self.wordThread_.start()
 
     def on_click(self, x, y, button, pressed):
         if GetWindowText(WindowFromPoint(GetCursorPos())) != self.windowTitle():
@@ -523,7 +526,7 @@ class OSK_UI(QtWidgets.QMainWindow):
     def trim(self, l):
         self.CurrentWord = self.CurrentWord[:-l]
         for i in range(l):  
-            keyboard.tap(Key.backspace)
+            kb.tap(Key.backspace)
 
     def sendBanglishFor(self, key):
         try: 
@@ -559,7 +562,7 @@ class OSK_UI(QtWidgets.QMainWindow):
             stringKey = (str(key)).replace("'", "")
 
             if stringKey in self.numDic:
-                keyboard.type(self.numDic[stringKey])
+                kb.type(self.numDic[stringKey])
                 self.initialize()
                 return
             if stringKey == "a":
@@ -874,7 +877,7 @@ class OSK_UI(QtWidgets.QMainWindow):
             if stringKey == "Z":
                 bnglaKey== "্য"   
             if bnglaKey != "" or stringKey == "o":
-                keyboard.type(str(bnglaKey))
+                kb.type(str(bnglaKey))
                 self.CurrentWord += str(bnglaKey)
                 self.formar_previous_formar_previous_word = self.previous_formar_previous_word
                 self.previous_formar_previous_word = self.formar_previous_word
@@ -890,14 +893,15 @@ class OSK_UI(QtWidgets.QMainWindow):
         pass
 
         pass
-    def populateBanglaWords(self, words):
-        for btn in self.banglaRecomendationBtns:
+    def populateWords(self, words):
+        for btn in self.RecomendationBtns:
             btn.setText("")
-        for wrd, btn in zip(words, self.banglaRecomendationBtns):
+        for wrd, btn in zip(words, self.RecomendationBtns):
             btn.setText(wrd)
         pass
     def rb1Clicked(self):
         self.completFunc(str(self.RB1.text()))
+        # print(str(self.RB1.text())) 
     def rb2Clicked(self):
         self.completFunc(str(self.RB2.text())) 
     def rb3Clicked(self):
@@ -925,14 +929,14 @@ class OSK_UI(QtWidgets.QMainWindow):
             cha = ""    
 
         try:    
-            keyboard.type(cha) 
+            kb.type(cha) 
         except Exception:     
             with io.open("dalal.ahk", 'w', encoding="utf-16") as f:
                 f.write(f"send,{cha}")
             os.system('AutoHotkeyU64.exe "dalal.ahk"')
     def logEmojie(self, Cha): 
         try:    
-            keyboard.type(Cha) 
+            kb.type(Cha) 
         except Exception:     
             with io.open("dalal.ahk", 'w', encoding="utf-16") as f:
                 f.write(f"send,{Cha}")
@@ -941,10 +945,10 @@ class OSK_UI(QtWidgets.QMainWindow):
     def tabChangedFunc(self, index):
         r = 0
         c = 0
-        for btn in self.banglaRecomendationBtns:
+        for btn in self.RecomendationBtns:
             if self.tabWidget.currentIndex() == 0:    
                 self.gridLayout_3.addWidget(btn,r, c)
-            elif self.tabWidget.currentIndex() == 1:    
+            elif self.tabWidget.currentIndex() == 1:
                 self.gridLayout_5.addWidget(btn,r, c)
             c+=1
             if c == 5:
@@ -971,11 +975,11 @@ class OSK_UI(QtWidgets.QMainWindow):
             self.winClicked()
            
     def escFunc(self):
-        keyboard.tap(Key.esc)
+        kb.tap(Key.esc)
         self.initState()     
     def logCha(self, Cha): 
         try:    
-            keyboard.type(Cha) 
+            kb.type(Cha) 
         except Exception:     
             with io.open("dalal.ahk", 'w', encoding="utf-16") as f:
                 f.write(f"send,{Cha}")
@@ -993,41 +997,41 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.initState()
     def winClicked(self):
         if self.winState == False:
-            keyboard.press(Key.cmd)
+            kb.press(Key.cmd)
             self.winState = True
             self.pushButton_50.setStyleSheet(self.changeStatedStylesheet)  
             return
         if self.winState == True:
-            keyboard.release(Key.cmd)
+            kb.release(Key.cmd)
             self.winState = False
             self.pushButton_50.setStyleSheet("")
             return    
     def altClicked(self):
         if self.altState == False:
-            keyboard.press(Key.alt)
+            kb.press(Key.alt)
             self.altState=True
             self.pushButton_51.setStyleSheet(self.changeStatedStylesheet)
             self.pushButton_53.setStyleSheet(self.changeStatedStylesheet)
             return
         if self.altState == True:
-            keyboard.release(Key.alt)
+            kb.release(Key.alt)
             self.altState=False
             self.pushButton_51.setStyleSheet("")
             self.pushButton_53.setStyleSheet("")
     def ctrlClicked(self):
         if self.ctrlState == False:
-            keyboard.press(Key.ctrl)
+            kb.press(Key.ctrl)
             self.ctrlState = True
             self.pushButton_49.setStyleSheet(self.changeStatedStylesheet)
             return
         if self.ctrlState == True:
-            keyboard.release(Key.ctrl)
+            kb.release(Key.ctrl)
             self.ctrlState = False
             self.pushButton_49.setStyleSheet("")
             return   
     def shiftClicked(self):
         if self.shiftState == False:
-            keyboard.press(Key.shift)
+            kb.press(Key.shift)
             for btn in self.latter_btns:
                 btnText = (btn.text()).upper()
                 btn.setText(btnText)
@@ -1040,7 +1044,7 @@ class OSK_UI(QtWidgets.QMainWindow):
 
             return
         if self.shiftState == True:
-            keyboard.release(Key.shift)
+            kb.release(Key.shift)
             
             for btn in self.latter_btns:
                 btnText = (btn.text()).lower()
@@ -1078,9 +1082,9 @@ class OSK_UI(QtWidgets.QMainWindow):
     def engishLogIn(self, char): 
         if self.BanglishCheckBox.isChecked() == False or any([self.ctrlState, self.altState, self.winState]):
             if any([self.ctrlState, self.altState, self.winState]):
-                keyboard.tap(char)  
+                kb.tap(char)  
             else:
-                keyboard.type(char)
+                kb.type(char)
                 self.CurrentWord += char
                 self.recomendFunc()
 
@@ -1089,13 +1093,13 @@ class OSK_UI(QtWidgets.QMainWindow):
             self.sendBanglishFor(char) 
                 
     def EnterClicked(self):
-        keyboard.tap(Key.enter)
+        kb.tap(Key.enter)
         self.initState()
     def deleteClicked(self):
-        keyboard.tap(Key.delete)
+        kb.tap(Key.delete)
         self.initState()
     def BackSpaceClicked(self):
-        keyboard.tap(Key.backspace)
+        kb.tap(Key.backspace)
         if self.CurrentWord != "": 
             try:
                 self.CurrentWord = self.CurrentWord[:-1]
@@ -1104,7 +1108,7 @@ class OSK_UI(QtWidgets.QMainWindow):
             # self.recomendFunc()
             self.initState()
     def tabClicked(self):
-        keyboard.tap(Key.tab)
+        kb.tap(Key.tab)
         self.initState()
     def subsTrack(self, fullWord, childWord):
         childLength = len(childWord)
@@ -1120,18 +1124,21 @@ class OSK_UI(QtWidgets.QMainWindow):
             print(childWord) 
     def completFunc(self, selectedWord):
         if self.CurrentWord == "":
-            return
+            self.CurrentWord = Main.wordSofar
+            print(self.CurrentWord)
         # selectedWord = self.RecomendationList[serial]
-        keyboard.type(self.subsTrack(selectedWord, self.CurrentWord))
+        
+        
+        kb.type(self.subsTrack(selectedWord, self.CurrentWord))
         if self.SpaceCheckBox.isChecked() == True:
-            keyboard.type(" ")
+            kb.type(" ")
         self.CurrentWord = ""
         self.recomendFunc()
         pass
     
     def recomendFunc(self):
         if self.CurrentWord == "":
-            for btn in self.banglaRecomendationBtns:
+            for btn in self.RecomendationBtns:
                 btn.setText("")
             return    
         self.RecomendationList = []
@@ -1152,11 +1159,11 @@ class OSK_UI(QtWidgets.QMainWindow):
                 similarity = similarity_ration_btween(word, self.CurrentWord)
                 if similarity > 0.70 and word not in self.RecomendationList:
                     self.RecomendationList.append(word) 
-        for wrd, btn in zip(self.RecomendationList, self.banglaRecomendationBtns):
+        for wrd, btn in zip(self.RecomendationList, self.RecomendationBtns):
             btn.setText(wrd)
 
     def logIn(self, char): # bangla cha log in  ==========================================> 
-        keyboard.type(char)
+        kb.type(char)
         if self.SFXcheckBox.isChecked() == True:
             try:
                 sound_thread = threading.Thread(target=lambda:winsound.PlaySound('.//SFX//Modern UI Sound_01.wav', winsound.SND_FILENAME))
@@ -1169,7 +1176,7 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.bangla_word_signal.emit(self.CurrentWord)
         
     def spaceClicked(self):
-        keyboard.tap(Key.space)
+        kb.tap(Key.space)
         if self.CurrentWord != "":
             self.CurrentWord = ""
             self.recomendFunc()
@@ -1323,7 +1330,8 @@ class OSK_UI(QtWidgets.QMainWindow):
 
         self.OskHistory.setValue("spChaHis", self.CharHistory)  
         # self.listener.stop()  
-        self.close()                    
+        # self.close()
+        self.hide()                    
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = OSK_UI() 

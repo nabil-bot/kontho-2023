@@ -107,7 +107,6 @@ class Ui_nms_pad(QMainWindow):
         uic.loadUi('.//Uis//Nms_pad.ui', self) 
         Line_space_icon = QtGui.QIcon()
         Line_space_icon.addPixmap(QtGui.QPixmap("Imgs/copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
     # some extra shitty features ==================================================================================
         self.TTSE_class = TTSE.TextToSpeech_UI()
         self.dockWidget_2.setVisible(False)
