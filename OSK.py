@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+from unicodedata import name
 from PyQt5 import QtWidgets, uic
 import sys
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QGroupBox
@@ -514,6 +515,8 @@ class OSK_UI(QtWidgets.QMainWindow):
         # self.word_signal.connect(self.wordThread_.run)
         # self.initThread_signal.connect(self.wordThread_.initFunc)
         # self.wordThread_.start()
+        self.loadCharacters()
+        self.loadEmojies()
 
     def on_click(self, x, y, button, pressed):
         if GetWindowText(WindowFromPoint(GetCursorPos())) != self.windowTitle():
@@ -935,21 +938,22 @@ class OSK_UI(QtWidgets.QMainWindow):
                 f.write(f"send,{cha}")
             os.system('AutoHotkeyU64.exe "dalal.ahk"')
     def logEmojie(self, Cha): 
-        try:    
-            kb.type(Cha) 
-        except Exception:     
-            with io.open("dalal.ahk", 'w', encoding="utf-16") as f:
-                f.write(f"send,{Cha}")
-            os.system('AutoHotkeyU64.exe "dalal.ahk"')
+        # try:    
+        #     kb.type(Cha) 
+        # except Exception:     
+        with io.open("dalal.ahk", 'w', encoding="utf-16") as f:
+            f.write(f"send,{Cha}")
+        os.system('AutoHotkeyU64.exe "dalal.ahk"')
         self.initState()
     def tabChangedFunc(self, index):
         r = 0
         c = 0
         for btn in self.RecomendationBtns:
             if self.tabWidget.currentIndex() == 0:    
-                self.gridLayout_3.addWidget(btn,r, c)
+                self.gridLayout_3.addWidget(btn, r, c)
             elif self.tabWidget.currentIndex() == 1:
                 self.gridLayout_5.addWidget(btn,r, c)
+                btn.setStyleSheet('QPushButton{\n	font: 12pt "Kalpurush";\npadding-top:4px;\n}')
             c+=1
             if c == 5:
                 c= 0
@@ -957,12 +961,12 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.CurrentWord = ""
         self.recomendFunc()
 
-        if index == 2 and self.characterLoaded == False:
-            self.loadCharacters()
-            self.characterLoaded = True
-        if index == 3 and self.emojiLoaded == False:
-            self.loadEmojies()
-            self.emojiLoaded = True
+        # if index == 2 and self.characterLoaded == False:
+        #     self.loadCharacters()
+        #     self.characterLoaded = True
+        # if index == 3 and self.emojiLoaded == False:
+        #     self.loadEmojies()
+        #     self.emojiLoaded = True
                 
     def initState(self):
         if self.shiftState == True:
@@ -1293,7 +1297,12 @@ class OSK_UI(QtWidgets.QMainWindow):
                 if len(cha) == 0:
                     continue
 
-                self.btn2 = QPushButton((cha).replace("\n", ""))
+                chaParts = cha.split(",")
+
+                emoji = chaParts[0]
+                name = chaParts[1]
+
+                self.btn2 = QPushButton((emoji).replace("\n", ""))
 
                 self.btn2.setMinimumSize(25, 25)
 
@@ -1303,7 +1312,7 @@ class OSK_UI(QtWidgets.QMainWindow):
                 except Exception as e:
                     print(e)
                     pass
-
+                self.btn2.setToolTip(name)
                 self.gridLayout2.addWidget(self.btn2,rowcount, columnCount)
                 columnCount +=1
                 if columnCount == columnNum:

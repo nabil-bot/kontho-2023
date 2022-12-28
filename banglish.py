@@ -249,7 +249,7 @@ def convert_to_banglish_sentence(sentence):
     # sp.Popen([programName, fileName])
 
 # convert_to_banglish_sentence(words_str) 
-print(convert_to_banglish("একাত্তর"))
+# print(convert_to_banglish("একাত্তর"))
 # print(convert_to_banglish("অঘটন"))
 
 
