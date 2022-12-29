@@ -1177,9 +1177,9 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.karList = ["া","ি","ী","ু","ূ","ৃ","ে","ৈ","ো","ৌ"]
         self.btsForNorChar = [self.pushButton_20,self.pushButton_21,self.pushButton_22,self.pushButton_23,self.pushButton_24,
                 self.pushButton_25,self.pushButton_26,self.pushButton_27,self.pushButton_28,self.pushButton_29,self.pushButton_30,self.pushButton_31,self.pushButton_32,self.pushButton_75,self.pushButton_76,self.pushButton_77,self.pushButton_45,self.pushButton_46, self.pushButton_111,self.pushButton_112,self.pushButton_113]    
+        
         self.pushButton_81.clicked.connect(self.shiftClicked)
         self.pushButton_115.clicked.connect(self.shiftClicked)
-
         self.pushButton_49.clicked.connect(self.ctrlClicked)
         self.pushButton_51.clicked.connect(self.altClicked)
         self.pushButton_50.clicked.connect(self.winClicked)
@@ -1318,8 +1318,7 @@ class OSK_UI(QtWidgets.QMainWindow):
         if self.altState == True:
             self.altClicked() 
         if self.winState == True:
-            self.winClicked()
-           
+            self.winClicked()       
     def escFunc(self):
         kb.tap(Key.esc)
         self.initState()     
@@ -2064,8 +2063,11 @@ class Ui(QtWidgets.QMainWindow):
         
 # osk class connectors ========================================================================>
 
-        self.oskClass.pushButton_33.clicked.connect(self.oskClass.BackSpaceClicked)
-        self.oskClass.pushButton_78.clicked.connect(self.oskClass.deleteClicked)
+        # self.oskClass.pushButton_33.clicked.connect(self.oskClass.BackSpaceClicked)
+
+        self.oskClass.pushButton_33.clicked.connect(lambda: self.on_osk_press(str("key.backspace")))
+
+        self.oskClass.pushButton_78.clicked.connect(lambda: self.on_osk_press(str("key.delete")))
         self.oskClass.pushButton_47.clicked.connect(self.oskClass.EnterClicked)
         self.oskClass.pushButton_64.clicked.connect(self.oskClass.tabClicked)
         self.oskClass.pushButton_19.clicked.connect(self.oskClass.escFunc)
@@ -2118,12 +2120,12 @@ class Ui(QtWidgets.QMainWindow):
         self.oskClass.pushButton_112.clicked.connect(lambda: self.on_osk_press(str(self.oskClass.pushButton_112.text())))
         self.oskClass.pushButton_113.clicked.connect(lambda: self.on_osk_press(str(self.oskClass.pushButton_113.text())))       
         self.oskClass.pushButton_38.clicked.connect(lambda: self.on_osk_press(str(self.oskClass.pushButton_38.text())))     
-        self.oskClass.pushButton_114.clicked.connect(lambda: keyboard.tap(Key.up))
-        self.oskClass.pushButton_54.clicked.connect(lambda: keyboard.tap(Key.left))
-        self.oskClass.pushButton_55.clicked.connect(lambda: keyboard.tap(Key.down))
-        self.oskClass.pushButton_56.clicked.connect(lambda: keyboard.tap(Key.right))
-        self.oskClass.pushButton_48.clicked.connect(lambda: keyboard.tap(Key.home))
-        self.oskClass.pushButton_116.clicked.connect(lambda: keyboard.tap(Key.end))
+        self.oskClass.pushButton_114.clicked.connect(lambda: kb.tap(Key.up))
+        self.oskClass.pushButton_54.clicked.connect(lambda: kb.tap(Key.left))
+        self.oskClass.pushButton_55.clicked.connect(lambda: kb.tap(Key.down))
+        self.oskClass.pushButton_56.clicked.connect(lambda: kb.tap(Key.right))
+        self.oskClass.pushButton_48.clicked.connect(lambda: self.on_osk_press(str("key.home")))
+        self.oskClass.pushButton_116.clicked.connect(lambda: self.on_osk_press(str("key.end")))
 
 
 
@@ -2167,45 +2169,6 @@ class Ui(QtWidgets.QMainWindow):
 
         self.listClass.listWidget.itemClicked.connect(self.WordClicked)
 
-    # def WordClicked(self, item):
-    #     global completorTraegered
-    #     global wordSofar
-    #     try:
-    #         wordSelected = item
-
-    #         if len(wordSofar) == 0 and len(item) > 1:
-    #             print(f"in if {item}")
-    #             self.listClass.completFunc(item)
-    #             return
-                
-    #         if wordSelected[:len(wordSofar)] == wordSofar:
-    #             self.listener.stop()
-    #             kb.type(wordSelected[len(wordSofar):])  
-    #             self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-    #             self.listener.start()            
-    #         elif len(wordSofar) == 1:
-    #             self.listener.stop()
-    #             kb.tap(Key.backspace)
-    #             kb.type(wordSelected)
-    #             self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-    #             self.listener.start() 
-    #             wordSofar = wordSelected
-    #         else:
-    #             keyList = [Key.ctrl, Key.shift, Key.left]
-    #             for key in keyList:
-    #                 kb.press(key)
-    #             for key in keyList:
-    #                 kb.release(key)     
-    #             completorTraegered = True
-    #             self.listener.stop()
-    #             kb.type(wordSelected)
-    #             self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-    #             self.listener.start() 
-    #             completorTraegered = False 
-    #         initGlobal()
-    #         self.listClass.showHideFunc("hide")  
-    #     except Exception:
-    #         pass   
     
     def WordClicked(self, item):
         global completorTraegered
@@ -2298,23 +2261,68 @@ class Ui(QtWidgets.QMainWindow):
     
         # print(self.listener.running)
         global wordSofar
+        if key == "key.end":
+            kb.tap(Key.end)
+            self.oskClass.initState()
+            self.initialize()
+            return
+        if key == "key.home":
+            kb.tap(Key.home)
+            self.oskClass.initState()
+            self.initialize()
+            return
+        if key == "key.delete":
+            kb.tap(Key.delete)
+            self.oskClass.initState()
+            self.initialize()
+            return
+
+        if key == "key.backspace":
+            self.listener.stop()
+            kb.tap(Key.backspace)
+            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+            self.listener.start()
+            global wordSofar
+            global CurrentWord
+            if CurrentWord != "": 
+                try:
+                    CurrentWord = CurrentWord[:-1]
+                except Exception:
+                    CurrentWord = "" 
+                    # self.oskClass.cleanRecomendations()
+                    self.initialize()
+
+                self.oskClass.initState()
+            elif wordSofar != "":
+                try:
+                    wordSofar = wordSofar[:-1]
+                except Exception:
+                    wordSofar = "" 
+                    self.oskClass.cleanRecomendations()
+            return
         if self.oskClass.BanglishCheckBox.isChecked() == False or any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
             if any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
                 kb.tap(key)  
+                
             else:
                 self.listener.stop()
                 kb.type(key)
-                wordSofar += key
+                if key in englishLatters:    
+                    wordSofar += key
                 # print(wordSofar)
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start()
-                
+            self.oskClass.initState()    
             return   
         else:
             self.listener.stop()
-            self.convertTobangla(key) 
+            if key in englishLatters:    
+                self.convertTobangla(key) 
+            else:
+                kb.type(key)      
             self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-            self.listener.start()    
+            self.listener.start() 
+            self.oskClass.initState()   
         # self.on_press(key)
 
         pass
