@@ -5368,6 +5368,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
           </property>
           <item>
            <widget class="QCheckBox" name="BanglishCheckBox">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type with Bangla phonetic&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="styleSheet">
              <string notr="true">font: 10pt &quot;MS Shell Dlg 2&quot;;</string>
             </property>

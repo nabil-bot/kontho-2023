@@ -40,7 +40,7 @@ User32 = ctypes.WinDLL('User32.dll')
 from win32gui import GetWindowText, GetCursorPos, WindowFromPoint, GetForegroundWindow, GetWindowRect, GetCaretPos
 from AddNewWord import AddNewWordsClass
 from WordManager import wordManagerClass
-from LoadWords import wordsList,englaList,EnglishwordsList
+from LoadWords import wordsList,englaList,EnglishwordsList,englishLatters
 from pynput import keyboard
 
 
@@ -640,27 +640,42 @@ class WhileloopThroughListThread(QtCore.QThread):
     def run(self):
         while self.is_running:
             global wordSofar
-            if self.preWord != wordSofar:   
-                self.newCherecterIspressed.emit(True)
-                # self.newCharecterState = False
+            global englishWordSofar
+            if self.preWord != wordSofar and wordSofar != "":   
                 
+                self.newCherecterIspressed.emit(True)
                 self.matchedWords = []
 
-                if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
-                    self.loopThroughList(wordsList,wordSofar,englishWordSofar)
-                    if len(self.matchedWords) == 0:
-                        self.ruledOut = True
+                if wordSofar[0] not in englishLatters:
+                    if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
+                        self.loopThroughList(wordsList,wordSofar,englishWordSofar)
+                        if len(self.matchedWords) == 0:
+                            self.ruledOut = True
 
-                if self.ruledOut == True and self.ruledOutEngla == False:
-                    self.loopThroughList(englaList,wordSofar,englishWordSofar)
-                    if len(self.matchedWords) == 0:
-                        self.ruledOutEngla = True
-                    else:    
-                        self.themeSignal.emit("blue")
+                    if self.ruledOut == True and self.ruledOutEngla == False:
+                        self.loopThroughList(englaList,wordSofar,englishWordSofar)
+                        if len(self.matchedWords) == 0:
+                            self.ruledOutEngla = True
+                        else:    
+                            self.themeSignal.emit("blue")
 
 
-                if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
-                    self.startSimilarityThread(englishWordSofar, 'bangla')   
+                    if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
+                        self.startSimilarityThread(englishWordSofar, 'bangla')   
+
+                if wordSofar[0] in englishLatters:
+                    # ================================
+                    englishWordSofar = wordSofar
+                    
+                    if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
+                        self.loopThroughList(EnglishwordsList,wordSofar,englishWordSofar)
+                        if len(self.matchedWords) == 0:
+                            self.ruledOut = True
+
+                    if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
+                        self.startSimilarityThread(englishWordSofar, 'english')
+                    # print(self.matchedWords)
+
 
                 self.matchedWordsSignal.emit(self.matchedWords)
                 self.preWord = wordSofar
@@ -671,27 +686,30 @@ class WhileloopThroughListThread(QtCore.QThread):
     def updateWord(self, wordSofar, englishWordSofar_local, bangla=""):
         self.wordSofar = wordSofar
         self.englishWordSofar_local = englishWordSofar_local
+ 
     def loopThroughList(self, wordList, wordSofar, englishWordSofar_local):
+
         for wrd in wordList[:]:
             wordArray = wrd.split(",")
-            if len(wordArray) == 1:
+            if len(wordArray) == 1 and wordSofar !=englishWordSofar_local:
                 continue
-            banglaWord = wordArray[0]
+            mainWord = wordArray[0]
             index = 0
             for wrd in wordArray[:]:
-                if banglaWord in self.matchedWords:
+                if mainWord in self.matchedWords:
                     break
                 if index == 0 and wrd[:len(wordSofar)] == wordSofar : # and wrd not in self.matchedWords
-                    self.matchedWords.append(banglaWord)
+                    self.matchedWords.append(mainWord)
                     break
-                elif (wrd[:len(englishWordSofar_local)]).lower() == (englishWordSofar_local).lower() and banglaWord not in self.matchedWords: # and wrd not in self.matchedWords
-                    self.matchedWords.append(banglaWord)
+                elif (wrd[:len(englishWordSofar_local)]).lower() == (englishWordSofar_local).lower() and mainWord not in self.matchedWords: # and wrd not in self.matchedWords
+                    self.matchedWords.append(mainWord)
                     break
                 index += 1
             if len(self.matchedWords) >11 or self.newCharecterState == True:
                 if self.newCharecterState == True:
                     print("loop Was breaked by new cherecter")
                 break 
+          
     def initFunc(self, sig):
         self.ruledOut = False
         self.ruledOutSimi = False
@@ -1219,12 +1237,6 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.initBanglaThread_signal.connect(self.BanglawordThread.initFunc)
         self.BanglawordThread.start()
 
-
-        # self.wordThread_ = wordThread()
-        # self.wordThread_.matched_Word_signal.connect(self.populateWords)
-        # self.word_signal.connect(self.wordThread_.run)
-        # self.initThread_signal.connect(self.wordThread_.initFunc)
-        # self.wordThread_.start()
         self.loadCharacters()
         self.loadEmojies()
 
@@ -2125,6 +2137,8 @@ class Ui(QtWidgets.QMainWindow):
         self.oskClass.RB8.clicked.connect(self.rb8Clicked)
         self.oskClass.RB9.clicked.connect(self.rb9Clicked)
         self.oskClass.RB10.clicked.connect(self.rb10Clicked)
+
+        self.oskClass.BanglishCheckBox.stateChanged.connect(lambda:self.initialize())
 # /osk class connectors ========================================================================>
         self.Doc_pad = Script_pad.Ui_nms_pad()
         self.lastActiveWindow = ""
@@ -2283,16 +2297,18 @@ class Ui(QtWidgets.QMainWindow):
     def on_osk_press(self, key):
     
         # print(self.listener.running)
-
+        global wordSofar
         if self.oskClass.BanglishCheckBox.isChecked() == False or any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
             if any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
                 kb.tap(key)  
             else:
                 self.listener.stop()
                 kb.type(key)
+                wordSofar += key
+                # print(wordSofar)
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start()
-                # wordSofar += key
+                
             return   
         else:
             self.listener.stop()

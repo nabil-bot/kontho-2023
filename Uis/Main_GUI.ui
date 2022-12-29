@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>290</width>
-    <height>58</height>
+    <width>269</width>
+    <height>45</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -75,7 +75,7 @@ QFrame:hover{
      <enum>Qt::ClickFocus</enum>
     </property>
     <property name="toolTip">
-     <string/>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Speech to text&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="toolTipDuration">
      <number>2</number>
@@ -144,7 +144,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
      <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="toolTip">
-     <string comment="Add Language" extracomment="Add Language"/>
+     <string comment="Add Language" extracomment="Add Language">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Settings&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="toolTipDuration">
      <number>1</number>
@@ -206,9 +206,6 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <height>25</height>
      </rect>
     </property>
-    <property name="cursor">
-     <cursorShape>PointingHandCursor</cursorShape>
-    </property>
     <property name="focusPolicy">
      <enum>Qt::NoFocus</enum>
     </property>
@@ -216,7 +213,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
      <enum>Qt::PreventContextMenu</enum>
     </property>
     <property name="toolTip">
-     <string comment="Add Language" extracomment="Add Language"/>
+     <string comment="Add Language" extracomment="Add Language">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;On screen keyboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="toolTipDuration">
      <number>1</number>
@@ -461,7 +458,7 @@ border:none;
      <enum>Qt::ClickFocus</enum>
     </property>
     <property name="toolTip">
-     <string/>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stop listening&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="toolTipDuration">
      <number>2</number>
@@ -691,6 +688,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <width>72</width>
       <height>24</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Switch language&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="styleSheet">
      <string notr="true">QPushButton{

@@ -12,3 +12,14 @@ englaList = wordsSTR.split("|")
 with io.open('EnglishWords.txt', "r", encoding="utf-8") as wordTxt:
     EnglishWordsSTR = wordTxt.read()
 EnglishwordsList = EnglishWordsSTR.split("|")
+
+englishLatter = "qwertyuiopasdfghjklzxcvbnm"
+englishLatterUpper = englishLatter.upper()
+
+englishLatters = []
+for l in range(26)[:]:
+    englishLatters.append(englishLatter[l])
+    englishLatters.append(englishLatterUpper[l])
+
+
+# print(englishLatters)
