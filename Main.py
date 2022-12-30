@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import time
+from tkinter.tix import Tree
 import keyboard as kb2
 import speech_recognition as sr
 from pynput.keyboard import Controller, Key
@@ -645,36 +646,39 @@ class WhileloopThroughListThread(QtCore.QThread):
                 
                 self.newCherecterIspressed.emit(True)
                 self.matchedWords = []
+                try:
+                    if wordSofar[0] not in englishLatters:
+                        if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
+                            self.loopThroughList(wordsList,wordSofar,englishWordSofar)
+                            if len(self.matchedWords) == 0:
+                                self.ruledOut = True
 
-                if wordSofar[0] not in englishLatters:
-                    if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
-                        self.loopThroughList(wordsList,wordSofar,englishWordSofar)
-                        if len(self.matchedWords) == 0:
-                            self.ruledOut = True
-
-                    if self.ruledOut == True and self.ruledOutEngla == False:
-                        self.loopThroughList(englaList,wordSofar,englishWordSofar)
-                        if len(self.matchedWords) == 0:
-                            self.ruledOutEngla = True
-                        else:    
-                            self.themeSignal.emit("blue")
+                        if self.ruledOut == True and self.ruledOutEngla == False:
+                            self.loopThroughList(englaList,wordSofar,englishWordSofar)
+                            if len(self.matchedWords) == 0:
+                                self.ruledOutEngla = True
+                            else:    
+                                self.themeSignal.emit("blue")
 
 
-                    if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
-                        self.startSimilarityThread(englishWordSofar, 'bangla')   
+                        if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
+                            self.startSimilarityThread(englishWordSofar, 'bangla')   
 
-                if wordSofar[0] in englishLatters:
-                    # ================================
-                    englishWordSofar = wordSofar
-                    
-                    if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
-                        self.loopThroughList(EnglishwordsList,wordSofar,englishWordSofar)
-                        if len(self.matchedWords) == 0:
-                            self.ruledOut = True
+                    if wordSofar[0] in englishLatters:
+                        # ================================
+                        englishWordSofar = wordSofar
+                        
+                        if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
+                            self.loopThroughList(EnglishwordsList,wordSofar,englishWordSofar)
+                            if len(self.matchedWords) == 0:
+                                self.ruledOut = True
 
-                    if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
-                        self.startSimilarityThread(englishWordSofar, 'english')
-                    # print(self.matchedWords)
+                        if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
+                            self.startSimilarityThread(englishWordSofar, 'english')
+                        # print(self.matchedWords)
+                except Exception:
+                    self.preWord = ""
+                    pass
 
 
                 self.matchedWordsSignal.emit(self.matchedWords)
@@ -1700,7 +1704,8 @@ class OSK_UI(QtWidgets.QMainWindow):
             self.winClicked()
 
         self.OskHistory.setValue("spChaHis", self.CharHistory)  
-        # self.listener.stop()  
+        if self.BanglishCheckBox.isChecked() == True:
+           self.BanglishCheckBox.setChecked(False)
         self.close()
         # self.hide()  
 
@@ -2167,9 +2172,27 @@ class Ui(QtWidgets.QMainWindow):
 
         self.loadAbbribiations()
 
-        self.listClass.listWidget.itemClicked.connect(self.WordClicked)
+        self.listClass.listWidget.itemClicked.connect(self.WordClickedMiddleFunc)
 
     
+    def WordClickedMiddleFunc(self, item):
+        # print(item.text())
+        # self.WordClicked()
+        global wordSofar
+        selectedText = item.text()
+
+        self.listener.stop()
+        if selectedText[:len(wordSofar)] == wordSofar:
+            kb.type(selectedText[len(wordSofar):])
+        else:
+            for i in range(len(wordSofar)):
+                kb.tap(Key.backspace)
+            kb.type(selectedText)      
+        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+        self.listener.start() 
+
+        initGlobal()
+        self.listClass.showHideFunc("hide") 
     def WordClicked(self, item):
         global completorTraegered
         global wordSofar
@@ -2179,17 +2202,21 @@ class Ui(QtWidgets.QMainWindow):
             wordSelected = item
 
             if len(wordSofar) == 0 and len(item) > 1:
-                print("in if ")
-                print(f"current word:{CurrentWord}")
-                print("/")
-                # self.listClass.completFunc(item)
                 c_wrd = CurrentWord
             else:
-                c_wrd = wordSofar    
-                
-            if wordSelected[:len(c_wrd)] == c_wrd:
+                c_wrd = wordSofar
+
+            # print(wordSelected)
+            # print(c_wrd)
+
+            if wordSelected[:len(c_wrd)] == c_wrd.lower():
                 self.listener.stop()
-                kb.type(wordSelected[len(c_wrd):])  
+                if self.oskClass.capsLocked == True:
+                    restOfWord = (wordSelected[len(c_wrd):]).upper()
+                else:
+                    restOfWord = wordSelected[len(c_wrd):]
+
+                kb.type(restOfWord)  
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start()            
             elif len(c_wrd) == 1:
@@ -2200,13 +2227,10 @@ class Ui(QtWidgets.QMainWindow):
                 self.listener.start() 
                 wordSofar = wordSelected
             else:
-                keyList = [Key.ctrl, Key.shift, Key.left]
-                for key in keyList:
-                    kb.press(key)
-                for key in keyList:
-                    kb.release(key)     
+                self.listener.stop() 
+                for i in range(len(c_wrd)):
+                    kb.tap(Key.backspace) 
                 completorTraegered = True
-                self.listener.stop()
                 kb.type(wordSelected)
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start() 
@@ -2314,17 +2338,18 @@ class Ui(QtWidgets.QMainWindow):
                 self.listener.start()
             self.oskClass.initState()    
             return   
-        else:
-            self.listener.stop()
-            if key in englishLatters:    
+        if self.oskClass.BanglishCheckBox.isChecked() == True:
+            if key in englishLatters:   
                 self.convertTobangla(key) 
+                self.listClass.showHideFunc("hide") 
             else:
+                self.listener.stop()
                 kb.type(key)      
-            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-            self.listener.start() 
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                self.listener.start() 
             self.oskClass.initState()   
         # self.on_press(key)
-
+            # self.listClass.showHideFunc("hide")
         pass
 
     def on_press(self, key):
@@ -2343,8 +2368,8 @@ class Ui(QtWidgets.QMainWindow):
                         kb2.unblock_key(i)
                     except Exception:
                         pass
-                self.shiftKeyBlocked = True    
-
+                self.shiftKeyBlocked = True
+                
             # print(str(key))
             if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"] and self.keysBlocked == True: 
                 kb2.unhook_all()
