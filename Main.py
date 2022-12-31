@@ -25,7 +25,7 @@ import Converter_for_main
 from CreateShortcut import creat_shortcut
 from pathlib import Path
 from Options import Options_UI
-import OSK
+# import OSK
 import win32api
 import winsound
 import sounddevice as sd
@@ -1987,7 +1987,7 @@ class Ui(QtWidgets.QMainWindow):
         self.Mic_btn.setFocusPolicy(QtCore.Qt.NoFocus)
         self.setFocusPolicy(QtCore.Qt.NoFocus)
         self.Settings_menu.addSeparator()
-        self.Conveter = self.Settings_menu.addAction('Unicode to Bijoy text conveter')
+        self.Conveter = self.Settings_menu.addAction('Unicode from/to Bijoy conveter')
         self.Conveter.triggered.connect(self.Open_converter_exe)  # < ------------------
         conveter_icon = QtGui.QIcon()
         conveter_icon.addPixmap(QtGui.QPixmap(".//Uis//Imgs//Converter logo for main.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)

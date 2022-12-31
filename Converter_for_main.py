@@ -1,27 +1,25 @@
 
 from PyQt5 import QtWidgets, uic
 import sys
-from PyQt5 import QtWidgets, uic, QtCore, QtGui
-from PyQt5.QtWidgets import QWidget, QDesktopWidget, QMenu, QAction, QApplication, QGraphicsDropShadowEffect, QGroupBox, QMessageBox 
-
+from PyQt5 import QtWidgets, uic, QtGui
+from PyQt5.QtWidgets import QApplication, QMessageBox 
+import pyperclip as pc
 import os 
-
 
 from bijoy2unicode import converter  
 # import Conveter_fun
-from Conveter_fun import Ui_conveter
+# from Conveter_fun import Ui_conveter
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox   
 from PyQt5.QtCore import QDir 
-from PyQt5 import uic, QtCore
+from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox   
 import sys
 import io
 import os
-# from PyQt5.QtWidgets import *
-from PyQt5 import QtCore
-# from PyQt5.QtGui import *
-# from PyQt5.QtCore import *
-from pynput.keyboard import Controller
+
+from LoadWords import banglaUnicodesLatters
+# from PyQt5 import QtCore
+
 import converter
 
 def convert(text):
@@ -111,12 +109,32 @@ class Ui_converter(QtWidgets.QWidget):
         self.Copy_pushButton.clicked.connect(self.copy_converted)
         self.Clear_pushButton.clicked.connect(self.clear)
         self.Open_text_pushButton.clicked.connect(self.Open_text)
+
+        self.UnicodeRadioButton.toggled.connect(self.ConvertToUnicodeStateFunc)
+
+        self.bijoyStyleSheet = 'QTextEdit{\nbackground-color: rgb(248, 248, 248);\nfont: 14pt  "Kalpurush ANSI" ;\n}'
+        self.unicodeStyleSheet = 'QTextEdit{\nfont: 13pt  "./Fonts/Kalpurush" , "Kalpurush" ;\n	background-color: rgb(248, 248, 248);\n}'
+
+        self.unicodeEngine = converter.Unicode()
+    def ConvertToUnicodeStateFunc(self, selected):
+        if selected:
+            self.First_textEdit.setStyleSheet(self.bijoyStyleSheet)
+            self.First_textEdit.setPlaceholderText("GLv‡b weRq ‡U·U wjLyb A_ev ‡c÷ Ki“b")
+            self.second_textEdit.setStyleSheet(self.unicodeStyleSheet)
+        else:
+            self.First_textEdit.setStyleSheet(self.unicodeStyleSheet)
+            self.First_textEdit.setPlaceholderText("Paste or write Unicode text here")
+            self.second_textEdit.setStyleSheet(self.bijoyStyleSheet)
+        pass    
     def Convert_text(self):
         try:    
-            text = self.Unicode_TextEdit.toPlainText()
-            converted_text = convert(self.preCustomize(text))
-            self.Bijoy_textEdit.clear()
-            self.Bijoy_textEdit.setText(converted_text)
+            text = self.First_textEdit.toPlainText()
+            if self.BijoyRadioButton.isChecked():
+                converted_text = convert(self.preCustomize(text))
+            else:
+                converted_text = self.unicodeEngine.convertBijoyToUnicode(text)
+            self.second_textEdit.clear()
+            self.second_textEdit.setText(converted_text)    
         except Exception:
             msg = QMessageBox()
             msg.setStyleSheet("QMessageBox{\n"
@@ -136,14 +154,20 @@ class Ui_converter(QtWidgets.QWidget):
         txt = txt.replace("–", "-")
         return txt          
     def paste(self):
-        self.Unicode_TextEdit.paste()
+        self.First_textEdit.paste()
+        text = self.First_textEdit.toPlainText()
+        if text not in ["", " "]:
+            if text[0] in banglaUnicodesLatters:
+                self.BijoyRadioButton.setChecked(True)
+            else:
+                self.UnicodeRadioButton.setChecked(True)   
     def copy_converted(self):
-        import pyperclip as pc
-        text = self.Bijoy_textEdit.toPlainText()
+        
+        text = self.second_textEdit.toPlainText()
         pc.copy(text)    
     def clear(self):
-        self.Bijoy_textEdit.setText('') 
-        self.Unicode_TextEdit.setText('') 
+        self.second_textEdit.setText('') 
+        self.First_textEdit.setText('') 
     def Open_text(self):
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.AnyFile)
@@ -154,7 +178,7 @@ class Ui_converter(QtWidgets.QWidget):
 
                 with io.open(file_name[0], 'r', encoding="utf-8") as f:
                     data = f.read()
-                    self.Unicode_TextEdit.setText(data)
+                    self.First_textEdit.setText(data)
                     f.close()
             else:
                 pass          
