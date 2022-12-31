@@ -114,4 +114,4 @@ def convert_num_to_word(given_number):
         return_value = convert_whole_number_to_word(given_number)
     return return_value
 
-# print(convert_num_to_word('৩,৬৪৩.৫০'))
+# print(convert_num_to_word('১২৩৪৫'))

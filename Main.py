@@ -41,8 +41,9 @@ User32 = ctypes.WinDLL('User32.dll')
 from win32gui import GetWindowText, GetCursorPos, WindowFromPoint, GetForegroundWindow, GetWindowRect, GetCaretPos
 from AddNewWord import AddNewWordsClass
 from WordManager import wordManagerClass
-from LoadWords import wordsList,englaList,EnglishwordsList,englishLatters
+from LoadWords import wordsList,englaList,EnglishwordsList,englishLatters, banglaNumbs
 from pynput import keyboard
+import NumberToWord
 
 
 # ++++++++++++++++global variables ====================
@@ -644,10 +645,12 @@ class WhileloopThroughListThread(QtCore.QThread):
             global englishWordSofar
             if self.preWord != wordSofar and wordSofar != "":   
                 
+                
+
                 self.newCherecterIspressed.emit(True)
                 self.matchedWords = []
                 try:
-                    if wordSofar[0] not in englishLatters:
+                    if wordSofar[0] not in englishLatters and wordSofar[0] not in banglaNumbs:
                         if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
                             self.loopThroughList(wordsList,wordSofar,englishWordSofar)
                             if len(self.matchedWords) == 0:
@@ -676,6 +679,17 @@ class WhileloopThroughListThread(QtCore.QThread):
                         if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
                             self.startSimilarityThread(englishWordSofar, 'english')
                         # print(self.matchedWords)
+
+                    # ========================================
+                    if wordSofar[0] in banglaNumbs: # banglaNumbs
+                        numberInWord = NumberToWord.convert_num_to_word(wordSofar)
+                        self.matchedWords.append(numberInWord) 
+                        splitedNumbersInword = ""
+                        for i in range(len(wordSofar)):
+                            splitedNumbersInword += f"{NumberToWord.convert_num_to_word(wordSofar[i])} "
+                        
+                        self.matchedWords.append(splitedNumbersInword.strip()) 
+                    # ========================================    
                 except Exception:
                     self.preWord = ""
                     pass
@@ -1766,6 +1780,9 @@ class listViewClass(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot(list)
     def populateWords(self, words):
         # self.show()
+        # print(words)
+        while("" in words):
+            words.remove("")
         self.listWidget.clear()
         self.listWidget.addItems(words)
         self.currentRow = 0
@@ -1821,59 +1838,6 @@ class listViewClass(QtWidgets.QMainWindow):
             self.listWidget.setStyleSheet('QListWidget{\n	font: 12pt "Kalpurush";\n	border-radius:2px;\n	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));\n	border: 2px solid rgb(0, 0, 255);\n}')  
         if theme == "yellow":
             self.listWidget.setStyleSheet('QListWidget{\n	font: 12pt "Kalpurush";\n	border-radius:2px;\n	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));\n	border: 2px solid rgb(255, 255, 0);\n}')              
-    def on_press(self, key):
-        if self.isHidden() == False:
-            if str(key) == "Key.down":
-                if self.listWidget.currentRow() == -1 or self.listWidget.currentRow() == self.listWidget.count()-1:
-                    self.listWidget.setCurrentRow(1)
-                else:
-                    self.listWidget.setCurrentRow(self.listWidget.currentRow()+1) 
-                try:
-                    kb2.block_key(28)
-                except Exception as e:
-                    pass    
-            if str(key) == "Key.up":
-                if self.listWidget.currentRow() == 1:
-                    self.listWidget.setCurrentRow(self.listWidget.count()-1)
-                else:    
-                    self.listWidget.setCurrentRow(self.listWidget.currentRow()-1)       
-            if str(key) == "Key.space":
-                self.currentRow = 0
-                self.populateWords([])
-            if str(key) == "Key.enter":
-                if self.listWidget.currentRow() != -1:    
-                    item = self.listWidget.currentItem()
-                    self.WordClicked(item.text())
-                    # initGlobal()
-                    self.showHideFunc("hide")
-                
-    def WordClicked(self, item):
-        global completorTraegered
-        global wordSofar
-        try:
-            wordSelected = item
-            if wordSelected[:len(wordSofar)] == wordSofar:
-                kb.type(wordSelected[len(wordSofar):])              
-            elif len(wordSofar) == 1:
-                keyList = [Key.shift, Key.left]
-                for key in keyList:
-                    kb.press(key)
-                for key in keyList:
-                    kb.release(key)
-                kb.type(wordSelected)
-            else:
-                keyList = [Key.ctrl, Key.shift, Key.left]
-                for key in keyList:
-                    kb.press(key)
-                for key in keyList:
-                    kb.release(key)     
-                completorTraegered = True
-                kb.type(wordSelected)
-                completorTraegered = False 
-            initGlobal()
-            self.showHideFunc("hide")  
-        except Exception:
-            pass
     def paintEvent(self, event):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor(128, 128, 128, 0))
@@ -2462,7 +2426,8 @@ class Ui(QtWidgets.QMainWindow):
         # takes english characters one by one as banglish word latters and types bangla
         if stringKey in self.numDic:
             kb.type(self.numDic[stringKey])
-            self.initialize()
+            wordSofar += self.numDic[stringKey]
+            # self.initialize()
             return
         if stringKey == "a":
             if wordSofar == "":

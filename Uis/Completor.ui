@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>849</width>
-    <height>632</height>
+    <height>525</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -75,6 +75,9 @@ border-radius: 10px;
        <height>23</height>
       </size>
      </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pin On top&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
      <property name="styleSheet">
       <string notr="true">QPushButton{
 
@@ -113,6 +116,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
        <height>20</height>
       </rect>
      </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Spell Check&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
      <property name="styleSheet">
       <string notr="true">QPushButton{
 border-bottom-left-radius:8px;
@@ -139,91 +145,20 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <string>S✓</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="SpellCheckPushButton_2">
+    <widget class="QCheckBox" name="checkBox">
      <property name="geometry">
       <rect>
-       <x>32</x>
-       <y>2</y>
-       <width>28</width>
-       <height>20</height>
+       <x>35</x>
+       <y>3</y>
+       <width>70</width>
+       <height>17</height>
       </rect>
      </property>
-     <property name="styleSheet">
-      <string notr="true">QPushButton{
-border-bottom-left-radius:1px;
-border-top-right-radius: 1px;
-border-bottom-right-radius: 1px;
-border-top-left-radius:1px;
-font: 10pt &quot;Arial&quot;;
- 	 color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
-	 background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2, 200, 255,255));
-	border:1px solid rgb(85, 255, 255);
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 250), stop:1 rgba(3, 115, 255, 250));\n&quot;
-
-}</string>
-     </property>
-     <property name="icon">
-      <iconset>
-       <normaloff>Imgs/copy.png</normaloff>Imgs/copy.png</iconset>
-     </property>
-     <property name="iconSize">
-      <size>
-       <width>15</width>
-       <height>15</height>
-      </size>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="SpellCheckPushButton_3">
-     <property name="geometry">
-      <rect>
-       <x>62</x>
-       <y>2</y>
-       <width>28</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QPushButton{
-border-bottom-left-radius:1px;
-border-top-right-radius: 1px;
-border-bottom-right-radius: 1px;
-border-top-left-radius:1px;
-font: 10pt &quot;Arial&quot;;
- 	 color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
-	 background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2, 200, 255,255));
-	border:1px solid rgb(85, 255, 255);
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 250), stop:1 rgba(3, 115, 255, 250));\n&quot;
-
-}</string>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Auto Complete&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset>
-       <normaloff>Imgs/cut (1).png</normaloff>Imgs/cut (1).png</iconset>
-     </property>
-     <property name="iconSize">
-      <size>
-       <width>15</width>
-       <height>15</height>
-      </size>
+      <string>AC</string>
      </property>
     </widget>
    </widget>

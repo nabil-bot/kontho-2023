@@ -25,3 +25,5 @@ banglaUnicodesStr = "অআইঈউঊঋএঐওঔািীুূৃেৈ�
 banglaUnicodesLatters = []
 for i in range(len(banglaUnicodesStr)):
     banglaUnicodesLatters.append(banglaUnicodesStr[i])
+
+banglaNumbs = ["১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯", "০"]
