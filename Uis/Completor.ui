@@ -145,7 +145,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <string>S✓</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="checkBox">
+    <widget class="QCheckBox" name="ACcheckBox">
      <property name="geometry">
       <rect>
        <x>35</x>

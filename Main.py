@@ -312,9 +312,6 @@ class whileThreadClass(QtCore.QThread):
         self.non_speaking_duration = non_speaking_duration
     def run(self):
         try:
-            # with open('.//Res//Recoard_settings.txt', "r") as RS:
-            #     RS_pos = RS.read()
-            # settings = (RS_pos.split('\n'))
             r = sr.Recognizer()
             self.mic_index = int(self.micIndex) # int(settings[5])
             self.mic_name = self.micName # settings[6]
@@ -626,6 +623,8 @@ class WhileloopThroughListThread(QtCore.QThread):
     newCherecterIspressed = QtCore.pyqtSignal(bool)
     themeSignal = QtCore.pyqtSignal(str)
 
+    acSignal = QtCore.pyqtSignal(str) # autoCurrect
+
     def __init__(self, parent=None):
         super(WhileloopThroughListThread, self).__init__(parent)
         
@@ -644,19 +643,17 @@ class WhileloopThroughListThread(QtCore.QThread):
             global wordSofar
             global englishWordSofar
             if self.preWord != wordSofar and wordSofar != "":   
-                
-                
 
                 self.newCherecterIspressed.emit(True)
                 self.matchedWords = []
                 try:
                     if wordSofar[0] not in englishLatters and wordSofar[0] not in banglaNumbs:
-                        if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
-                            self.loopThroughList(wordsList,wordSofar,englishWordSofar)
+                        if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):  
+                            self.loopThroughList(wordsList,wordSofar,englishWordSofar)    # this gonna check in main dictionary
                             if len(self.matchedWords) == 0:
                                 self.ruledOut = True
 
-                        if self.ruledOut == True and self.ruledOutEngla == False:
+                        if self.ruledOut == True and self.ruledOutEngla == False:  # englawords dictionary
                             self.loopThroughList(englaList,wordSofar,englishWordSofar)
                             if len(self.matchedWords) == 0:
                                 self.ruledOutEngla = True
@@ -721,6 +718,9 @@ class WhileloopThroughListThread(QtCore.QThread):
                     break
                 elif (wrd[:len(englishWordSofar_local)]).lower() == (englishWordSofar_local).lower() and mainWord not in self.matchedWords: # and wrd not in self.matchedWords
                     self.matchedWords.append(mainWord)
+                    if len(wordSofar) > 5 and wrd.lower() == (englishWordSofar_local).lower() and mainWord != wordSofar:
+                        self.acSignal.emit(mainWord)
+                        self.preWord = mainWord
                     break
                 index += 1
             if len(self.matchedWords) >11 or self.newCharecterState == True:
@@ -763,6 +763,7 @@ class wordThread(QtCore.QThread):
     matched_Word_signal = QtCore.pyqtSignal(list)
     hideSignal = QtCore.pyqtSignal(str)
     themeSignal = QtCore.pyqtSignal(str)
+    acWordSignal = QtCore.pyqtSignal(str)
 
     newCherecterIspressed = QtCore.pyqtSignal(bool)
     initSignal = QtCore.pyqtSignal(str)
@@ -781,6 +782,7 @@ class wordThread(QtCore.QThread):
 
         self.whileLoopThread = WhileloopThroughListThread()
         self.whileLoopThread.matchedWordsSignal.connect(self.addSimiWordsFunc)
+        self.whileLoopThread.acSignal.connect(self.sendAcSignal)
         self.whileLoopThread.finished.connect(self.whileLoopThread.deleteLater)
         self.whileLoopThread.themeSignal.connect(self.emitTheme)
         self.initSignal.connect(self.whileLoopThread.initFunc)
@@ -809,6 +811,9 @@ class wordThread(QtCore.QThread):
         except Exception as e:
             print(traceback.format_exc()) 
     
+    def sendAcSignal(self, acWord):
+        self.acWordSignal.emit(acWord)
+        pass
 
     def dicThreadReturnFunc(self, matchedWords):
         self.matched_Word_signal.emit(matchedWords) 
@@ -1032,17 +1037,6 @@ class OSK_UI(QtWidgets.QMainWindow):
 
         self.emojiLoaded = False
         self.characterLoaded = False
-
-        # self.RB1.clicked.connect(self.rb1Clicked)
-        # self.RB2.clicked.connect(self.rb2Clicked)
-        # self.RB3.clicked.connect(self.rb3Clicked)
-        # self.RB4.clicked.connect(self.rb4Clicked)
-        # self.RB5.clicked.connect(self.rb5Clicked)
-        # self.RB6.clicked.connect(self.rb6Clicked)
-        # self.RB7.clicked.connect(self.rb7Clicked)
-        # self.RB8.clicked.connect(self.rb8Clicked)
-        # self.RB9.clicked.connect(self.rb9Clicked)
-        # self.RB10.clicked.connect(self.rb10Clicked)
         
         self.OskHistory = QSettings("OSK_History")
 
@@ -1963,13 +1957,11 @@ class Ui(QtWidgets.QMainWindow):
         settings_icon.addPixmap(QtGui.QPixmap(".//Uis//Imgs//gear 3.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.Options.setIcon(settings_icon)
         self.Settings_menu.addSeparator() # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        self.Run_at_startUp = QAction('Run automatically at startup', self, checkable=True, checked=False)
-        self.Run_at_startUp.triggered.connect(self.Run_startup_fun)
-        self.Settings_menu.addAction(self.Run_at_startUp)
-        if RKS_pos == "True":
-            self.Run_at_startUp.setChecked(True) 
-        if RKS_pos == "False":
-            self.Run_at_startUp.setChecked(False)
+        # if RKS_pos == "True":
+        #     self.RunAtAtartUpCheckBox.setChecked(True) 
+        # if RKS_pos == "False":
+        #     self.RunAtAtartUpCheckBox.setChecked(False)
+        # self.RunAtAtartUpCheckBox.stateChanged.connect(self.Run_startup_fun)
         self.Settings_menu.addSeparator() # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         self.trackClipSetting = QSettings("TrackClip")
         
@@ -2124,6 +2116,7 @@ class Ui(QtWidgets.QMainWindow):
 
         self.wordThread_ = wordThread()
         self.wordThread_.matched_Word_signal.connect(self.getRecomendedWords)
+        self.wordThread_.acWordSignal.connect(self.AutoCompleate)
         self.wordThread_.hideSignal.connect(self.listClass.showHideFunc)
         self.wordThread_.themeSignal.connect(self.listClass.changeTheme)
         self.word_signal.connect(self.wordThread_.run)
@@ -2137,8 +2130,21 @@ class Ui(QtWidgets.QMainWindow):
         self.loadAbbribiations()
 
         self.listClass.listWidget.itemClicked.connect(self.WordClickedMiddleFunc)
-
-    
+        self.autoCompletedWord = ""
+    def AutoCompleate(self, theWord):
+        global wordSofar
+        if self.listClass.ACcheckBox.isChecked():
+            self.listener.stop() 
+            for i in range(len(wordSofar)):
+                kb.tap(Key.backspace) 
+            # completorTraegered = True
+            kb.type(theWord)
+            self.autoCompletedWord = theWord
+            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+            self.listener.start() 
+            
+            # print(theWord)
+        pass
     def WordClickedMiddleFunc(self, item):
         # print(item.text())
         # self.WordClicked()
@@ -2161,7 +2167,9 @@ class Ui(QtWidgets.QMainWindow):
         global completorTraegered
         global wordSofar
         global CurrentWord
-
+        # print(item)
+        # print(self.autoCompletedWord)
+        # print(wordSofar)
         try:
             wordSelected = item
 
@@ -2172,7 +2180,17 @@ class Ui(QtWidgets.QMainWindow):
 
             # print(wordSelected)
             # print(c_wrd)
-
+            if self.autoCompletedWord != "" and wordSofar == item: 
+                self.listener.stop() 
+                for i in range(len(self.autoCompletedWord)):
+                    kb.tap(Key.backspace) 
+                completorTraegered = True
+                kb.type(wordSelected)
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                self.listener.start() 
+                completorTraegered = False 
+                
+            
             if wordSelected[:len(c_wrd)] == c_wrd.lower():
                 self.listener.stop()
                 if self.oskClass.capsLocked == True:
@@ -2190,6 +2208,8 @@ class Ui(QtWidgets.QMainWindow):
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start() 
                 wordSofar = wordSelected
+        
+                
             else:
                 self.listener.stop() 
                 for i in range(len(c_wrd)):
@@ -2322,7 +2342,7 @@ class Ui(QtWidgets.QMainWindow):
         global englishWordSofar
         global previous_word
         global formar_previous_word
-
+        
         if self.current_language == "English":
             return
         try: 
@@ -2426,6 +2446,10 @@ class Ui(QtWidgets.QMainWindow):
         # takes english characters one by one as banglish word latters and types bangla
         if stringKey in self.numDic:
             kb.type(self.numDic[stringKey])
+            
+            if wordSofar != "":
+                if wordSofar[0] not in banglaNumbs:
+                    self.initialize()
             wordSofar += self.numDic[stringKey]
             # self.initialize()
             return
@@ -2762,9 +2786,7 @@ class Ui(QtWidgets.QMainWindow):
             formar_previous_word = previous_word
             previous_word = stringKey
             englishWordSofar += stringKey
-
-            
-            
+      
                 
     def initialize(self):
         global wordSofar
@@ -2772,7 +2794,7 @@ class Ui(QtWidgets.QMainWindow):
         global previous_word
         global formar_previous_word
         global ruledOut 
-        
+        self.autoCompletedWord = ""
         previous_word = ""
         wordSofar = ""
         englishWordSofar = ""
@@ -2883,10 +2905,9 @@ class Ui(QtWidgets.QMainWindow):
         except Exception as e:
             self.showError(e)    
         pass
-    def Run_startup_fun(self):
+    def Run_startup_fun(self, state):
         try:
-            if self.Run_at_startUp.isChecked() == True:
-                
+            if state:
                 creat_shortcut()
                 with open('.//Res//Run_at_startup.txt', "w") as RKS:
                     RKS.write("True")
