@@ -2342,7 +2342,7 @@ class Ui(QtWidgets.QMainWindow):
         global englishWordSofar
         global previous_word
         global formar_previous_word
-        
+        self.autoCompletedWord = ""
         if self.current_language == "English":
             return
         try: 
@@ -2794,7 +2794,7 @@ class Ui(QtWidgets.QMainWindow):
         global previous_word
         global formar_previous_word
         global ruledOut 
-        self.autoCompletedWord = ""
+        
         previous_word = ""
         wordSofar = ""
         englishWordSofar = ""
