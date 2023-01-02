@@ -109,7 +109,7 @@ class wordManagerClass(QMainWindow):
     def saveFunc(self):
         if self.tabWidget.currentIndex() == 0:
             pass
-        elif self.tabWidget.currentIndex() == 2:
+        elif self.tabWidget.currentIndex() == 3:
             strToSave = ""
             row_count = self.tableWidget_3.rowCount()
             for i in range(row_count):
@@ -146,11 +146,12 @@ class wordManagerClass(QMainWindow):
             rowPosition = self.tableWidget.rowCount()
             self.tableWidget.insertRow(rowPosition)
             self.tableWidget.scrollToBottom()
-        elif self.tabWidget.currentIndex() == 2:
+        elif self.tabWidget.currentIndex() == 3:
             rowPosition = self.tableWidget_3.rowCount()
             self.tableWidget_3.insertRow(rowPosition)
             self.tableWidget_3.scrollToBottom()
-            pass    
+            pass 
+   
         pass
     def removeFunc(self):
         if self.tabWidget.currentIndex() == 0:    
