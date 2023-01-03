@@ -18,44 +18,44 @@ engla_list = words_str.split("|")
 
 # for w in engla_list:
 #     Word_list.append(w)
-# jointWord = False
-# def jointWordSpliter(word):
-#     firstWord = ""
-#     secondWord = ""
-#     thirdWord = ""
-#     jointWord = False
-#     for i in range(len(word))[:]:
-#         firstWord = word[:i]
-#         if firstWord != word and i>1:   
-#             if firstWord in Word_list:
-#                 secondWord = word[i:] 
-
-#                 # banglish = convert_to_banglish(firstWord)+convert_to_banglish(secondWord)
-#                 # return banglish
-#                 if len(secondWord) > 1 and secondWord in Word_list:
-#                     banglish = convert_to_banglish(firstWord)+convert_to_banglish(secondWord)
-#                     return banglish
+jointWord = False
 def jointWordSpliter(word):
-    # words_list = []
-    # s = 0
-    # wholeWord = ""
-    # for i in range(len(word))[:]:
-    #     CurrentWord = word[s:i]
-    #     if CurrentWord != word and len(CurrentWord)>3:   
-    #         if CurrentWord in Word_list:
-    #             words_list.append(CurrentWord)
-    #             wholeWord += convert_to_banglish(CurrentWord)
-    #             s = i
-    # restOf = word[s:]
-    # words_list.append(restOf)  
-    # wholeWord += convert_to_banglish(restOf)          
-    # # print(words_list) 
-    # return wholeWord      
-    w_list = []
-    for wrd in Word_list[:]:
-        if wrd in word and wrd != word and len(wrd) > 1:
-            w_list.append(wrd)
-    return  w_list      
+    firstWord = ""
+    secondWord = ""
+    thirdWord = ""
+    jointWord = False
+    for i in range(len(word))[:]:
+        firstWord = word[:i]
+        if firstWord != word and i>1:   
+            if firstWord in Word_list:
+                secondWord = word[i:] 
+
+                # banglish = convert_to_banglish(firstWord)+convert_to_banglish(secondWord)
+                # return banglish
+                if len(secondWord) > 1 and secondWord in Word_list:
+                    banglish = convert_to_banglish(firstWord)+convert_to_banglish(secondWord)
+                    return banglish
+# def jointWordSpliter(word):
+#     # words_list = []
+#     # s = 0
+#     # wholeWord = ""
+#     # for i in range(len(word))[:]:
+#     #     CurrentWord = word[s:i]
+#     #     if CurrentWord != word and len(CurrentWord)>3:   
+#     #         if CurrentWord in Word_list:
+#     #             words_list.append(CurrentWord)
+#     #             wholeWord += convert_to_banglish(CurrentWord)
+#     #             s = i
+#     # restOf = word[s:]
+#     # words_list.append(restOf)  
+#     # wholeWord += convert_to_banglish(restOf)          
+#     # # print(words_list) 
+#     # return wholeWord      
+#     w_list = []
+#     for wrd in Word_list[:]:
+#         if wrd in word and wrd != word and len(wrd) > 1:
+#             w_list.append(wrd)
+#     return  w_list      
 
 
           
