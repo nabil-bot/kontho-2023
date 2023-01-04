@@ -7,6 +7,7 @@ from PyQt5 import uic
 from PyQt5.QtGui import QColor
 import sys
 from banglish import jointWordSpliter, convert_to_banglish
+from LoadWords import wordsList, englaList, EnglishwordsList
 
 import io
 # from banglish import jointWordSpliter, convert_to_banglish
@@ -17,7 +18,13 @@ class wordManagerClass(QMainWindow):
         super(wordManagerClass, self).__init__()
         uic.loadUi('.//Uis//WordManagerUi.ui', self)
 
-        self.loadBanglaWords()
+        # self.loadBanglaWords()
+
+        self.loadWords(wordsList, self.tableWidget)   # loading bangla words
+        # self.loadWords(englaList, self.EnglaTableWidget)
+        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+
+
         self.changes = []
         self.redoReserve = []
 
@@ -52,24 +59,6 @@ class wordManagerClass(QMainWindow):
 
         # self.tableWidget.itemChanged.connect(self.itemChangedFunc)
     
-    # def itemChangedFunc(self, item):
-    #     print("in")
-    #     print(item.text())
-    #     if self.tableWidget.currentColumn() == 0:
-    #         word = self.tableWidget.item(self.tableWidget.currentRow() , self.tableWidget.currentColumn()).text()
-    #         try:
-    #             convertion = jointWordSpliter(word) 
-    #             if convertion != None:
-    #                 banglish = convertion
-    #             else:
-    #                 banglish = convert_to_banglish(word) 
-    #             pass
-    #             print(banglish)
-    #             current_item = banglish
-    #             c_item = QTableWidgetItem(current_item.format(0, 0))
-    #             self.tableWidget.setItem(self.tableWidget.currentRow() , self.tableWidget.currentColumn()+1, c_item)
-    #         except Exception as e:
-    #             print(e)
 
     def getTextFormTable(self, table):
         row_count = table.rowCount()
@@ -217,6 +206,48 @@ class wordManagerClass(QMainWindow):
             self.selectAnItem(item)
             pass
         pass
+    # def itemChangedFunc(self, citem):
+    #     changedData = []
+    #     changedData.append(self.currentItem)
+    #     changedData.append(self.tableWidget.currentRow())
+    #     changedData.append(self.tableWidget.currentColumn())
+    #     if self.itemChangedByUndoFunc == False:
+    #         self.changes.insert(0, changedData)
+    #         self.changes = self.changes[:50]
+    #         self.currentItem = citem
+
+    #     pass
+    #     # print("in func")
+    #     if self.tableWidget.currentColumn() == 0:
+    #         # print("in if")
+    #         word = self.tableWidget.item(self.tableWidget.currentRow() , self.tableWidget.currentColumn()).text()
+    #         # print(word)
+    #         try:
+    #             convertion = jointWordSpliter(word) 
+    #             if convertion != None:
+    #                 banglish = convertion
+    #             else:
+    #                 banglish = convert_to_banglish(word) 
+    #             pass
+    #             # print(banglish)
+    #             current_item = banglish
+    #             c_item = QTableWidgetItem(current_item.format(0, 0))
+                
+    #             self.tableWidget.itemChanged.disconnect(self.itemChangedFunc)
+                
+    #             self.tableWidget.setItem(self.tableWidget.currentRow() , self.tableWidget.currentColumn()+1, c_item)
+    #             self.tableWidget.itemChanged.connect(self.itemChangedFunc)
+
+    #         except Exception as e:
+    #             print(e)
+    # def currentItemChangedFunc(self, current, previous):
+    #     if current != None:    
+    #         self.currentItem = current.text()
+    #     else:
+    #         self.currentItem = ""
+
+    #     pass
+
     def itemChangedFunc(self, citem):
         changedData = []
         changedData.append(self.currentItem)
@@ -257,24 +288,20 @@ class wordManagerClass(QMainWindow):
         else:
             self.currentItem = ""
 
-        pass
-    def loadBanglaWords(self, path = "BanglishList2.txt"):
-        with io.open(path, "r", encoding="utf-8") as wordTxt:
-            wordsSTR = wordTxt.read()
-        wordsList = wordsSTR.split("|")
-        
+        pass    
+    def loadWords(self, wordsList, tableWidget):
         for wrd in wordsList:
             wordArray = wrd.split(",")
             if wrd in [" ", ""]:
                 continue
-            rowPosition = self.tableWidget.rowCount()
-            self.tableWidget.insertRow(rowPosition)
+            rowPosition = tableWidget.rowCount()
+            tableWidget.insertRow(rowPosition)
             c = 0
             for w in wordArray[:2]:
                 item = QTableWidgetItem(w.format(0, 0))
-                self.tableWidget.setItem(rowPosition,c, item)
+                tableWidget.setItem(rowPosition,c, item)
                 c+=1
-            self.tableWidget.item(rowPosition, 0).setBackground(QColor(170, 255, 0, 155))    
+            tableWidget.item(rowPosition, 0).setBackground(QColor(170, 255, 0, 155)) 
 
     def undo(self):
         if len(self.changes) != 0:    

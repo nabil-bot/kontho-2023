@@ -27,13 +27,13 @@ background-color: qlineargradient(spread:pad, x1:1, y1:1, x2:1, y2:0, stop:0 rgb
      <number>2</number>
     </property>
     <property name="topMargin">
-     <number>9</number>
+     <number>2</number>
     </property>
     <property name="rightMargin">
      <number>2</number>
     </property>
     <property name="bottomMargin">
-     <number>2</number>
+     <number>1</number>
     </property>
     <property name="horizontalSpacing">
      <number>4</number>
@@ -81,6 +81,32 @@ background-color: qlineargradient(spread:pad, x1:1, y1:1, x2:1, y2:0, stop:0 rgb
        <attribute name="title">
         <string>Engla</string>
        </attribute>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <widget class="QTableWidget" name="EnglaTableWidget">
+          <column>
+           <property name="text">
+            <string>Engla Word</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Main Word</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Phonetic 2</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Phonetic 3</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
@@ -88,7 +114,7 @@ background-color: qlineargradient(spread:pad, x1:1, y1:1, x2:1, y2:0, stop:0 rgb
        </attribute>
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="0" column="0">
-         <widget class="QTableWidget" name="tableWidget_2">
+         <widget class="QTableWidget" name="EnglishTableWidget">
           <column>
            <property name="text">
             <string>Words</string>

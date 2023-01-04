@@ -1,20 +1,18 @@
 # -*- coding:utf-8 -*-
 
 import io
-
+from LoadWords import Word_list, englaList
 
 
 layout_dictionary1 = {"ক":"ko","খ":"kho","গ":"go","ঘ":"gho","ঙ":"Ngo","চ":"co","ছ":"cho","জ":"jo", "ঝ":"jho","ঞ":"NGo", "ট":"To","ঠ":"Tho","ড":"Do","ঢ":"Dho","ণ":"No","ত":"to", "থ":"tho", "দ":"do", "ধ":"dho","ন":"no","প":"po","ফ":"fo","ব":"bo","ভ":"bho","ম":"mo","য":"Zo","র":"ro","ল":"lo","শ":"sho","ষ":"Sho","স":"so","হ":"ho","ড়":"Ro","ঢ়":"Rho","য়":"yo","ৎ":"THo","ং":"ng","ঃ":"","ঁ":"","অ":"o","আ":"a","ই":"i","ঈ":"Ei", "উ":"u","ঊ":"U","ঋ":"Ri","এ":"e","ঐ":"Oi","ও":"O","ঔ":"OU","া":"a","ি":"i","ী":"I","ু":"u","ূ":"U","ৃ":"ri","ে":"e","ৈ":"Oi","ো":"O","ৌ":"Ou","্":"", ",":"", "।":"", " ":" "}
 kal_list = ["া", "ি", "ী", "ে", "ু", "ূ", "ৃ", "ো", "ৌ", "ৈ"] 
 
 
-with io.open("SoreOwords.txt", 'r', encoding="utf-8") as f:
-    words_str = f.read()
-Word_list = words_str.split("|")
 
-with io.open("result.txt", 'r', encoding="utf-8") as f:
-    words_str = f.read()
-engla_list = words_str.split("|")
+
+# with io.open("result.txt", 'r', encoding="utf-8") as f:
+#     words_str = f.read()
+engla_list = englaList
 
 # for w in engla_list:
 #     Word_list.append(w)

@@ -2135,16 +2135,26 @@ class Ui(QtWidgets.QMainWindow):
         global wordSofar
         if self.listClass.ACcheckBox.isChecked():
             self.listener.stop() 
-            for i in range(len(wordSofar)):
-                kb.tap(Key.backspace) 
-            # completorTraegered = True
-            kb.type(theWord)
+
+            times_to_tap_backspace, restOfWord = self.smertCompletor(wordSofar, theWord) 
+            for i in range(times_to_tap_backspace):
+                kb.tap(Key.backspace)
+            kb.type(restOfWord)
+
             self.autoCompletedWord = theWord
             self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
             self.listener.start() 
             
             # print(theWord)
         pass
+    def smertCompletor(self, word_soFar, the_word):
+        for i in range(len(the_word))[:]:
+            if the_word[i] == word_soFar[i]:
+                pass
+            else:
+                same_index = i
+                break
+        return len(word_soFar[same_index:]), the_word[same_index:]  
     def WordClickedMiddleFunc(self, item):
         # print(item.text())
         # self.WordClicked()
@@ -2155,6 +2165,7 @@ class Ui(QtWidgets.QMainWindow):
         if selectedText[:len(wordSofar)] == wordSofar:
             kb.type(selectedText[len(wordSofar):])
         else:
+            print("i am actually here")
             for i in range(len(wordSofar)):
                 kb.tap(Key.backspace)
             kb.type(selectedText)      
@@ -2163,13 +2174,12 @@ class Ui(QtWidgets.QMainWindow):
 
         initGlobal()
         self.listClass.showHideFunc("hide") 
-    def WordClicked(self, item):
+    def WordClicked(self, item):    # this function is called when u select a word using keyboard
         global completorTraegered
         global wordSofar
         global CurrentWord
-        # print(item)
-        # print(self.autoCompletedWord)
-        # print(wordSofar)
+        # print("in this function")
+        
         try:
             wordSelected = item
 
@@ -2208,14 +2218,14 @@ class Ui(QtWidgets.QMainWindow):
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start() 
                 wordSofar = wordSelected
-        
-                
             else:
                 self.listener.stop() 
-                for i in range(len(c_wrd)):
-                    kb.tap(Key.backspace) 
+                
+                times_to_tap_backspace, restOfWord = self.smertCompletor(c_wrd, wordSelected) 
+                for i in range(times_to_tap_backspace):
+                    kb.tap(Key.backspace)
                 completorTraegered = True
-                kb.type(wordSelected)
+                kb.type(restOfWord)
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start() 
                 completorTraegered = False 
@@ -2324,8 +2334,17 @@ class Ui(QtWidgets.QMainWindow):
             return   
         if self.oskClass.BanglishCheckBox.isChecked() == True:
             if key in englishLatters:   
+                # self.listener.stop()
+                # print("I am still here")
+                global completorTraegered
+                completorTraegered = True
                 self.convertTobangla(key) 
-                self.listClass.showHideFunc("hide") 
+                completorTraegered = False
+
+                # self.listClass.showHideFunc("hide")
+                # self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                # self.listener.start() 
+                # self.listClass.showHideFunc("hide") 
             else:
                 self.listener.stop()
                 kb.type(key)      
@@ -2342,7 +2361,7 @@ class Ui(QtWidgets.QMainWindow):
         global englishWordSofar
         global previous_word
         global formar_previous_word
-        self.autoCompletedWord = ""
+        
         if self.current_language == "English":
             return
         try: 
@@ -2409,6 +2428,7 @@ class Ui(QtWidgets.QMainWindow):
                 return
             
             self.convertTobangla(key)
+            # print("I am being called")
             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
         except Exception as e:
             # print(e)
@@ -2437,6 +2457,7 @@ class Ui(QtWidgets.QMainWindow):
                     kb2.block_key(i)
     
     def convertTobangla(self, key):
+        
         global wordSofar 
         global englishWordSofar
         global previous_word
@@ -2794,7 +2815,7 @@ class Ui(QtWidgets.QMainWindow):
         global previous_word
         global formar_previous_word
         global ruledOut 
-        
+        self.autoCompletedWord = ""
         previous_word = ""
         wordSofar = ""
         englishWordSofar = ""

@@ -1,21 +1,16 @@
-from time import time
-import win32api
-import time
+word_soFar = "প্রধান্মন্ত্রি"
+the_word = "অঘটনঘটনপটীয়সী" 
 
+def smertCompletor(word_soFar, the_word):
+  for i in range(len(the_word))[:]:
+    if the_word[i] == word_soFar[i]:
+      pass
+    else:
+      same_index = i
+      break
+  return len(word_soFar[same_index:]), the_word[same_index:]   
 
-# Get the caret position
-import win32gui
+times_to_tap_backspace, restOfWord = smertCompletor(word_soFar, the_word) 
+print(times_to_tap_backspace)
+print(restOfWord)
 
-
-time.sleep(5)
-# Get the caret position
-
-active_window = win32gui.GetActiveWindow()
-
-# Give the focus to the active window
-win32gui.SetFocus(active_window)
-# win32gui.SetCaretPos(100, 100)
-pos = win32gui.GetCaretPos()
-
-# Print the caret position
-print(pos)
