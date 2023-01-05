@@ -103,7 +103,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
         <string>Genarel</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_4">
-        <item row="0" column="0" colspan="3">
+        <item row="0" column="1">
          <widget class="QFrame" name="frame">
           <property name="styleSheet">
            <string notr="true">QFrame{	
@@ -157,36 +157,57 @@ background-color: rgb(225, 225, 225);
            <enum>QFrame::Raised</enum>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
-           <item row="1" column="0">
-            <widget class="Line" name="line_5">
+           <item row="10" column="1">
+            <widget class="Line" name="line_15">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="label_12">
+            <widget class="QCheckBox" name="checkBox_3">
              <property name="text">
-              <string>max number of word predictions:</string>
+              <string>Auto close brackets () {} []</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
+           <item row="8" column="0">
             <widget class="Line" name="line_7">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
+           <item row="4" column="1">
             <widget class="QSpinBox" name="spinBox">
              <property name="maximum">
               <number>15</number>
              </property>
             </widget>
            </item>
-           <item row="5" column="1">
-            <widget class="Line" name="line_14">
+           <item row="3" column="0">
+            <widget class="Line" name="line_5">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_12">
+             <property name="text">
+              <string>max number of word predictions:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0">
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string> Predict words for:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="2">
+            <widget class="Line" name="line_16">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -199,45 +220,14 @@ background-color: rgb(225, 225, 225);
              </property>
             </widget>
            </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_13">
-             <property name="text">
-              <string> Predict words for:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="2">
-            <widget class="Line" name="line_16">
+           <item row="8" column="1">
+            <widget class="Line" name="line_14">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="9" column="0" colspan="3">
-            <widget class="QLineEdit" name="lineEdit">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="2">
-            <widget class="QCheckBox" name="checkBox_2">
-             <property name="text">
-              <string>English</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="0">
-            <widget class="Line" name="line_12">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
+           <item row="11" column="0">
             <widget class="QLabel" name="label_14">
              <property name="maximumSize">
               <size>
@@ -250,66 +240,104 @@ background-color: rgb(225, 225, 225);
              </property>
             </widget>
            </item>
-           <item row="8" column="1" colspan="2">
+           <item row="9" column="2">
+            <widget class="QCheckBox" name="checkBox_2">
+             <property name="text">
+              <string>English</string>
+             </property>
+            </widget>
+           </item>
+           <item row="12" column="0" colspan="3">
+            <widget class="QLineEdit" name="lineEdit">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="13" column="0">
+            <widget class="Line" name="line_12">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="1" colspan="2">
             <widget class="QPushButton" name="pushButton">
              <property name="text">
               <string>Open</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="1">
-            <widget class="QCheckBox" name="checkBox">
-             <property name="text">
-              <string>Bangla</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
+           <item row="10" column="0">
             <widget class="Line" name="line_8">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
-            <widget class="Line" name="line_15">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="0">
-            <widget class="QLabel" name="label_15">
+           <item row="9" column="1">
+            <widget class="QCheckBox" name="checkBox">
              <property name="text">
-              <string>English Dictionary:</string>
+              <string>Bangla</string>
              </property>
             </widget>
            </item>
-           <item row="11" column="1" colspan="2">
+           <item row="14" column="1" colspan="2">
             <widget class="QPushButton" name="pushButton_2">
              <property name="text">
               <string>Open</string>
              </property>
             </widget>
            </item>
-           <item row="10" column="2">
-            <widget class="Line" name="line_18">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="1">
+           <item row="13" column="1">
             <widget class="Line" name="line_17">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="12" column="0" colspan="3">
+           <item row="14" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>English Dictionary:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="13" column="2">
+            <widget class="Line" name="line_18">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="15" column="0" colspan="3">
             <widget class="QLineEdit" name="lineEdit_2"/>
            </item>
-           <item row="14" column="0">
+           <item row="16" column="2">
+            <widget class="Line" name="line_20">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="16" column="0">
+            <widget class="Line" name="line_13">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="16" column="1">
+            <widget class="Line" name="line_19">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="17" column="0">
             <spacer name="verticalSpacer">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
@@ -322,28 +350,21 @@ background-color: rgb(225, 225, 225);
              </property>
             </spacer>
            </item>
-           <item row="13" column="2">
-            <widget class="Line" name="line_20">
+           <item row="5" column="0">
+            <widget class="Line" name="line_21">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="13" column="0">
-            <widget class="Line" name="line_13">
+           <item row="5" column="1">
+            <widget class="Line" name="line_22">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="13" column="1">
-            <widget class="Line" name="line_19">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
+           <item row="6" column="0">
             <widget class="QLabel" name="label_16">
              <property name="text">
               <string>Minimum similarity ratio
@@ -351,21 +372,7 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
-            <widget class="Line" name="line_21">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="Line" name="line_22">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
+           <item row="6" column="1">
             <widget class="QDoubleSpinBox" name="doubleSpinBox">
              <property name="minimum">
               <double>0.250000000000000</double>
@@ -378,8 +385,41 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
+           <item row="1" column="0">
+            <widget class="Line" name="line_23">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
+        </item>
+        <item row="0" column="2">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="0">
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>

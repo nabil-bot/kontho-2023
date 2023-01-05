@@ -718,7 +718,7 @@ class WhileloopThroughListThread(QtCore.QThread):
                     break
                 elif (wrd[:len(englishWordSofar_local)]).lower() == (englishWordSofar_local).lower() and mainWord not in self.matchedWords: # and wrd not in self.matchedWords
                     self.matchedWords.append(mainWord)
-                    if len(wordSofar) > 5 and wrd.lower() == (englishWordSofar_local).lower() and mainWord != wordSofar:
+                    if len(wordSofar) > 3 and wrd.lower() == (englishWordSofar_local).lower() and mainWord != wordSofar:
                         self.acSignal.emit(mainWord)
                         self.preWord = mainWord
                     break
@@ -2013,6 +2013,7 @@ class Ui(QtWidgets.QMainWindow):
         self.converter_gui = Converter_for_main.Ui_converter()
 
         self.numDic = {'1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯','0':'০'}
+        self.qoteDic = {'(':')', '[':']', '{':'}'}
         self.karList = ["া","ি","ী","ু","ূ","ৃ","ে","ৈ","ো","ৌ"]
         self.keysToBlock = [2,3,4,5,6,7,8,9,10,11,  16,17,18,19,20,21,22,23,24,25,   30,31,32,33,34,35,36,37,38,   44,45,46,47,48,49,50,  52]    
         self.keysToUnlock = [2,3,4,5,6,7,8,9,10,11,52]
@@ -2087,8 +2088,6 @@ class Ui(QtWidgets.QMainWindow):
         self.oskClass.pushButton_56.clicked.connect(lambda: kb.tap(Key.right))
         self.oskClass.pushButton_48.clicked.connect(lambda: self.on_osk_press(str("key.home")))
         self.oskClass.pushButton_116.clicked.connect(lambda: self.on_osk_press(str("key.end")))
-
-
 
         self.oskClass.RB1.clicked.connect(self.rb1Clicked)
         self.oskClass.RB2.clicked.connect(self.rb2Clicked)
@@ -2396,9 +2395,6 @@ class Ui(QtWidgets.QMainWindow):
                         self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
                     else:
                         self.initialize() 
-            # if str(key) in ["Key.down", "Key.up", "Key.enter"]:
-            #     self.listClass.on_press(key)
-  
             if self.listClass.isHidden() == False:
                 if str(key) == "Key.down":
                     if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
@@ -2423,12 +2419,19 @@ class Ui(QtWidgets.QMainWindow):
                         self.WordClicked(item.text())
                         # initGlobal()
                         self.listClass.showHideFunc("hide")
+            qote = (str(key)).replace("'", "")
+            if qote in self.qoteDic:
+                kb.release(Key.shift)
+                kb.type(self.qoteDic[qote])
+                kb.tap(Key.left)
 
+                self.initialize()
+                return
             if completorTraegered == True:
                 return
             
             self.convertTobangla(key)
-            # print("I am being called")
+            # print("I am being called") 
             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
         except Exception as e:
             # print(e)
@@ -2479,7 +2482,7 @@ class Ui(QtWidgets.QMainWindow):
                 bnglaKey = "আ"
             elif previous_word == "a":
                 bnglaKey = "্য"
-            elif previous_word == formar_previous_word and previous_word != "":
+            elif previous_word == formar_previous_word and previous_word != "" and previous_word not in ["m", "b"]:
                 self.trim(1)
                 bnglaKey = "্যা"
             else:

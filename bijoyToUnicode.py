@@ -1,16 +1,14 @@
-word_soFar = "প্রধান্মন্ত্রি"
-the_word = "অঘটনঘটনপটীয়সী" 
+# -*- coding:utf-8 -*-
+import io
 
-def smertCompletor(word_soFar, the_word):
-  for i in range(len(the_word))[:]:
-    if the_word[i] == word_soFar[i]:
-      pass
-    else:
-      same_index = i
-      break
-  return len(word_soFar[same_index:]), the_word[same_index:]   
+with io.open("CN.txt", 'r', encoding="utf-8") as f:
+    country_name_str = f.read()
+c_english = country_name_str.split(",")
 
-times_to_tap_backspace, restOfWord = smertCompletor(word_soFar, the_word) 
-print(times_to_tap_backspace)
-print(restOfWord)
+with io.open("CB.txt", 'r', encoding="utf-8") as f:
+    country_name_str = f.read()
+c_Bangla = country_name_str.split(",")
+
+print(len(c_english))
+print(len(c_Bangla))
 

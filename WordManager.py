@@ -1,14 +1,14 @@
 # -*- coding:utf-8 -*-
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QTableWidgetItem, QFileDialog
 from PyQt5.QtCore import Qt, QSettings, pyqtSignal, QItemSelectionModel
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QMainWindow, QHeaderView, QMessageBox
 from PyQt5 import uic
 from PyQt5.QtGui import QColor
 import sys
 from banglish import jointWordSpliter, convert_to_banglish
 from LoadWords import wordsList, englaList, EnglishwordsList
-
+import traceback
 import io
 # from banglish import jointWordSpliter, convert_to_banglish
 
@@ -94,7 +94,6 @@ class wordManagerClass(QMainWindow):
                         file.write(textFromTable)
             except Exception as e:
                 self.showError(e)
-
     def loadAbbribiations(self):
         with io.open('.//Res//Abbreviations.txt', "r", encoding="utf-8") as RKS:
             abriStr = RKS.read()
@@ -129,7 +128,6 @@ class wordManagerClass(QMainWindow):
             with io.open('.//Res//Abbreviations.txt', "w", encoding="utf-8") as RKS:
                 RKS.write(strToSave)
         self.save_signal.emit("dkjf")
-
     def AddWordsFromFile(self):
         path, _ = QFileDialog.getOpenFileName(
             parent= self,
@@ -157,6 +155,28 @@ class wordManagerClass(QMainWindow):
             rowPosition = self.tableWidget.rowCount()
             self.tableWidget.insertRow(rowPosition)
             self.tableWidget.scrollToBottom()
+
+            # saving it to undo func 
+        
+            changedData = []
+            changedData.append("|*|added_New_row|*|")
+            
+            if len(self.changes) != 0:
+                last_change = self.changes[0]
+                first_Value_of_last_change = last_change[0] 
+                if first_Value_of_last_change == "|*|added_New_row|*|":
+                    pre_rows_added = last_change[1]  # list of previous rows added 
+                    pre_rows_added.append(rowPosition)
+                    changedData.append(pre_rows_added)
+                    self.changes[0] = changedData
+                else:    
+                    changedData.append([rowPosition])
+                    self.changes.insert(0, changedData)
+                    self.changes = self.changes[:50]    
+            else:    
+                changedData.append([rowPosition])
+                self.changes.insert(0, changedData)
+                self.changes = self.changes[:50]    
         elif self.tabWidget.currentIndex() == 3:
             rowPosition = self.tableWidget_3.rowCount()
             self.tableWidget_3.insertRow(rowPosition)
@@ -166,7 +186,30 @@ class wordManagerClass(QMainWindow):
         pass
     def removeFunc(self):
         if self.tabWidget.currentIndex() == 0:    
-            self.tableWidget.removeRow(self.tableWidget.currentRow())
+            current_row = self.tableWidget.currentRow()
+            
+            changedData = []
+            changedData.append("|*|removed_a_row|*|") # <--
+            
+            row_contents = []
+            for c in range(self.tableWidget.columnCount()):
+                try:    
+                    txt_from_colunm = self.tableWidget.item(current_row, c).text()
+                except Exception:
+                    txt_from_colunm = " " 
+                if txt_from_colunm not in ["", " "]:
+                    row_contents.append(txt_from_colunm)
+            changedData.append(row_contents) # <-- row contentents as list
+            changedData.append(current_row) # <-- row position
+
+            self.changes.insert(0, changedData)
+            self.changes = self.changes[:50] 
+
+            self.tableWidget.removeRow(current_row)
+
+            # saving it to undo func 
+
+
         elif self.tabWidget.currentIndex() == 2:   
             self.tableWidget_3.removeRow(self.tableWidget.currentRow())
     def selectAnItem(self, item):
@@ -257,37 +300,12 @@ class wordManagerClass(QMainWindow):
             self.changes.insert(0, changedData)
             self.changes = self.changes[:50]
             self.currentItem = citem
-
         pass
-        # print("in func")
-        if self.tableWidget.currentColumn() == 0:
-            # print("in if")
-            word = self.tableWidget.item(self.tableWidget.currentRow() , self.tableWidget.currentColumn()).text()
-            # print(word)
-            try:
-                convertion = jointWordSpliter(word) 
-                if convertion != None:
-                    banglish = convertion
-                else:
-                    banglish = convert_to_banglish(word) 
-                pass
-                # print(banglish)
-                current_item = banglish
-                c_item = QTableWidgetItem(current_item.format(0, 0))
-                
-                self.tableWidget.itemChanged.disconnect(self.itemChangedFunc)
-                
-                self.tableWidget.setItem(self.tableWidget.currentRow() , self.tableWidget.currentColumn()+1, c_item)
-                self.tableWidget.itemChanged.connect(self.itemChangedFunc)
-
-            except Exception as e:
-                print(e)
     def currentItemChangedFunc(self, current, previous):
         if current != None:    
             self.currentItem = current.text()
         else:
             self.currentItem = ""
-
         pass    
     def loadWords(self, wordsList, tableWidget):
         for wrd in wordsList:
@@ -302,27 +320,54 @@ class wordManagerClass(QMainWindow):
                 tableWidget.setItem(rowPosition,c, item)
                 c+=1
             tableWidget.item(rowPosition, 0).setBackground(QColor(170, 255, 0, 155)) 
-
     def undo(self):
         if len(self.changes) != 0:    
             self.itemChangedByUndoFunc = True
             try:
                 lastChange = self.changes[0]
-                item = QTableWidgetItem((lastChange[0]).format(0, 0))
+
+                first_Value_of_last_change = lastChange[0]
+
+
+                if first_Value_of_last_change == "|*|added_New_row|*|":
+                    self.redoReserve.insert(0, lastChange)
+                    rows_added = lastChange[1] # list of rows added
+                    rows_added.reverse()
+                    for r in rows_added:
+                        self.tableWidget.removeRow(r)
+                elif first_Value_of_last_change == "|*|removed_a_row|*|":
+                    self.redoReserve.insert(0, lastChange)
+                    removed_row_position = lastChange[2]
+                    self.tableWidget.insertRow(removed_row_position)
+
+                    contents_according_column = lastChange[1]
+                    c = 0
+                    for content in contents_according_column:
+                        item = QTableWidgetItem((content).format(0, 0))
+                        self.tableWidget.setItem(removed_row_position,c, item)
+                        c+=1
+                    self.tableWidget.scrollToItem(item) 
+                else:
+                    change = []
+                    change.append((self.tableWidget.item(lastChange[1], lastChange[2])).text())
+                    change.append(lastChange[1])
+                    change.append(lastChange[2])
+
+                    self.redoReserve.insert(0, change)
+                    
+                    item = QTableWidgetItem((lastChange[0]).format(0, 0))
+                    self.tableWidget.setItem(lastChange[1],lastChange[2], item)
+                    self.tableWidget.setCurrentCell(lastChange[1], lastChange[2], QItemSelectionModel.Current)
                 
-                change = []
-                change.append((self.tableWidget.item(lastChange[1], lastChange[2])).text())
-                change.append(lastChange[1])
-                change.append(lastChange[2])
-
-                self.redoReserve.insert(0, change)
                 self.redoReserve = self.redoReserve[:50]
-
-                self.tableWidget.setItem(lastChange[1],lastChange[2], item)
-
-                self.changes = self.changes[1:50]
-                self.tableWidget.setCurrentCell(lastChange[1], lastChange[2], QItemSelectionModel.Current)
-            except Exception:
+                try:    
+                    self.changes = self.changes[1:50] 
+                except Exception:
+                    self.changes = []   
+                # print(self.changes)
+            except Exception as e:
+                print(e)
+                print("in undo function") 
                 pass
             self.itemChangedByUndoFunc = False
     def redo(self):
@@ -330,21 +375,32 @@ class wordManagerClass(QMainWindow):
             self.itemChangedByUndoFunc = True
             try:
                 lastChange = self.redoReserve[0]
-                item = QTableWidgetItem((lastChange[0]).format(0, 0))
                 
-                change = []
-                change.append((self.tableWidget.item(lastChange[1], lastChange[2])).text())
-                change.append(lastChange[1])
-                change.append(lastChange[2])
+                first_Value_of_last_change = lastChange[0]
 
-                self.changes.insert(0, change)
+                if first_Value_of_last_change == "|*|added_New_row|*|":
+                    self.changes.insert(0, lastChange)
+                    rows_added = lastChange[1]
+                    rows_added.reverse()
+                    for r in rows_added:
+                        self.tableWidget.insertRow(r)
+                    self.tableWidget.scrollToBottom()
+                elif first_Value_of_last_change == "|*|removed_a_row|*|":
+                    self.changes.insert(0, lastChange)
+                    self.tableWidget.removeRow(lastChange[2])
+                else:
+                    self.changes.insert(0, lastChange)
+                    item = QTableWidgetItem((lastChange[0]).format(0, 0))
+                    self.tableWidget.setItem(lastChange[1],lastChange[2], item)
+                    self.tableWidget.setCurrentCell(lastChange[1], lastChange[2], QItemSelectionModel.Current)
+
                 self.changes = self.changes[:50]
-
-                self.tableWidget.setItem(lastChange[1],lastChange[2], item)
-
-                self.redoReserve = self.redoReserve[1:50]
-                self.tableWidget.setCurrentCell(lastChange[1], lastChange[2], QItemSelectionModel.Current)
-            except Exception:
+                try:    
+                    self.redoReserve = self.redoReserve[1:50]
+                except Exception:
+                    self.redoReserve = []        
+            except Exception as e:
+                print(traceback.format_exc())
                 pass
             self.itemChangedByUndoFunc = False
             pass  
