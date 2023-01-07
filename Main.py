@@ -8,7 +8,7 @@ from pynput.keyboard import Controller, Key
 kb = Controller()
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 import sys
-from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QRect, QTimer, QSettings, QEasingCurve
+from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QRect, QTimer, QSettings, QEasingCurve, QEvent
 from PyQt5.QtWidgets import QWidget, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox
 from PyQt5.QtGui import QPainter, QColor 
 import os
@@ -1742,6 +1742,22 @@ class listViewClass(QtWidgets.QMainWindow):
         self.SpellCheckPushButton.clicked.connect(self.spellCheckFunc)
         self.threadRunning = False
 
+        self.listWidget.installEventFilter(self)
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.ContextMenu and source is self.listWidget:
+            menu = QMenu()
+            menu.addAction('Copy')
+            menu.addAction('Edit')
+            menu.addAction('Search Google')
+
+            if menu.exec_(event.globalPos()):
+                item = source.itemAt(event.pos())
+                try:    
+                    print(item.text())
+                except Exception:
+                    pass    
+            return True
+        return super().eventFilter(source, event)
 
     def spellCheckFunc(self):
         global wordSofar

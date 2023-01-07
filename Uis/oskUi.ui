@@ -17,6 +17,9 @@
    <iconset>
     <normaloff>../osk_logo.png</normaloff>../osk_logo.png</iconset>
   </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QFrame" name="frame">
     <property name="geometry">
@@ -225,8 +228,9 @@ padding-top:4px;
 border: none;
 	background-color: rgba(255, 255, 255, 100);
 
-}
+	background-color: rgb(224, 242, 241);
 
+}
 
 QPushButton{
  padding-top:2px;

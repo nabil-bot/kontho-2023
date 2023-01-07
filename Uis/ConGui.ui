@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>633</width>
-    <height>346</height>
+    <height>323</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,48 @@
     <normaloff>../NMs Keybord/Imgs/Converter logo for main.png</normaloff>../NMs Keybord/Imgs/Converter logo for main.png</iconset>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(105, 171, 216);
+   <string notr="true">QWidget{
+  background-color: rgb(105, 171, 216);
+}
+QPushButton {
+    border: 1px solid rgb(255, 255, 255);
+    border-radius: 5px;
+    color: #ffffff;
+    font-size: 12px;
+    padding:2px;
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #3498db, stop: 1 #2980b9);
+}
+QPushButton:hover {
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #3cb0fd, stop: 1 #3498db);
+}
+QPushButton:pressed {
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #000000, stop: 1 #2980b9);
+}
+QTextEdit{
+	font: 13pt  &quot;./Fonts/Kalpurush&quot; , &quot;Kalpurush&quot; ;
+	background-color: rgb(248, 248, 248);
+}
+
+
+QPushButton{
+ padding-top:2px;
+	font: 10pt &quot;MS Shell Dlg 2l&quot;;
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+
+border:1px solid rgb(253, 254, 254);
+	color: rgb(255, 255, 255);
+border-radius:2px;
+}
+QPushButton:hover{
+color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
+ background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
+
+}
+QPushButton:pressed{
+background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));&quot;
+}
+
+
 </string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -49,26 +90,7 @@
       <cursorShape>PointingHandCursor</cursorShape>
      </property>
      <property name="styleSheet">
-      <string notr="true">QPushButton{
- padding-top:2px;
-	font: 10pt &quot;MS Shell Dlg 2l&quot;;
- color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
-background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
-
-border:1px solid rgb(253, 254, 254);
-
-border-radius:5px;
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
-
-}</string>
+      <string notr="true"/>
      </property>
      <property name="text">
       <string>Open text file</string>
@@ -97,26 +119,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Paste any Text&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="styleSheet">
-      <string notr="true">QPushButton{
- padding-top:2px;
-	font: 10pt &quot;MS Shell Dlg 2l&quot;;
- color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
-background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
-
-border:1px solid rgb(253, 254, 254);
-
-border-radius:5px;
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
-
-}</string>
+      <string notr="true"/>
      </property>
      <property name="text">
       <string>Paste</string>
@@ -139,26 +142,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <cursorShape>PointingHandCursor</cursorShape>
      </property>
      <property name="styleSheet">
-      <string notr="true">QPushButton{
- padding-top:2px;
-	font: 10pt &quot;MS Shell Dlg 2l&quot;;
- color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
-background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
-
-border:1px solid rgb(253, 254, 254);
-
-border-radius:5px;
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
-
-}</string>
+      <string notr="true"/>
      </property>
      <property name="text">
       <string>Convert to:</string>
@@ -184,26 +168,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <enum>Qt::NoFocus</enum>
      </property>
      <property name="styleSheet">
-      <string notr="true">QPushButton{
- padding-top:2px;
-	font: 10pt &quot;MS Shell Dlg 2l&quot;;
- color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
-background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
-
-border:1px solid rgb(253, 254, 254);
-
-border-radius:5px;
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
-
-}</string>
+      <string notr="true"/>
      </property>
      <property name="text">
       <string>Clear all</string>
@@ -226,26 +191,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <cursorShape>PointingHandCursor</cursorShape>
      </property>
      <property name="styleSheet">
-      <string notr="true">QPushButton{
- padding-top:2px;
-	font: 10pt &quot;MS Shell Dlg 2l&quot;;
- color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
-background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
-
-border:1px solid rgb(253, 254, 254);
-
-border-radius:5px;
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
-
-}</string>
+      <string notr="true"/>
      </property>
      <property name="text">
       <string>Copy converted</string>
@@ -271,11 +217,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <bool>false</bool>
      </property>
      <property name="styleSheet">
-      <string notr="true">QTextEdit{
-	background-color: rgb(248, 248, 248);
-	font: 14pt  &quot;Kalpurush ANSI&quot; ;
-}
-</string>
+      <string notr="true"/>
      </property>
      <property name="acceptRichText">
       <bool>true</bool>
@@ -300,11 +242,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <cursorShape>IBeamCursor</cursorShape>
      </property>
      <property name="styleSheet">
-      <string notr="true">QTextEdit{
-	font: 13pt  &quot;./Fonts/Kalpurush&quot; , &quot;Kalpurush&quot; ;
-	background-color: rgb(248, 248, 248);
-}
-</string>
+      <string notr="true"/>
      </property>
      <property name="acceptRichText">
       <bool>false</bool>
@@ -360,6 +298,30 @@ background : transparent;
        <widget class="QRadioButton" name="BijoyRadioButton">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Unicode to Bijoy&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox {
+  background: transparent;
+  border: 2px solid black;
+  border-radius: 5px;
+}
+
+QCheckBox:hover {
+  background: rgba(0, 0, 0, 255);
+  border: 2px solid rgba(0, 0, 0, 255);
+  border-radius: 5px;
+}
+
+QCheckBox::indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: white;
+}
+
+QCheckBox::indicator:unchecked {
+  image: url(:/images/checkmark_unchecked.png);
+}</string>
         </property>
         <property name="text">
          <string>Bijoy</string>
