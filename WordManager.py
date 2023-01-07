@@ -32,13 +32,23 @@ class wordManagerClass(QMainWindow):
         self.redoReserve_for_tab_4 = []
         
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
-        # self.loadWords(englaList, self.EnglaTableWidget)
-        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        self.loadWords(englaList, self.EnglaTableWidget)
+        self.loadWords(EnglishwordsList, self.EnglishTableWidget)
 
         self.clearUndoList()
 
         self.tableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
         self.tableWidget.itemChanged.connect(self.itemChangedFunc)
+
+        self.EnglaTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        self.EnglaTableWidget.itemChanged.connect(self.itemChangedFunc)
+
+        self.EnglishTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        self.EnglishTableWidget.itemChanged.connect(self.itemChangedFunc)
+
+        self.tableWidget_3.currentItemChanged.connect(self.currentItemChangedFunc)
+        self.tableWidget_3.itemChanged.connect(self.itemChangedFunc)
+
 
         self.itemChangedByUndoFunc = False
 
@@ -73,7 +83,13 @@ class wordManagerClass(QMainWindow):
 
         self.actionSave_as.triggered.connect(self.saveAsFunction)
 
+        self.tabWidget.currentChanged.connect(self.TabChanged)
 
+    def TabChanged(self, index):
+        self.currentItem = ""
+        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        
+        currentTable.setCurrentCell(0, 0, QItemSelectionModel.Current)
     def clearUndoList(self):
         self.changes_for_tab_1.clear()
         self.redoReserve_for_tab_1.clear()
@@ -90,6 +106,7 @@ class wordManagerClass(QMainWindow):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         text = (currentTable.item(currentTable.currentRow() , currentTable.currentColumn()).text())
         pc.copy(text) 
+        print(text)
     def CutFunc(self):
         self.copyFunc()
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
@@ -99,6 +116,7 @@ class wordManagerClass(QMainWindow):
     def PasteFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         copied_text = pc.paste()
+        print(copied_text)
         c_item = QTableWidgetItem(copied_text.format(0, 0))
         currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)
 
@@ -195,7 +213,7 @@ class wordManagerClass(QMainWindow):
                 wrd_list = words_str.split("|") 
                 currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
                    
-                self.loadWords(wrd_list,currentTable)
+                self.loadWords(wrd_list, currentTable)
         except Exception as e:
             self.showError(e)
     def openFile(self):
@@ -217,39 +235,34 @@ class wordManagerClass(QMainWindow):
         currentTable.scrollToBottom()
         
         self.addRowUnDoReserveFunc(rowPosition, Current_changes_list, currentTable)  # , Current_changes_list, currentTable
-    
     def addRowUnDoReserveFunc(self, rowPosition, changes, currentTable): # , changes, currentTable
-        changedData = []
-        changedData.append("|*|added_New_row|*|")
-        if len(changes) != 0:
-            last_change = changes[0]
-            first_Value_of_last_change = last_change[0] 
-            if first_Value_of_last_change == "|*|added_New_row|*|":
-                pre_rows_added = last_change[1]  # list of previous rows added 
-                pre_rows_added.append(rowPosition)
-                changedData.append(pre_rows_added)
-                changes[0] = changedData
+        try:
+            changedData = []
+            changedData.append("|*|added_New_row|*|")
+            if len(changes) != 0:
+                last_change = changes[0]
+                first_Value_of_last_change = last_change[0] 
+                if first_Value_of_last_change == "|*|added_New_row|*|":
+                    pre_rows_added = last_change[1]  # list of previous rows added 
+                    pre_rows_added.append(rowPosition)
+                    changedData.append(pre_rows_added)
+                    changes[0] = changedData
+                else:    
+                    changedData.append([rowPosition])
+                    changes.insert(0, changedData)
+                    changes = changes[:50]    
             else:    
                 changedData.append([rowPosition])
                 changes.insert(0, changedData)
-                changes = changes[:50]    
-        else:    
-            changedData.append([rowPosition])
-            changes.insert(0, changedData)
-            changes = changes[:50] 
+                changes = changes[:50] 
+            self.saveChangesForUndo_Redo(currentTable, changes)
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
 
-        # if currentTable == self.tableWidget:
-        #     self.changes_for_tab_1 = changes
-
-        self.saveChangesForUndo(currentTable, changes)
-
-            
 
     def removeFunc(self):
-        
-        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        
-            
+        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()  
         current_row = currentTable.currentRow()
         
         changedData = []
@@ -269,13 +282,8 @@ class wordManagerClass(QMainWindow):
         Current_changes_list.insert(0, changedData)
         Current_changes_list = Current_changes_list[:50] 
 
-        self.saveChangesForUndo(currentTable, Current_changes_list)
-
-
+        self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
         currentTable.removeRow(current_row)
-
-            # saving it to undo func 
-
 
     def selectAnItem(self, item):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
@@ -290,8 +298,10 @@ class wordManagerClass(QMainWindow):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
 
         currentTable.setCurrentItem(None)
-        
-        self.matching_items = currentTable.findItems(s, Qt.MatchContains)
+        if self.MatchCaseCheckBox.isChecked() == False:
+            self.matching_items = currentTable.findItems(s, Qt.MatchContains)
+        else:
+             self.matching_items = currentTable.findItems(s, Qt.MatchExactly)   
         self.MatchedNumberLineEdit.setText(str(self.currentMatchedIndex+1) + "/"+str(len(self.matching_items)))
         if self.matching_items:
             item = self.matching_items[0] 
@@ -332,16 +342,26 @@ class wordManagerClass(QMainWindow):
             Current_changes_list = Current_changes_list[:50]
             self.currentItem = citem
            
-        self.saveChangesForUndo(currentTable, Current_changes_list)
-    def saveChangesForUndo(self, currentTable, Current_changes_list):
-        if currentTable == self.tableWidget:
-            self.changes_for_tab_1 = Current_changes_list
-        if currentTable == self.EnglaTableWidget:
-            self.changes_for_tab_2 = Current_changes_list
-        if currentTable == self.EnglishTableWidget:
-            self.changes_for_tab_3 = Current_changes_list
-        if currentTable == self.tableWidget_3:
-            self.changes_for_tab_4 = Current_changes_list     
+        self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
+    def saveChangesForUndo_Redo(self, currentTable, Current_changes_list=None, curren_redoReserve=None):
+        if Current_changes_list!=None:    
+            if currentTable == self.tableWidget:
+                self.changes_for_tab_1 = Current_changes_list
+            if currentTable == self.EnglaTableWidget:
+                self.changes_for_tab_2 = Current_changes_list
+            if currentTable == self.EnglishTableWidget:
+                self.changes_for_tab_3 = Current_changes_list
+            if currentTable == self.tableWidget_3:
+                self.changes_for_tab_4 = Current_changes_list  
+        if curren_redoReserve != None:    
+            if currentTable == self.tableWidget:
+                self.redoReserve_for_tab_1 = curren_redoReserve
+            if currentTable == self.EnglaTableWidget:
+                self.redoReserve_for_tab_2 = curren_redoReserve
+            if currentTable == self.EnglishTableWidget:
+                self.redoReserve_for_tab_3 = curren_redoReserve
+            if currentTable == self.tableWidget_3:
+                self.redoReserve_for_tab_4 = curren_redoReserve                              
     def currentItemChangedFunc(self, current, previous):
         if current != None:    
             self.currentItem = current.text()
@@ -373,29 +393,51 @@ class wordManagerClass(QMainWindow):
             row_contents.append(row_infos)
             tableWidget.item(rowPosition, 0).setBackground(QColor(13, 71, 161, 255)) 
         changedData.append(row_contents) 
+        
+        tableWidget.scrollToBottom() 
+        
         if tableWidget == self.tableWidget:    
             self.changes_for_tab_1.insert(0, changedData)
             self.changes_for_tab_1 = self.changes_for_tab_1[:50]
-        self.tableWidget.scrollToBottom() 
+
+        if tableWidget == self.EnglaTableWidget:    
+            self.changes_for_tab_2.insert(0, changedData)
+            self.changes_for_tab_2 = self.changes_for_tab_2[:50]
+
+        if tableWidget == self.EnglishTableWidget:    
+            self.changes_for_tab_3.insert(0, changedData)
+            self.changes_for_tab_3 = self.changes_for_tab_3[:50]    
+
+        if tableWidget == self.tableWidget_3:    
+            self.changes_for_tab_4.insert(0, changedData)
+            self.changes_for_tab_4 = self.changes_for_tab_4[:50]         
         self.itemChangedByUndoFunc = False
 
     def undo(self):
         try:    
-            if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
-                if len(self.changes_for_tab_1) != 0:
-                    self.changes_for_tab_1, self.redoReserve_for_tab_1 = self.undo_func(self.changes_for_tab_1,self.redoReserve_for_tab_1, self.tableWidget)
+            currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+            changes_list, redoReserve_list = self.undo_func(currentTable, Current_changes_list, curren_redoReserve)
+            self.saveChangesForUndo_Redo(currentTable, changes_list, redoReserve_list)
+            
+            # if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
+            #     if len(self.changes_for_tab_1) != 0:
+            #         self.changes_for_tab_1, self.redoReserve_for_tab_1 = self.undo_func(self.tableWidget, self.changes_for_tab_1, self.redoReserve_for_tab_1)
         except Exception as e:
             print(e)
-            pass
+
     def redo(self):
         try:    
-            if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
-                if len(self.redoReserve_for_tab_1) != 0:
-                    self.changes_for_tab_1, self.redoReserve_for_tab_1 = self.redo_func(self.changes_for_tab_1,self.redoReserve_for_tab_1, self.tableWidget)
+            currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+            changes_list, redoReserve_list = self.redo_func(currentTable, Current_changes_list, curren_redoReserve)
+            self.saveChangesForUndo_Redo(currentTable, changes_list, redoReserve_list)
+            
+            # if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
+            #     if len(self.redoReserve_for_tab_1) != 0:
+            #         self.changes_for_tab_1, self.redoReserve_for_tab_1 = self.redo_func(self.changes_for_tab_1,self.redoReserve_for_tab_1, self.tableWidget)
         except Exception:
             pass
-    def undo_func(self, changes_list, redoReserve_list,current_table):
-        print(changes_list)
+    def undo_func(self,current_table , changes_list, redoReserve_list):
+        # print(changes_list)
         if len(changes_list) != 0:    
             self.itemChangedByUndoFunc = True
             try:
@@ -432,6 +474,9 @@ class wordManagerClass(QMainWindow):
                         c+=1
                     current_table.scrollToItem(item) 
                 else:  # item change undo call 
+                    
+                    # print(f"last change: {lastChange}")
+                    
                     change = []
                     change.append((current_table.item(lastChange[1], lastChange[2])).text())
                     change.append(lastChange[1])
@@ -439,28 +484,23 @@ class wordManagerClass(QMainWindow):
 
                     redoReserve_list.insert(0, change)
                     
-                    print("in here")
-                    # if lastChange[0] == "":
-                    #     item = QTableWidgetItem((" ").format(0, 0))
-                    #     current_table.setItem(lastChange[1],lastChange[2], item)
-                    # else:
                     item = QTableWidgetItem((lastChange[0]).format(0, 0))
                     current_table.setItem(lastChange[1],lastChange[2], item)
-                    print(f"lastChange[0]:{lastChange[0]}")
+                    # print(f"lastChange[0]:{lastChange[0]}")
 
 
                     current_table.setCurrentCell(lastChange[1], lastChange[2], QItemSelectionModel.Current)
                 
                 redoReserve_list = redoReserve_list[:50]
                 changes_list.remove(lastChange)
-                return changes_list,redoReserve_list 
+                return changes_list, redoReserve_list 
 
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
                 pass
             self.itemChangedByUndoFunc = False
-    def redo_func(self, changes_list, redoReserve_list,current_table):
+    def redo_func(self,current_table, changes_list, redoReserve_list):
         # print(redoReserve_list)
         if len(redoReserve_list) != 0:
             self.itemChangedByUndoFunc = True
