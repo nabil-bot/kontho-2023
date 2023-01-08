@@ -93,6 +93,14 @@ class wordManagerClass(QMainWindow):
         self.tabWidget.currentChanged.connect(self.TabChanged)
         self.SaveChangesPushButton.clicked.connect(self.saveChangesOfPlainTextEdit)
 
+        self.contentWasEdited_ofTable_1 = False
+        self.contentWasEdited_ofTable_2 = False
+        self.contentWasEdited_ofTable_3 = False
+        self.contentWasEdited_ofTable_4 = False
+
+
+    def saveFunc(self):
+        pass
     def saveChangesOfPlainTextEdit(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         c_item = QTableWidgetItem(self.plainTextEdit.toPlainText().format(0, 0))
@@ -123,7 +131,10 @@ class wordManagerClass(QMainWindow):
         self.redoReserve_for_tab_4.clear()
     def currentCellText(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        text = (currentTable.item(currentTable.currentRow() , currentTable.currentColumn()).text())
+        try:    
+            text = (currentTable.item(currentTable.currentRow() , currentTable.currentColumn()).text())
+        except Exception as e:
+            text = ""   
         return text
     def copyFunc(self):
         pc.copy(self.currentCellText()) 
@@ -140,13 +151,13 @@ class wordManagerClass(QMainWindow):
         c_item = QTableWidgetItem(copied_text.format(0, 0))
         currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)
     def currentTable(self):
-        if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
+        if self.tabWidget.currentIndex() == 0:
             return self.tableWidget,self.changes_for_tab_1,self.redoReserve_for_tab_1
-        if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Engla":
+        if self.tabWidget.currentIndex() == 1:
             return self.EnglaTableWidget,self.changes_for_tab_2,self.redoReserve_for_tab_2 
-        if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "English":
+        if self.tabWidget.currentIndex() == 2:
             return self.EnglishTableWidget,self.changes_for_tab_3,self.redoReserve_for_tab_3 
-        if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Abbreviation":
+        if self.tabWidget.currentIndex() == 3:
             return self.tableWidget_3,self.changes_for_tab_4,self.redoReserve_for_tab_4      
     def getTextFormTable(self, table):
         row_count = table.rowCount()
@@ -358,27 +369,36 @@ class wordManagerClass(QMainWindow):
             self.currentItem = citem 
         self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
 
-
+        if currentTable == self.tableWidget and currentTable.currentColumn() == 0:    
+            self.setEnglaWord(currentTable)
+        
+        
+        if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == False:
+            self.contentWasEdited_ofTable_1 = True
+            index = 0
+            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
+        if currentTable == self.EnglaTableWidget and self.contentWasEdited_ofTable_2 == False:
+            self.contentWasEdited_ofTable_2 = True
+            index = 1
+            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
+        if currentTable == self.EnglishTableWidget and self.contentWasEdited_ofTable_3 == False:
+            self.contentWasEdited_ofTable_3 = True
+            index = 2
+            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
+        if currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == False:
+            self.contentWasEdited_ofTable_4 = True        
+            index = 3
+            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")    
+    def setEnglaWord(self, currentTable):
+        
         if currentTable == self.tableWidget and currentTable.currentColumn() == 0:
             try:
                 banglish = convert_to_banglish(self.currentCellText())
+                currentTable.setCurrentCell(currentTable.currentRow(), 1, QItemSelectionModel.Current)
                 c_item = QTableWidgetItem(banglish.format(0, 0))
                 currentTable.setItem(currentTable.currentRow() , 1, c_item)
-                currentTable.setCurrentCell(currentTable.currentRow(), 1, QItemSelectionModel.Current)
             except Exception as e:
-                self.showError(traceback.format_exc())   
-        self.itemChangedActualFunc         
-    def itemChangedActualFunc(self, citem):
-        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        changedData = []
-        changedData.append(self.currentItem)
-        changedData.append(currentTable.currentRow())
-        changedData.append(currentTable.currentColumn())
-        if self.itemChangedByUndoFunc == False:
-            Current_changes_list.insert(0, changedData)
-            Current_changes_list = Current_changes_list[:50]
-            self.currentItem = citem 
-        self.saveChangesForUndo_Redo(currentTable, Current_changes_list)    
+                self.showError(traceback.format_exc())    
     def saveChangesForUndo_Redo(self, currentTable, Current_changes_list=None, curren_redoReserve=None):
         if Current_changes_list!=None:    
             if currentTable == self.tableWidget:
@@ -401,9 +421,9 @@ class wordManagerClass(QMainWindow):
     def currentItemChangedFunc(self, current, previous):
         if current != None:    
             self.currentItem = current.text()
-            self.plainTextEdit.setPlainText(self.currentItem)
         else:
             self.currentItem = ""
+        self.plainTextEdit.setPlainText(self.currentItem)    
         pass    
     def loadWords(self, wordsList, tableWidget):
         self.itemChangedByUndoFunc = True
@@ -602,7 +622,9 @@ class wordManagerClass(QMainWindow):
         msg.setText(f"{error_msg}")
         msg.setIcon(QMessageBox.Warning)
         msg.setWindowFlags(Qt.WindowStaysOnTopHint)
-        msg.exec_()  
+        msg.exec_() 
+    def closeEvent(self, event):
+        self.close()     
              
 if __name__ == "__main__":
     app = QApplication(sys.argv)

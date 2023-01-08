@@ -18,7 +18,44 @@
     <normaloff>../osk_logo.png</normaloff>../osk_logo.png</iconset>
   </property>
   <property name="styleSheet">
-   <string notr="true"/>
+   <string notr="true">QCheckBox {
+ background: transparent;
+}
+
+QCheckBox:disabled {
+  background-color: #d3d3d3;
+  border: 1px solid #808080;
+  color: #808080;
+}
+
+QCheckBox::indicator {
+  width: 12px;
+  height: 12px;
+	border: 2px solid rgb(2, 139, 255);
+}
+
+QCheckBox::indicator:unchecked {
+  image: url(:/images/unchecked.png);
+}
+
+QCheckBox::indicator:unchecked:hover {
+  image: url(:/images/unchecked_hover.png);
+	background-color: rgb(0, 227, 255);
+	 width: 14px;
+  height: 14px;
+}
+
+QCheckBox::indicator:checked {
+border: 2px solid green;
+ image: url(Tic_seign.png);
+}
+
+QCheckBox::indicator:checked:hover {
+  image: url(Tic_seign.png);
+ width: 14px;
+  height: 14px;
+}
+</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QFrame" name="frame">
@@ -5156,9 +5193,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
                <property name="styleSheet">
                 <string notr="true">
 QPushButton{
-
 	font:  11pt &quot;MS Shell Dlg 2&quot;;
- color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 255), stop:1 rgba(75, 75, 75, 255));
+	font: 57 11pt &quot;Hind Siliguri Medium&quot;;
+color:white;
 background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 170));
 background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(8, 237, 255, 255), stop:1 rgba(151, 82, 255, 255));
 
@@ -5181,7 +5218,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
 }</string>
                </property>
                <property name="text">
-                <string/>
+                <string>English</string>
                </property>
               </widget>
              </item>
@@ -5372,6 +5409,12 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
           </property>
           <item>
            <widget class="QCheckBox" name="BanglishCheckBox">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>25</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type with Bangla phonetic&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
@@ -5387,6 +5430,13 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
            <widget class="QLabel" name="label">
             <property name="text">
              <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="OpenLayOutPushButton">
+            <property name="text">
+             <string>Banglish Layout Map</string>
             </property>
            </widget>
           </item>

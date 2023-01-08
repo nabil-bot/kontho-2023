@@ -2116,7 +2116,8 @@ class Ui(QtWidgets.QMainWindow):
         self.oskClass.RB9.clicked.connect(self.rb9Clicked)
         self.oskClass.RB10.clicked.connect(self.rb10Clicked)
 
-        self.oskClass.BanglishCheckBox.stateChanged.connect(lambda:self.initialize())
+        self.oskClass.BanglishCheckBox.stateChanged.connect(self.BanglishCheckBoxStateChanged)
+        self.oskClass.OpenLayOutPushButton.clicked.connect(lambda: self.openBanglishLayout())
 # /osk class connectors ========================================================================>
         self.Doc_pad = Script_pad.Ui_nms_pad()
         self.lastActiveWindow = ""
@@ -2146,6 +2147,14 @@ class Ui(QtWidgets.QMainWindow):
 
         self.listClass.listWidget.itemClicked.connect(self.WordClickedMiddleFunc)
         self.autoCompletedWord = ""
+    def BanglishCheckBoxStateChanged(self):
+        if self.oskClass.BanglishCheckBox.isChecked() == True:
+            self.oskClass.pushButton_52.setText("বাংলা")
+        else:
+            self.oskClass.pushButton_52.setText("English")
+        self.initialize()  
+         
+
     def AutoCompleate(self, theWord):
         global wordSofar
         if self.listClass.ACcheckBox.isChecked():

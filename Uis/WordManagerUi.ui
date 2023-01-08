@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>878</width>
+    <width>841</width>
     <height>533</height>
    </rect>
   </property>
@@ -287,7 +287,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>878</width>
+     <width>841</width>
      <height>21</height>
     </rect>
    </property>
@@ -433,6 +433,12 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
               </property>
               <item>
                <widget class="QCheckBox" name="MatchCaseCheckBox">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>18</height>
+                 </size>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">QCheckBox {
  background: transparent;
