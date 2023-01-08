@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+from importlib.resources import path
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QTableWidgetItem, QFileDialog
 from PyQt5.QtCore import Qt, QSettings, pyqtSignal, QItemSelectionModel
 from PyQt5 import QtCore, QtGui
@@ -8,7 +9,7 @@ from PyQt5.QtGui import QColor
 import pyperclip as pc
 import sys
 from banglish import jointWordSpliter, convert_to_banglish
-from LoadWords import wordsList, englaList, EnglishwordsList
+from LoadWords import *
 import traceback
 import io
 
@@ -53,6 +54,11 @@ class wordManagerClass(QMainWindow):
         self.tableWidget_3.itemChanged.connect(self.itemChangedFunc)
 
 
+        self.contentWasEdited_ofTable_1 = False
+        self.contentWasEdited_ofTable_2 = False
+        self.contentWasEdited_ofTable_3 = False
+        self.contentWasEdited_ofTable_4 = False
+        
         self.itemChangedByUndoFunc = False
 
         self.actionUndo.triggered.connect(self.undo)
@@ -93,14 +99,32 @@ class wordManagerClass(QMainWindow):
         self.tabWidget.currentChanged.connect(self.TabChanged)
         self.SaveChangesPushButton.clicked.connect(self.saveChangesOfPlainTextEdit)
 
-        self.contentWasEdited_ofTable_1 = False
-        self.contentWasEdited_ofTable_2 = False
-        self.contentWasEdited_ofTable_3 = False
-        self.contentWasEdited_ofTable_4 = False
+        
 
 
-    def saveFunc(self):
-        pass
+    def saveCurrentTableFunc(self):
+        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        txt = self.getTextFormTable(currentTable)
+        if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == True:
+            path = banglaDictionaryPath
+            self.contentWasEdited_ofTable_1 = False
+        elif currentTable == self.EnglaTableWidget and self.contentWasEdited_ofTable_2 == True:
+            path = englaDictionaryPath
+            self.contentWasEdited_ofTable_2 = False 
+        elif currentTable == self.EnglishTableWidget and self.contentWasEdited_ofTable_3 == True:
+            path= englishDictionaryPath
+            self.contentWasEdited_ofTable_3 = False    
+        elif currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == True:
+            path = AbbreviationsPath
+            self.contentWasEdited_ofTable_4 = False  
+        else:
+            return          
+        self.writeDownContentsToFile(path, txt) 
+        self.indicateTabContentChanged(self.tabWidget.currentIndex(), False)
+
+    def writeDownContentsToFile(self, path, txt):
+        with io.open(path, "w", encoding="utf-8") as file:
+            file.write(txt)
     def saveChangesOfPlainTextEdit(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         c_item = QTableWidgetItem(self.plainTextEdit.toPlainText().format(0, 0))
@@ -147,9 +171,10 @@ class wordManagerClass(QMainWindow):
     def PasteFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         copied_text = pc.paste()
-
-        c_item = QTableWidgetItem(copied_text.format(0, 0))
-        currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)
+        self.setCurrentCellText(currentTable, copied_text)
+    def setCurrentCellText(self,currentTable, txt):
+        c_item = QTableWidgetItem(txt.format(0, 0))
+        currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)    
     def currentTable(self):
         if self.tabWidget.currentIndex() == 0:
             return self.tableWidget,self.changes_for_tab_1,self.redoReserve_for_tab_1
@@ -195,10 +220,6 @@ class wordManagerClass(QMainWindow):
             except Exception as e:
                 self.showError(e)
     def loadAbbribiations(self):
-        with io.open('.//Res//Abbreviations.txt', "r", encoding="utf-8") as RKS:
-            abriStr = RKS.read()
-        abris = abriStr.split("\n")
-        
         header = self.tableWidget_3.horizontalHeader()       
         header.setSectionResizeMode(1, QHeaderView.Stretch)
         for ab in abris[:]:
@@ -359,6 +380,12 @@ class wordManagerClass(QMainWindow):
 
     def itemChangedFunc(self, citem):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        # print(type(citem))
+        # if currentTable == self.tableWidget and currentTable.currentColumn() == 0: 
+        #     if self.currentCellText() not in banglaAlphabates:
+        #         self.setCurrentCellText(currentTable, citem.text())
+        #         return
+
         changedData = []
         changedData.append(self.currentItem)
         changedData.append(currentTable.currentRow())
@@ -366,7 +393,7 @@ class wordManagerClass(QMainWindow):
         if self.itemChangedByUndoFunc == False:
             Current_changes_list.insert(0, changedData)
             Current_changes_list = Current_changes_list[:50]
-            self.currentItem = citem 
+            self.currentItem = citem.text() 
         self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
 
         if currentTable == self.tableWidget and currentTable.currentColumn() == 0:    
@@ -375,22 +402,23 @@ class wordManagerClass(QMainWindow):
         
         if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == False:
             self.contentWasEdited_ofTable_1 = True
-            index = 0
-            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
+            self.indicateTabContentChanged(0,True)
         if currentTable == self.EnglaTableWidget and self.contentWasEdited_ofTable_2 == False:
             self.contentWasEdited_ofTable_2 = True
-            index = 1
-            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
+            self.indicateTabContentChanged(1,True)
         if currentTable == self.EnglishTableWidget and self.contentWasEdited_ofTable_3 == False:
             self.contentWasEdited_ofTable_3 = True
-            index = 2
-            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
+            self.indicateTabContentChanged(2,True)
         if currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == False:
             self.contentWasEdited_ofTable_4 = True        
-            index = 3
-            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")    
+            self.indicateTabContentChanged(3,True)
+    def indicateTabContentChanged(self, index, state):
+        if state:
+            self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
+        else:  
+            self.tabWidget.setTabText(index, self.tabWidget.tabText(index).replace("*", ""))
+
     def setEnglaWord(self, currentTable):
-        
         if currentTable == self.tableWidget and currentTable.currentColumn() == 0:
             try:
                 banglish = convert_to_banglish(self.currentCellText())
@@ -448,7 +476,7 @@ class wordManagerClass(QMainWindow):
                 c+=1
             row_infos.append(row_items) # <-- row_contents 
             row_contents.append(row_infos)
-            tableWidget.item(rowPosition, 0).setBackground(QColor(13, 71, 161, 255)) 
+            tableWidget.item(rowPosition, 0).setBackground(QColor(1, 87, 155, 255)) 
         changedData.append(row_contents) 
         
         tableWidget.scrollToBottom() 
