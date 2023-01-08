@@ -14,7 +14,11 @@
    <string>Word manager</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">
+   <string notr="true">QPlainTextEdit{
+	background-color: rgb(1, 22, 39);
+	color: rgb(0, 255, 0);
+	font: 57 14pt &quot;Hind Siliguri Medium&quot;;
+}
 QTabWidget::pane {
     border: 1px solid #000000;
     border-top-left-radius: 5px;
@@ -158,13 +162,13 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
         <property name="leftMargin">
-         <number>2</number>
+         <number>6</number>
         </property>
         <property name="topMargin">
          <number>9</number>
         </property>
         <property name="rightMargin">
-         <number>2</number>
+         <number>6</number>
         </property>
         <property name="bottomMargin">
          <number>2</number>
@@ -304,7 +308,8 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
     <addaction name="actionRedo"/>
     <addaction name="actionAdd"/>
     <addaction name="actionRemove"/>
-    <addaction name="actionFind"/>
+    <addaction name="actionShowTextEditor"/>
+    <addaction name="actionClear_Undo_List"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -809,6 +814,36 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_2">
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QVBoxLayout" name="verticalLayout_4">
+     <item>
+      <widget class="QPlainTextEdit" name="plainTextEdit">
+       <property name="styleSheet">
+        <string notr="true">QPlainTextEdit{
+	background-color: rgb(1, 22, 39);
+	color: rgb(0, 255, 0);
+	font: 57 14pt &quot;Hind Siliguri Medium&quot;;
+}</string>
+       </property>
+       <property name="plainText">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="SaveChangesPushButton">
+       <property name="text">
+        <string>Save</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <action name="actionOpen">
    <property name="text">
     <string>Open</string>
@@ -850,9 +885,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
     <string>Save as</string>
    </property>
   </action>
-  <action name="actionFind">
+  <action name="actionShowTextEditor">
    <property name="text">
-    <string>Find</string>
+    <string>Text Editor</string>
    </property>
   </action>
   <action name="actionAdd_Words_from_file">
@@ -863,6 +898,11 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
   <action name="actionReload">
    <property name="text">
     <string>Reload</string>
+   </property>
+  </action>
+  <action name="actionClear_Undo_List">
+   <property name="text">
+    <string>Clear Undo List</string>
    </property>
   </action>
  </widget>

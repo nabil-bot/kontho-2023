@@ -11,7 +11,7 @@ from banglish import jointWordSpliter, convert_to_banglish
 from LoadWords import wordsList, englaList, EnglishwordsList
 import traceback
 import io
-# from banglish import jointWordSpliter, convert_to_banglish
+
 
 class wordManagerClass(QMainWindow):
     save_signal = pyqtSignal(str)
@@ -32,10 +32,13 @@ class wordManagerClass(QMainWindow):
         self.redoReserve_for_tab_4 = []
         
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
-        self.loadWords(englaList, self.EnglaTableWidget)
-        self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        # self.loadWords(englaList, self.EnglaTableWidget)
+        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
 
         self.clearUndoList()
+
+        self.plainTextEdit.textChanged.connect(self.plainEditTextChanged) 
+
 
         self.tableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
         self.tableWidget.itemChanged.connect(self.itemChangedFunc)
@@ -54,6 +57,10 @@ class wordManagerClass(QMainWindow):
 
         self.actionUndo.triggered.connect(self.undo)
         self.UndoPushButton.clicked.connect(self.undo)
+
+        self.actionClear_Undo_List.triggered.connect(lambda:self.clearUndoList())
+
+        self.actionShowTextEditor.triggered.connect(lambda:self.dockWidget_2.setVisible(True))
 
         self.actionRedo.triggered.connect(self.redo)
         self.RedoPushButton.clicked.connect(self.redo)
@@ -84,6 +91,18 @@ class wordManagerClass(QMainWindow):
         self.actionSave_as.triggered.connect(self.saveAsFunction)
 
         self.tabWidget.currentChanged.connect(self.TabChanged)
+        self.SaveChangesPushButton.clicked.connect(self.saveChangesOfPlainTextEdit)
+
+    def saveChangesOfPlainTextEdit(self):
+        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        c_item = QTableWidgetItem(self.plainTextEdit.toPlainText().format(0, 0))
+        currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)
+        self.plainTextEdit.setStyleSheet('QPlainTextEdit{\n	background-color: rgb(1, 22, 39);\n	color: rgb(0, 255, 0);\n	font: 57 14pt "Hind Siliguri Medium";\n}')
+    def plainEditTextChanged(self):
+        if self.plainTextEdit.toPlainText() == self.currentCellText():
+            self.plainTextEdit.setStyleSheet('QPlainTextEdit{\n	background-color: rgb(1, 22, 39);\n	color: rgb(0, 255, 0);\n	font: 57 14pt "Hind Siliguri Medium";\n}')
+        else:
+            self.plainTextEdit.setStyleSheet('QPlainTextEdit{\n	background-color: rgb(1, 22, 39);\n	color: white;\n	font: 57 14pt "Hind Siliguri Medium";\n}')
 
     def TabChanged(self, index):
         self.currentItem = ""
@@ -102,11 +121,12 @@ class wordManagerClass(QMainWindow):
 
         self.changes_for_tab_4.clear()
         self.redoReserve_for_tab_4.clear()
-    def copyFunc(self):
+    def currentCellText(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         text = (currentTable.item(currentTable.currentRow() , currentTable.currentColumn()).text())
-        pc.copy(text) 
-        print(text)
+        return text
+    def copyFunc(self):
+        pc.copy(self.currentCellText()) 
     def CutFunc(self):
         self.copyFunc()
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
@@ -116,10 +136,9 @@ class wordManagerClass(QMainWindow):
     def PasteFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         copied_text = pc.paste()
-        print(copied_text)
+
         c_item = QTableWidgetItem(copied_text.format(0, 0))
         currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)
-
     def currentTable(self):
         if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
             return self.tableWidget,self.changes_for_tab_1,self.redoReserve_for_tab_1
@@ -259,8 +278,6 @@ class wordManagerClass(QMainWindow):
         except Exception as e:
             print(e)
             print(traceback.format_exc())
-
-
     def removeFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()  
         current_row = currentTable.currentRow()
@@ -331,8 +348,6 @@ class wordManagerClass(QMainWindow):
 
     def itemChangedFunc(self, citem):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        
-        
         changedData = []
         changedData.append(self.currentItem)
         changedData.append(currentTable.currentRow())
@@ -340,9 +355,30 @@ class wordManagerClass(QMainWindow):
         if self.itemChangedByUndoFunc == False:
             Current_changes_list.insert(0, changedData)
             Current_changes_list = Current_changes_list[:50]
-            self.currentItem = citem
-           
+            self.currentItem = citem 
         self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
+
+
+        if currentTable == self.tableWidget and currentTable.currentColumn() == 0:
+            try:
+                banglish = convert_to_banglish(self.currentCellText())
+                c_item = QTableWidgetItem(banglish.format(0, 0))
+                currentTable.setItem(currentTable.currentRow() , 1, c_item)
+                currentTable.setCurrentCell(currentTable.currentRow(), 1, QItemSelectionModel.Current)
+            except Exception as e:
+                self.showError(traceback.format_exc())   
+        self.itemChangedActualFunc         
+    def itemChangedActualFunc(self, citem):
+        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        changedData = []
+        changedData.append(self.currentItem)
+        changedData.append(currentTable.currentRow())
+        changedData.append(currentTable.currentColumn())
+        if self.itemChangedByUndoFunc == False:
+            Current_changes_list.insert(0, changedData)
+            Current_changes_list = Current_changes_list[:50]
+            self.currentItem = citem 
+        self.saveChangesForUndo_Redo(currentTable, Current_changes_list)    
     def saveChangesForUndo_Redo(self, currentTable, Current_changes_list=None, curren_redoReserve=None):
         if Current_changes_list!=None:    
             if currentTable == self.tableWidget:
@@ -365,6 +401,7 @@ class wordManagerClass(QMainWindow):
     def currentItemChangedFunc(self, current, previous):
         if current != None:    
             self.currentItem = current.text()
+            self.plainTextEdit.setPlainText(self.currentItem)
         else:
             self.currentItem = ""
         pass    
@@ -418,10 +455,7 @@ class wordManagerClass(QMainWindow):
             currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
             changes_list, redoReserve_list = self.undo_func(currentTable, Current_changes_list, curren_redoReserve)
             self.saveChangesForUndo_Redo(currentTable, changes_list, redoReserve_list)
-            
-            # if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
-            #     if len(self.changes_for_tab_1) != 0:
-            #         self.changes_for_tab_1, self.redoReserve_for_tab_1 = self.undo_func(self.tableWidget, self.changes_for_tab_1, self.redoReserve_for_tab_1)
+            self.plainEditTextChanged()
         except Exception as e:
             print(e)
 
@@ -430,10 +464,7 @@ class wordManagerClass(QMainWindow):
             currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
             changes_list, redoReserve_list = self.redo_func(currentTable, Current_changes_list, curren_redoReserve)
             self.saveChangesForUndo_Redo(currentTable, changes_list, redoReserve_list)
-            
-            # if self.tabWidget.tabText(self.tabWidget.currentIndex()) == "Bangla":
-            #     if len(self.redoReserve_for_tab_1) != 0:
-            #         self.changes_for_tab_1, self.redoReserve_for_tab_1 = self.redo_func(self.changes_for_tab_1,self.redoReserve_for_tab_1, self.tableWidget)
+            self.plainEditTextChanged()
         except Exception:
             pass
     def undo_func(self,current_table , changes_list, redoReserve_list):
@@ -572,48 +603,7 @@ class wordManagerClass(QMainWindow):
         msg.setIcon(QMessageBox.Warning)
         msg.setWindowFlags(Qt.WindowStaysOnTopHint)
         msg.exec_()  
-
-    # def itemChangedFunc(self, citem):
-    #     changedData = []
-    #     changedData.append(self.currentItem)
-    #     changedData.append(self.tableWidget.currentRow())
-    #     changedData.append(self.tableWidget.currentColumn())
-    #     if self.itemChangedByUndoFunc == False:
-    #         self.changes_for_tab_1.insert(0, changedData)
-    #         self.changes_for_tab_1 = self.changes_for_tab_1[:50]
-    #         self.currentItem = citem
-
-    #     pass
-    #     # print("in func")
-    #     if self.tableWidget.currentColumn() == 0:
-    #         # print("in if")
-    #         word = self.tableWidget.item(self.tableWidget.currentRow() , self.tableWidget.currentColumn()).text()
-    #         # print(word)
-    #         try:
-    #             convertion = jointWordSpliter(word) 
-    #             if convertion != None:
-    #                 banglish = convertion
-    #             else:
-    #                 banglish = convert_to_banglish(word) 
-    #             pass
-    #             # print(banglish)
-    #             current_item = banglish
-    #             c_item = QTableWidgetItem(current_item.format(0, 0))
-                
-    #             self.tableWidget.itemChanged.disconnect(self.itemChangedFunc)
-                
-    #             self.tableWidget.setItem(self.tableWidget.currentRow() , self.tableWidget.currentColumn()+1, c_item)
-    #             self.tableWidget.itemChanged.connect(self.itemChangedFunc)
-
-    #         except Exception as e:
-    #             print(e)
-    # def currentItemChangedFunc(self, current, previous):
-    #     if current != None:    
-    #         self.currentItem = current.text()
-    #     else:
-    #         self.currentItem = ""
-
-    #     pass             
+             
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = wordManagerClass()
