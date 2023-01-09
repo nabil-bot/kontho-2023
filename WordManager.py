@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 from importlib.resources import path
+from tkinter.messagebox import showerror
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QTableWidgetItem, QFileDialog
 from PyQt5.QtCore import Qt, QSettings, pyqtSignal, QItemSelectionModel
 from PyQt5 import QtCore, QtGui
@@ -33,7 +34,7 @@ class wordManagerClass(QMainWindow):
         self.redoReserve_for_tab_4 = []
         
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
-        # self.loadWords(englaList, self.EnglaTableWidget)
+        self.loadWords(englaList, self.EnglaTableWidget)
         # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
 
         self.clearUndoList()
@@ -85,7 +86,7 @@ class wordManagerClass(QMainWindow):
         self.currentItem = ""
         self.actionAdd_Words_from_file.triggered.connect(self.AddWordsFromFile)
     
-        self.SavePushButton.clicked.connect(self.saveFunc)
+        self.SavePushButton.clicked.connect(self.saveCurrentTableFunc)
 
         self.loadAbbribiations()
 
@@ -99,12 +100,16 @@ class wordManagerClass(QMainWindow):
         self.tabWidget.currentChanged.connect(self.TabChanged)
         self.SaveChangesPushButton.clicked.connect(self.saveChangesOfPlainTextEdit)
 
-        
+        self.indicateTabContentChanged(0, False)
+        self.contentWasEdited_ofTable_1 = False
 
 
     def saveCurrentTableFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         txt = self.getTextFormTable(currentTable)
+        if txt == "":
+            self.showError("No content to save!")
+            return
         if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == True:
             path = banglaDictionaryPath
             self.contentWasEdited_ofTable_1 = False
@@ -187,7 +192,6 @@ class wordManagerClass(QMainWindow):
     def getTextFormTable(self, table):
         row_count = table.rowCount()
         colum_count = table.columnCount()
-        
         text_ = ''
         for no in range(row_count):
             wordStr = ""
@@ -265,6 +269,8 @@ class wordManagerClass(QMainWindow):
                 currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
                    
                 self.loadWords(wrd_list, currentTable)
+                if len(wrd_list) > 0:
+                    self.recognize_Changes(currentTable)
         except Exception as e:
             self.showError(e)
     def openFile(self):
@@ -334,6 +340,10 @@ class wordManagerClass(QMainWindow):
         self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
         currentTable.removeRow(current_row)
 
+        # recognizing Changes 
+        if row_contents[0] not in [" ", ""] and row_contents[1] not in [" ", ""]:
+            self.recognize_Changes(currentTable)
+
     def selectAnItem(self, item):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         
@@ -399,7 +409,8 @@ class wordManagerClass(QMainWindow):
         if currentTable == self.tableWidget and currentTable.currentColumn() == 0:    
             self.setEnglaWord(currentTable)
         
-        
+        self.recognize_Changes(currentTable)
+    def recognize_Changes(self, currentTable):
         if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == False:
             self.contentWasEdited_ofTable_1 = True
             self.indicateTabContentChanged(0,True)
@@ -412,6 +423,7 @@ class wordManagerClass(QMainWindow):
         if currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == False:
             self.contentWasEdited_ofTable_4 = True        
             self.indicateTabContentChanged(3,True)
+
     def indicateTabContentChanged(self, index, state):
         if state:
             self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
@@ -451,7 +463,10 @@ class wordManagerClass(QMainWindow):
             self.currentItem = current.text()
         else:
             self.currentItem = ""
-        self.plainTextEdit.setPlainText(self.currentItem)    
+        self.plainTextEdit.setPlainText(self.currentItem)  
+        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        position = f"{currentTable.currentRow()+1}, {currentTable.currentColumn()+1}"
+        self.RowColumnLineEdit.setText(position)
         pass    
     def loadWords(self, wordsList, tableWidget):
         self.itemChangedByUndoFunc = True
