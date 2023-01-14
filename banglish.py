@@ -137,9 +137,15 @@ def convert_to_banglish(bangla_word):
                     # print("in if")
                     banglish = banglish[:-1]
                     pass
-                if latter == "ব" or latter == "ম": 
+                if latter == "ব": 
                     banglish = banglish[:-1]
                     value = "o"
+                if latter == "ম":
+                    banglish = banglish[:-1]
+                    if former_previous_latter == "দ":
+                        value = "do"
+                    else:
+                        value = "o"
                 if latter == "য":
                     
                     three_latter_valued = ["ধ", "ষ", "ল", "ব", "ক"]
@@ -238,7 +244,7 @@ def convert_to_banglish_sentence(sentence):
     # fileName = "banglishPreview.txt"
     # sp.Popen([programName, fileName])
 
-# wrd = "পদ্মাসেতু"
+
 # print(convert_to_banglish_sentence(wrd))
 # print(convert_to_banglish(wrd))
 # print(convert_to_banglish("অন্তরঙ্গতা"))
@@ -259,7 +265,6 @@ def updateBanglish(Word_list):
 
 
 def convert_to_banglish_old_algo(bangla_word):
-
     banglish = ""
     former_previous_latter = ""
     previous_latter = ""
@@ -366,9 +371,15 @@ def convert_to_banglish_old_algo(bangla_word):
                     # print("in if")
                     banglish = banglish[:-1]
                     pass
-                if latter == "ব" or latter == "ম": 
+                if latter == "ব": 
                     banglish = banglish[:-1]
                     value = "o"
+                if latter == "ম":
+                    banglish = banglish[:-1]
+                    if former_previous_latter == "দ":
+                        value = "do"
+                    else:
+                        value = "o"
                 if latter == "য":
                     
                     three_latter_valued = ["ধ", "ষ", "ল", "ব", "ক"]
@@ -439,15 +450,19 @@ def convert_to_banglish_old_algo(bangla_word):
     banglish = banglish.replace("Ngk", "Nk")
     return(banglish)     
 
-print(convert_to_banglish_old_algo("হয়রান"))
+# print(convert_to_banglish_old_algo("হয়রান"))
 
 
+wrd = "পদ্মাসেতু"
 
 def main_banglish_converter(wrd):
     conv_1  = convert_to_banglish(wrd)
     conv_2 = convert_to_banglish_sentence(wrd)
-    if conv_1 != conv_2:
-        return [conv_1, conv_2]
+    conv_3 = convert_to_banglish_sentence(wrd)
+    return_list = []
+    for w in [conv_1,conv_2,conv_3]:
+        if w not in return_list:
+            return_list.append(w)
     else:
         return [conv_1]
-     
+print(main_banglish_converter(wrd))

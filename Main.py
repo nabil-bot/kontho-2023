@@ -1779,11 +1779,12 @@ class listViewClass(QtWidgets.QMainWindow):
         # if len(indexes) > 0:
         #     self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
 
+        print(position)
         self.index = self.listWidget.indexAt(position)
         # Select the item
         self.listWidget.setCurrentIndex(self.index)
         if self.index.isValid():
-            print(self.context_menu.winId())
+            # print(self.context_menu.winId())
             self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
 
 
@@ -2063,11 +2064,14 @@ class Ui(QtWidgets.QMainWindow):
         self.main_settings = QSettings("MainSettings")
         self.settingsGUIClass.AutoCloseCheckBox.stateChanged.connect(self.autoCloseBra)
         self.settingsGUIClass.UseAbrisCheckBox.stateChanged.connect(self.useAbries)
+        self.settingsGUIClass.ShowReacorCheckBox.stateChanged.connect(self.showAudioReactor)
         try:
             self.settingsGUIClass.RunAtAtartUpCheckBox.setChecked(bool(self.main_settings.value("runAtStartUp")))  
             self.settingsGUIClass.AutoCloseCheckBox.setChecked(bool(self.main_settings.value("AutoCloseBrackets"))) 
             self.AutoCloseBra = bool(self.main_settings.value("AutoCloseBrackets"))
-            self.settingsGUIClass.setChecked(bool(self.main_settings.value("UseAbries")))      
+            self.settingsGUIClass.UseAbrisCheckBox.setChecked(bool(self.main_settings.value("UseAbries")))  
+            self.settingsGUIClass.ShowReacorCheckBox.setChecked(bool(self.main_settings.value("ShowAudioReactor")))  
+            self.ShowReactor = bool(self.main_settings.value("ShowAudioReactor"))        
         except Exception as e:
             print(e)
 
@@ -2206,7 +2210,9 @@ class Ui(QtWidgets.QMainWindow):
         else:
             self.oskClass.pushButton_52.setText("English")
         self.initialize()  
-
+    def showAudioReactor(self, state):
+        self.main_settings.setValue("ShowAudioReactor", bool(state))  
+        self.ShowReactor = state
     def autoCloseBra(self, state):
         self.main_settings.setValue("AutoCloseBrackets", bool(state))  
         self.AutoCloseBra = state
@@ -3184,10 +3190,14 @@ class Ui(QtWidgets.QMainWindow):
         self.thread.any_signal.connect(self.vissible_signal)
         # self.thread.finished.connect(self.thread.deleteLater)
         self.thread.start()
-
-        self.reactor_thread = ThreadClass(parent=None)
-        self.reactor_thread.any_signal.connect(self.update_prograss)  
-        self.reactor_thread.start()
+        if self.ShowReactor == True:
+            print(self.ShowReactor)
+            self.progressBar.setVisible(True)
+            self.reactor_thread = ThreadClass(parent=None)
+            self.reactor_thread.any_signal.connect(self.update_prograss)  
+            self.reactor_thread.start()
+        else:
+            self.progressBar.setVisible(False)   
         
         self.main_timer.start(int(self.settingsGUIClass.MicSettings.value('TimeOut')))
 
@@ -3306,6 +3316,8 @@ class Ui(QtWidgets.QMainWindow):
                 self.Mic_btn.setVisible(True)
                 self.Lang_Button.setVisible(True)
             except Exception as e:
+                print(e)
+                print(traceback.format_exc())
                 self.Listining_label.setVisible(False)   
                 self.Stop_btn.setVisible(False)
                 self.Mic_btn.setVisible(True)

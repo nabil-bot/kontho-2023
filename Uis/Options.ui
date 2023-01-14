@@ -213,6 +213,34 @@ background-color: rgb(225, 225, 225);
            <enum>QFrame::Raised</enum>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
+           <item row="0" column="0" colspan="2">
+            <widget class="QCheckBox" name="RunAtAtartUpCheckBox">
+             <property name="text">
+              <string>Run automatically at startup</string>
+             </property>
+            </widget>
+           </item>
+           <item row="12" column="2">
+            <widget class="Line" name="line_16">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QCheckBox" name="UseAbrisCheckBox">
+             <property name="text">
+              <string>use Abbreviations</string>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="1">
+            <widget class="Line" name="line_14">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
            <item row="11" column="2">
             <widget class="QCheckBox" name="checkBox_2">
              <property name="minimumSize">
@@ -243,17 +271,10 @@ background-color: rgb(225, 225, 225);
              </property>
             </widget>
            </item>
-           <item row="13" column="1" colspan="2">
-            <widget class="QPushButton" name="pushButton">
+           <item row="16" column="1" colspan="2">
+            <widget class="QPushButton" name="pushButton_2">
              <property name="text">
               <string>Open</string>
-             </property>
-            </widget>
-           </item>
-           <item row="12" column="0">
-            <widget class="Line" name="line_8">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -270,10 +291,10 @@ background-color: rgb(225, 225, 225);
              </property>
             </widget>
            </item>
-           <item row="16" column="1" colspan="2">
-            <widget class="QPushButton" name="pushButton_2">
-             <property name="text">
-              <string>Open</string>
+           <item row="12" column="0">
+            <widget class="Line" name="line_8">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -284,10 +305,27 @@ background-color: rgb(225, 225, 225);
              </property>
             </widget>
            </item>
+           <item row="13" column="1" colspan="2">
+            <widget class="QPushButton" name="pushButton">
+             <property name="text">
+              <string>Open</string>
+             </property>
+            </widget>
+           </item>
            <item row="16" column="0">
             <widget class="QLabel" name="label_15">
              <property name="text">
               <string>English Dictionary:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="17" column="0" colspan="3">
+            <widget class="QLineEdit" name="lineEdit_2"/>
+           </item>
+           <item row="15" column="2">
+            <widget class="Line" name="line_18">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -298,18 +336,8 @@ background-color: rgb(225, 225, 225);
              </property>
             </widget>
            </item>
-           <item row="15" column="2">
-            <widget class="Line" name="line_18">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="17" column="0" colspan="3">
-            <widget class="QLineEdit" name="lineEdit_2"/>
-           </item>
-           <item row="18" column="2">
-            <widget class="Line" name="line_20">
+           <item row="7" column="0">
+            <widget class="Line" name="line_21">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -328,8 +356,15 @@ background-color: rgb(225, 225, 225);
              </property>
             </spacer>
            </item>
-           <item row="7" column="0">
-            <widget class="Line" name="line_21">
+           <item row="18" column="1">
+            <widget class="Line" name="line_19">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="18" column="2">
+            <widget class="Line" name="line_20">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -339,28 +374,6 @@ background-color: rgb(225, 225, 225);
             <widget class="Line" name="line_22">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="18" column="1">
-            <widget class="Line" name="line_19">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="Line" name="line_23">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="label_16">
-             <property name="text">
-              <string>Minimum similarity ratio
-to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
@@ -374,6 +387,35 @@ to suggest for misspelled word:</string>
              </property>
              <property name="singleStep">
               <double>0.050000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="0">
+            <widget class="QLabel" name="label_16">
+             <property name="text">
+              <string>Minimum similarity ratio
+to suggest for misspelled word:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="Line" name="line_23">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="Line" name="line_5">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QSpinBox" name="spinBox">
+             <property name="maximum">
+              <number>15</number>
              </property>
             </widget>
            </item>
@@ -391,27 +433,6 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="1">
-            <widget class="QSpinBox" name="spinBox">
-             <property name="maximum">
-              <number>15</number>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="Line" name="line_5">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_12">
-             <property name="text">
-              <string>max number of word predictions:</string>
-             </property>
-            </widget>
-           </item>
            <item row="11" column="0">
             <widget class="QLabel" name="label_13">
              <property name="text">
@@ -419,31 +440,10 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
-           <item row="12" column="2">
-            <widget class="Line" name="line_16">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0" colspan="2">
-            <widget class="QCheckBox" name="RunAtAtartUpCheckBox">
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_12">
              <property name="text">
-              <string>Run automatically at startup</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="1">
-            <widget class="Line" name="line_14">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QCheckBox" name="UseAbrisCheckBox">
-             <property name="text">
-              <string>use Abbreviations</string>
+              <string>max number of word predictions:</string>
              </property>
             </widget>
            </item>
@@ -909,9 +909,9 @@ color: rgba(0, 0, 0, 210);</string>
             </widget>
            </item>
            <item row="2" column="0" colspan="3">
-            <widget class="QCheckBox" name="checkBox_5">
+            <widget class="QCheckBox" name="ShowReacorCheckBox">
              <property name="text">
-              <string>Use mic sound reactor while Speech to text </string>
+              <string>Show mic audio reactor while speech to text</string>
              </property>
             </widget>
            </item>

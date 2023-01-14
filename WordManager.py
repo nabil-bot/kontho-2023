@@ -26,6 +26,7 @@ class GetTextThreadClass(QtCore.QThread):
         self.is_running = True
         self.table = table
     def run(self):
+        
         pass
     def stop(self):
         self.is_running = False
@@ -95,9 +96,9 @@ class wordManagerClass(QMainWindow):
         self.redoReserve_for_tab_4 = []
         
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
-        # self.loadWords(englaList, self.EnglaTableWidget)
-        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
-        # self.loadAbbribiations()
+        self.loadWords(englaList, self.EnglaTableWidget)
+        self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        self.loadAbbribiations()
 
         self.clearUndoList()
 
@@ -211,10 +212,9 @@ class wordManagerClass(QMainWindow):
 
                     if len(banglish_list) == 3:
                         item1 = QTableWidgetItem(banglish_list[2].format(0, 0))
-                        self.tableWidget.setItem(r,4, item1)
+                        self.tableWidget.setItem(r, 4, item1)
 
-
-                if stableEngla !=  banglish_list[0]:   
+                if stableEngla !=  banglish_list[0]:
                     self.tableWidget.item(r, 2).setBackground(QColor(183, 28, 28, 255)) 
             except Exception:
                 pass     
@@ -254,7 +254,10 @@ class wordManagerClass(QMainWindow):
             return          
         self.writeDownContentsToFile(path, txt) 
         self.indicateTabContentChanged(self.tabWidget.currentIndex(), False)
-        self.setUnsevedSaveButton(False)   
+        self.setUnsevedSaveButton(False)  
+
+        for r in range(currentTable.rowCount()):
+            currentTable.item(r, 0).setBackground(QColor(1, 87, 155, 255)) 
 
     def writeDownContentsToFile(self, path, txt):
         with io.open(path, "w", encoding="utf-8") as file:
@@ -465,7 +468,7 @@ class wordManagerClass(QMainWindow):
                 wrd_list = words_str.split("|") 
                 currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
                    
-                self.loadWords(wrd_list, currentTable, True)
+                self.loadWords(wrd_list, currentTable, adding_from_newFile= True)
                 if len(wrd_list) > 0:
                     self.recognize_Changes(currentTable)
         except Exception as e:
@@ -762,10 +765,12 @@ class wordManagerClass(QMainWindow):
                 continue
 
             # this code prevents adding dublicate words ==========
-            if adding_from_newFile:
+            if adding_from_newFile == True:
+
                 main_wrd = wordArray[0]
-                found_items = tableWidget.findItems(main_wrd, Qt.MatchExactly)
-                if len(found_items) > 0:
+                found_items = tableWidget.findItems(main_wrd, Qt.MatchContains)
+                if len(found_items) > 1:
+                    # print(main_wrd)
                     continue
 
             rowPosition = tableWidget.rowCount()
