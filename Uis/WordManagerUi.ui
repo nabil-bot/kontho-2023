@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>841</width>
-    <height>533</height>
+    <width>904</width>
+    <height>553</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -193,12 +193,22 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
           </column>
           <column>
            <property name="text">
-            <string>Phonetic 2</string>
+            <string>2</string>
            </property>
           </column>
           <column>
            <property name="text">
-            <string>Phonetic 3</string>
+            <string>3</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>ANSI</string>
            </property>
           </column>
          </widget>
@@ -278,6 +288,148 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>Add more</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_10">
+        <item row="0" column="0">
+         <widget class="QFrame" name="frame">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_11">
+           <item row="0" column="0">
+            <widget class="QPlainTextEdit" name="plainTextEdit_2">
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 255, 255);
+font: 57 11pt &quot;Hind Siliguri Medium&quot;;</string>
+             </property>
+             <property name="plainText">
+              <string/>
+             </property>
+             <property name="placeholderText">
+              <string>paste multiple words or paragraphs here</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButton_3">
+             <property name="text">
+              <string>Detect New Words</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QGroupBox" name="ProgressGroupBox">
+      <property name="styleSheet">
+       <string notr="true">QGroupBox{
+background-color: rgb(1, 22, 39);
+border-radius:5px;
+}
+QPushButton{
+ padding-top:2px;
+padding-bottom:2px;
+ padding-left:6px;
+padding-right:6px;
+	font: 10pt &quot;MS Shell Dlg 2l&quot;;
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+
+border:1px solid rgb(253, 254, 254);
+	color: rgb(255, 255, 255);
+border-radius:2px;
+}
+QPushButton:hover{
+color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
+ background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
+
+}
+QPushButton:pressed{
+background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
+}</string>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_9">
+       <property name="leftMargin">
+        <number>5</number>
+       </property>
+       <property name="topMargin">
+        <number>5</number>
+       </property>
+       <property name="rightMargin">
+        <number>5</number>
+       </property>
+       <property name="bottomMargin">
+        <number>5</number>
+       </property>
+       <property name="spacing">
+        <number>5</number>
+       </property>
+       <item row="1" column="2">
+        <widget class="QPushButton" name="CancelPushButton">
+         <property name="text">
+          <string>Cancel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="Progresslabel">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(255, 255, 255);</string>
+         </property>
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="3">
+        <widget class="QProgressBar" name="progressBar">
+         <property name="styleSheet">
+          <string notr="true">QProgressBar{
+	border:1px solid white;
+	border-radius: 9px;
+	color: Black;
+}
+QProgressBar::chunk {
+	background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(0, 242, 255, 255), stop:1 rgba(27, 126, 255, 255));
+	border-radius :6px;
+}
+</string>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
    </layout>
@@ -287,7 +439,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>841</width>
+     <width>904</width>
      <height>21</height>
     </rect>
    </property>
@@ -310,6 +462,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
     <addaction name="actionRemove"/>
     <addaction name="actionShowTextEditor"/>
     <addaction name="actionClear_Undo_List"/>
+    <addaction name="actionTestBanglishAlgo"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -702,23 +855,7 @@ QCheckBox::indicator:checked:hover {
         <item>
          <widget class="QPushButton" name="SavePushButton">
           <property name="styleSheet">
-           <string notr="true">QPushButton{
- padding-top:2px;
-	font: 10pt &quot;MS Shell Dlg 2l&quot;;
-background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));
-
-border:1px solid rgb(253, 254, 254);
-	color: rgb(255, 255, 255);
-border-radius:2px;
-}
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));
-
-}
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));&quot;
-}</string>
+           <string notr="true"/>
           </property>
           <property name="text">
            <string>Save</string>
@@ -734,7 +871,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
   <widget class="QDockWidget" name="dockWidget_8">
    <property name="minimumSize">
     <size>
-     <width>206</width>
+     <width>296</width>
      <height>55</height>
     </size>
    </property>
@@ -779,17 +916,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
         <string notr="true"/>
        </property>
        <property name="text">
-        <string>Copy</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="CutPushButton">
-       <property name="styleSheet">
-        <string notr="true"/>
-       </property>
-       <property name="text">
-        <string>Cut</string>
+        <string>Copy Cell</string>
        </property>
       </widget>
      </item>
@@ -799,7 +926,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
         <string notr="true"/>
        </property>
        <property name="text">
-        <string>Paste</string>
+        <string>Paste to Cell</string>
        </property>
       </widget>
      </item>
@@ -821,6 +948,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidget_2">
+   <property name="windowTitle">
+    <string notr="true">Edit Current cell</string>
+   </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
@@ -922,6 +1052,16 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
   <action name="actionClear_Undo_List">
    <property name="text">
     <string>Clear Undo List</string>
+   </property>
+  </action>
+  <action name="actionGetUniqueTable">
+   <property name="text">
+    <string>GetUniqueTable</string>
+   </property>
+  </action>
+  <action name="actionTestBanglishAlgo">
+   <property name="text">
+    <string>TestBanglishAlgo</string>
    </property>
   </action>
  </widget>

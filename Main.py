@@ -38,7 +38,8 @@ import difflib
 import win32process
 import win32api
 User32 = ctypes.WinDLL('User32.dll')
-from win32gui import GetWindowText, GetCursorPos, WindowFromPoint, GetForegroundWindow, GetWindowRect, GetCaretPos
+
+from win32gui import GetWindowText, GetCursorPos, WindowFromPoint, GetForegroundWindow, GetWindowRect, GetCaretPos, GetCursorInfo
 from AddNewWord import AddNewWordsClass
 from WordManager import wordManagerClass
 from LoadWords import wordsList,englaList,EnglishwordsList,englishLatters, banglaNumbs
@@ -59,6 +60,7 @@ keysBlocked = True
 completorTraegered = False 
 CurrentWord = ""
 ruledOut = False
+minimun_Similarity_Ratio = 0.70
 
 def initGlobal():
     global previous_word 
@@ -542,6 +544,7 @@ class similarityThread(QtCore.QThread):
         self.brokenByNewCharacter = False
                
     def run(self):
+        global minimun_Similarity_Ratio
         self.newCharacterIsPressed = False 
         self.similarTheredIsRunningSignal.emit(True, self.brokenByNewCharacter, self.englishWordSoFar)
         self.similarWords = []
@@ -573,9 +576,9 @@ class similarityThread(QtCore.QThread):
             
             similarity = self.similarity_ration_btween(englishWord, englishWordSofar)   
             if len(englishWordSofar) < 5:
-                minimumSimi = 0.7
+                minimumSimi = minimun_Similarity_Ratio
             else:
-                minimumSimi = 0.7   
+                minimumSimi = minimun_Similarity_Ratio   
             if similarity > minimumSimi:
                 if similarity > self.heighestMatchedRatio:
                     if self.currentLang == "bangla":    
@@ -1023,6 +1026,10 @@ class OSK_UI(QtWidgets.QMainWindow):
         # self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         User32.SetWindowLongW(int(self.winId()), -20, 134217728)
+        # User32.SetWindowLongW(int(self.dockWidget.winId()), -20, 134217728)
+        # self.dockWidget.setWindowFlags(Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint)
+        # User32.SetWindowLongW(int(self.dockWidget.winId()), -20, 134217728)
+        # print(int(self.dockWidget.winId()))
         self.CloseButton.clicked.connect(lambda: self.close())
         self.MinimizeButton.clicked.connect(lambda: self.showMinimized())
         self.clicked = False
@@ -1051,6 +1058,10 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.winState = False
 
         self.pushButton_35.setStyleSheet("")
+
+        self.state = self.saveState()
+        # self.RestoreCharacPushButton.clicked.connect(self.RestoreCharac)
+
 # banglakeyboard connectors ===========================
         self.Ao_pushButton.clicked.connect(lambda:self.logIn("অ"))
         self.Aa_pushButton.clicked.connect(lambda:self.logIn("আ"))
@@ -1240,9 +1251,11 @@ class OSK_UI(QtWidgets.QMainWindow):
 
         self.previousLetter = ""
     
-        self.MouseListener = mouse.Listener(on_click = self.on_click)
-        self.MouseListener.start()
-        
+        # self.MouseListener = mouse.Listener(on_click = self.on_click)
+        # self.MouseListener.start()
+        # self.RestoreCharacPushButton.setVisible(False)
+        # self.dockWidget.dockLocationChanged.connect(lambda:self.RestoreCharacPushButton.setVisible(True))
+
         self.BanglawordThread = BanglawordThread()
         self.BanglawordThread.matched_Word_signal.connect(self.populateWords)
         self.bangla_word_signal.connect(self.BanglawordThread.run)
@@ -1252,12 +1265,20 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.loadCharacters()
         self.loadEmojies()
 
+    # def RestoreCharac(self):
+    #     self.dockWidget.show()
+    #     self.restoreDockWidget(self.dockWidget)
+    #     self.gridLayout_7.addWidget(self.dockWidget)
+    #     self.RestoreCharacPushButton.setVisible(False)
+
+
     def on_click(self, x, y, button, pressed):
+        # print("I am here!")
         global CurrentWord
         if GetWindowText(WindowFromPoint(GetCursorPos())) != self.windowTitle():
             CurrentWord = ""
             self.recomendFunc()
-            self.initState() 
+            # self.initState() 
             self.initThread_signal.emit("init")
             pass
     
@@ -1742,22 +1763,38 @@ class listViewClass(QtWidgets.QMainWindow):
         self.SpellCheckPushButton.clicked.connect(self.spellCheckFunc)
         self.threadRunning = False
 
-        self.listWidget.installEventFilter(self)
-    def eventFilter(self, source, event):
-        if event.type() == QEvent.ContextMenu and source is self.listWidget:
-            menu = QMenu()
-            menu.addAction('Copy')
-            menu.addAction('Edit')
-            menu.addAction('Search Google')
+        self.context_menu = QMenu(self.listWidget)
+        self.context_menu.setTitle("conTitle")
+        self.action1 = QAction("Action 1", self)
+        self.action1.triggered.connect(self.action1_triggered)
+        self.context_menu.addAction(self.action1)
+        
 
-            if menu.exec_(event.globalPos()):
-                item = source.itemAt(event.pos())
-                try:    
-                    print(item.text())
-                except Exception:
-                    pass    
-            return True
-        return super().eventFilter(source, event)
+        self.listWidget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.listWidget.customContextMenuRequested.connect(self.open_menu)
+        # self.listWidget.installEventFilter(self)
+    def open_menu(self, position):
+        # indexes = self.listWidget.selectedIndexes()
+        # print(indexes)
+        # if len(indexes) > 0:
+        #     self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
+
+        self.index = self.listWidget.indexAt(position)
+        # Select the item
+        self.listWidget.setCurrentIndex(self.index)
+        if self.index.isValid():
+            print(self.context_menu.winId())
+            self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
+
+
+    def action1_triggered(self):
+        # selected_item = self.listWidget.currentItem()
+        
+        # print(self.listWidget.itemFromIndex(self.index).text())
+        
+        # item_text = selected_item.text()
+        # print(item_text)        
+        pass
 
     def spellCheckFunc(self):
         global wordSofar
@@ -1840,6 +1877,7 @@ class listViewClass(QtWidgets.QMainWindow):
         pass
     @QtCore.pyqtSlot(str)
     def changeTheme(self, theme):
+        
         if theme == "green":
             self.listWidget.setStyleSheet('QListWidget{\n	font: 12pt "Kalpurush";\n	border-radius:2px;\n	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));\n	border: 2px solid rgb(0, 255, 0);\n}')
         if theme == "red":
@@ -2017,7 +2055,22 @@ class Ui(QtWidgets.QMainWindow):
 
         self.main_timer = QTimer()
         self.main_timer.timeout.connect(self.Stop_thread)
-        self.settingsGUIClass = Options_UI()     
+        
+        
+        self.settingsGUIClass = Options_UI()    # <------------------ 
+        self.settingsGUIClass.RunAtAtartUpCheckBox.stateChanged.connect(self.Run_startup_fun)
+        
+        self.main_settings = QSettings("MainSettings")
+        self.settingsGUIClass.AutoCloseCheckBox.stateChanged.connect(self.autoCloseBra)
+        self.settingsGUIClass.UseAbrisCheckBox.stateChanged.connect(self.useAbries)
+        try:
+            self.settingsGUIClass.RunAtAtartUpCheckBox.setChecked(bool(self.main_settings.value("runAtStartUp")))  
+            self.settingsGUIClass.AutoCloseCheckBox.setChecked(bool(self.main_settings.value("AutoCloseBrackets"))) 
+            self.AutoCloseBra = bool(self.main_settings.value("AutoCloseBrackets"))
+            self.settingsGUIClass.setChecked(bool(self.main_settings.value("UseAbries")))      
+        except Exception as e:
+            print(e)
+
         self.current_language = "English"
         self.Lang_Button.clicked.connect(self.update_lang) 
 
@@ -2153,8 +2206,18 @@ class Ui(QtWidgets.QMainWindow):
         else:
             self.oskClass.pushButton_52.setText("English")
         self.initialize()  
-         
 
+    def autoCloseBra(self, state):
+        self.main_settings.setValue("AutoCloseBrackets", bool(state))  
+        self.AutoCloseBra = state
+    def useAbries(self, state):
+        self.main_settings.setValue("UseAbries", bool(state))  
+        if state:
+            self.loadAbbribiations()
+        else:
+            kb2.unhook_all()
+            self.blockKeys()
+        pass
     def AutoCompleate(self, theWord):
         global wordSofar
         if self.listClass.ACcheckBox.isChecked():
@@ -2282,6 +2345,8 @@ class Ui(QtWidgets.QMainWindow):
                 kb2.add_abbreviation(parts[0], parts[1])   
         except Exception as e:
             self.showError(e)
+        self.blockKeys()
+    def blockKeys(self):
         if self.current_language == "Bangla":
             self.listener.stop()
             for i in self.keysToBlock:
@@ -2289,7 +2354,7 @@ class Ui(QtWidgets.QMainWindow):
             self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
             self.listener.start()
             self.listClass.hide()
-            self.initialize() 
+            self.initialize()
     def trim(self, l):
         global wordSofar
         self.listener.stop()
@@ -2386,6 +2451,16 @@ class Ui(QtWidgets.QMainWindow):
         global previous_word
         global formar_previous_word
         
+        if self.AutoCloseBra:
+            qote = (str(key)).replace("'", "")
+            if qote in self.qoteDic:
+                kb.release(Key.shift)
+                kb.type(self.qoteDic[qote])
+                kb.tap(Key.left)
+                self.initialize()
+                return
+        
+        
         if self.current_language == "English":
             return
         try: 
@@ -2444,14 +2519,8 @@ class Ui(QtWidgets.QMainWindow):
                         self.WordClicked(item.text())
                         # initGlobal()
                         self.listClass.showHideFunc("hide")
-            qote = (str(key)).replace("'", "")
-            if qote in self.qoteDic:
-                kb.release(Key.shift)
-                kb.type(self.qoteDic[qote])
-                kb.tap(Key.left)
-
-                self.initialize()
-                return
+            
+            
             if completorTraegered == True:
                 return
             
@@ -2463,10 +2532,19 @@ class Ui(QtWidgets.QMainWindow):
             print(traceback.format_exc())
         pass
     def on_click(self, x, y, button, pressed):
-        if GetWindowText(WindowFromPoint(GetCursorPos())) not in  [self.listClass.windowTitle(), self.oskClass.windowTitle()]:
+        
+        # cursor_info = GetCursorInfo()
+        # if cursor_info:
+        #     hwnd = WindowFromPoint((cursor_info[2][0], cursor_info[2][1]))
+        #     print(hwnd)
+        # print(self.listClass.context_menu.windowTitle())
+        # print(GetWindowText(WindowFromPoint(GetCursorPos())))
+        if GetWindowText(WindowFromPoint(GetCursorPos())) not in [self.listClass.windowTitle(), self.oskClass.windowTitle(), self.listClass.context_menu.windowTitle()]:
             self.lastActiveWindow = GetWindowText(WindowFromPoint(GetCursorPos()))
             self.initialize()
-            pass
+
+            
+
     def on_release(self, key):
         if self.current_language == "English":
             return
@@ -2507,7 +2585,7 @@ class Ui(QtWidgets.QMainWindow):
                 bnglaKey = "আ"
             elif previous_word == "a":
                 bnglaKey = "্য"
-            elif previous_word == formar_previous_word and previous_word != "" and previous_word not in ["m", "b"]:
+            elif previous_word == formar_previous_word and previous_word != "" and previous_word in ["c", ]:
                 self.trim(1)
                 bnglaKey = "্যা"
             else:
@@ -2843,6 +2921,8 @@ class Ui(QtWidgets.QMainWindow):
         global previous_word
         global formar_previous_word
         global ruledOut 
+        global CurrentWord
+        CurrentWord = ""
         self.autoCompletedWord = ""
         previous_word = ""
         wordSofar = ""
@@ -2958,8 +3038,9 @@ class Ui(QtWidgets.QMainWindow):
         try:
             if state:
                 creat_shortcut()
-                with open('.//Res//Run_at_startup.txt', "w") as RKS:
-                    RKS.write("True")
+                
+                self.main_settings.setValue("runAtStartUp", True)
+
                 msg = QMessageBox()
                 msg.setStyleSheet("QMessageBox{\n"
                                 "color: white;\n"
@@ -2994,19 +3075,9 @@ class Ui(QtWidgets.QMainWindow):
                 msg.setIcon(QMessageBox.Information)
                 msg.exec_()       
             pass
-        except Exception:
-            msg = QMessageBox()
-            msg.setStyleSheet("QMessageBox{\n"
-                            "color: white;\n"
-                            "background-color: rgb(108, 177, 223);\n"
-                            "font: 12pt \"MS Shell Dlg 2\";\n"
-                            "gridline-color: #EAEDED;\n"
-                            "}")
-            msg.setWindowTitle("Kontho")
-            msg.setWindowFlags(Qt.WindowStaysOnTopHint)
-            msg.setText("Something went wrong!")
-            msg.setIcon(QMessageBox.Warning)
-            msg.exec_()
+        except Exception as e:
+            self.showError(e)
+            
     def Open_converter_exe(self):
         try: 
             
@@ -3116,8 +3187,8 @@ class Ui(QtWidgets.QMainWindow):
 
         self.reactor_thread = ThreadClass(parent=None)
         self.reactor_thread.any_signal.connect(self.update_prograss)  
-
         self.reactor_thread.start()
+        
         self.main_timer.start(int(self.settingsGUIClass.MicSettings.value('TimeOut')))
 
         self.Listining_label.setVisible(True)

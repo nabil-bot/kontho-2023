@@ -1,21 +1,82 @@
 # -*- coding:utf-8 -*-
 from importlib.resources import path
+from os import stat
+from shutil import ExecError
 from tkinter.messagebox import showerror
-from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QTableWidgetItem, QFileDialog
-from PyQt5.QtCore import Qt, QSettings, pyqtSignal, QItemSelectionModel
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QTableWidgetItem, QFileDialog, QTableWidget, QStyledItemDelegate, QLineEdit, QPlainTextEdit
+from PyQt5.QtCore import Qt, QSettings, pyqtSignal, QItemSelectionModel, QEvent, QRegExp
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QMainWindow, QHeaderView, QMessageBox
 from PyQt5 import uic
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QRegExpValidator
 import pyperclip as pc
 import sys
-from banglish import jointWordSpliter, convert_to_banglish
+from banglish import jointWordSpliter, convert_to_banglish, main_banglish_converter
 from LoadWords import *
 import traceback
 import io
+import re
 
 
-class wordManagerClass(QMainWindow):
+class GetTextThreadClass(QtCore.QThread):	
+    return_text_signal = QtCore.pyqtSignal(str)
+    progration_signal = QtCore.pyqtSignal(int)
+    def __init__(self, table, parent=None):
+        super(GetTextThreadClass, self).__init__(parent)
+        self.is_running = True
+        self.table = table
+    def run(self):
+        pass
+    def stop(self):
+        self.is_running = False
+        self.terminate() 
+         
+class PlainTextEditEnglishDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super(PlainTextEditEnglishDelegate, self).__init__(parent)
+    def createEditor(self, parent, option, index):
+        editor = QPlainTextEdit(parent)
+        validator = QtGui.QRegExpValidator(QtCore.QRegExp('^[a-zA-Z]+$')) 
+        editor.setValidator(validator)
+        return editor
+    
+
+class PlainTextEditBanglaDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super(PlainTextEditBanglaDelegate, self).__init__(parent)
+
+    def createEditor(self, parent, option, index):
+        editor = QPlainTextEdit(parent)
+        validator = QtGui.QRegExpValidator(QtCore.QRegExp('[\u0980-\u09E3]+')) 
+        editor.setValidator(validator)
+        return editor
+    
+
+class EnglishDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        validator = QtGui.QRegExpValidator(QtCore.QRegExp('^[a-zA-Z]+$')) 
+        editor.setValidator(validator)
+        return editor
+    def setEditorData(self, editor, index):
+        editor.setText(index.data())
+    def setModelData(self, editor, model, index):
+        model.setData(index, editor.text())
+
+class BanglaDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        validator = QtGui.QRegExpValidator(QtCore.QRegExp('[\u0980-\u09E3]+')) 
+        editor.setValidator(validator)
+        return editor
+    
+
+
+class wordManagerClass(QMainWindow): 
     save_signal = pyqtSignal(str)
     def __init__(self):
         super(wordManagerClass, self).__init__()
@@ -34,8 +95,9 @@ class wordManagerClass(QMainWindow):
         self.redoReserve_for_tab_4 = []
         
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
-        self.loadWords(englaList, self.EnglaTableWidget)
+        # self.loadWords(englaList, self.EnglaTableWidget)
         # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        # self.loadAbbribiations()
 
         self.clearUndoList()
 
@@ -44,12 +106,23 @@ class wordManagerClass(QMainWindow):
 
         self.tableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
         self.tableWidget.itemChanged.connect(self.itemChangedFunc)
+        
+        self.Bangla_Delegate = BanglaDelegate(self.tableWidget)
+        self.English_Delegate = EnglishDelegate(self.tableWidget)
+
+        self.plainTextEdit_English_Delegate = PlainTextEditEnglishDelegate(self.plainTextEdit) 
+        self.plainTextEdit_Bangla_Delegate = PlainTextEditBanglaDelegate(self.plainTextEdit)
+        # self.tableWidget.setItemDelegateForRow(0, delegate)
+
 
         self.EnglaTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
         self.EnglaTableWidget.itemChanged.connect(self.itemChangedFunc)
 
+        
         self.EnglishTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
         self.EnglishTableWidget.itemChanged.connect(self.itemChangedFunc)
+        self.EnglishTableWidget.setItemDelegate(self.English_Delegate)  
+
 
         self.tableWidget_3.currentItemChanged.connect(self.currentItemChangedFunc)
         self.tableWidget_3.itemChanged.connect(self.itemChangedFunc)
@@ -73,7 +146,7 @@ class wordManagerClass(QMainWindow):
         self.RedoPushButton.clicked.connect(self.redo)
 
         self.CopyPushButton.clicked.connect(self.copyFunc)
-        self.CutPushButton.clicked.connect(self.CutFunc)
+
         self.PastePushButton.clicked.connect(self.PasteFunc)
 
         self.lineEdit.textChanged.connect(self.search)
@@ -88,7 +161,7 @@ class wordManagerClass(QMainWindow):
     
         self.SavePushButton.clicked.connect(self.saveCurrentTableFunc)
 
-        self.loadAbbribiations()
+        
 
         self.matching_items = []
         self.currentMatchedIndex = 0
@@ -103,6 +176,61 @@ class wordManagerClass(QMainWindow):
         self.indicateTabContentChanged(0, False)
         self.contentWasEdited_ofTable_1 = False
 
+        self.setUnsevedSaveButton(False)
+        self.ProgressGroupBox.setVisible(False)
+
+        self.CancelPushButton.clicked.connect(self.stopSaveThread)
+
+        # self.PastePushButton.toolTip("Paste in currect cell")
+        # self.plainTextEdit.keyPressEvent = self.keyPressEvent_PlainTextEdit
+        self.plainTextEdit.installEventFilter(self)
+    # =-===================----..>>>>
+
+        self.actionTestBanglishAlgo.triggered.connect(self.TestBanglish)
+
+    def TestBanglish(self):
+        row_count = self.tableWidget.rowCount()
+        colum_count = self.tableWidget.columnCount()
+
+        for r in range(row_count):
+            try:    
+                ban_word = self.tableWidget.item(r, 0).text()
+                stableEngla = self.tableWidget.item(r, 1).text()
+            except Exception:
+                continue 
+
+            try:
+                banglish_list = main_banglish_converter(ban_word)
+
+                item1 = QTableWidgetItem(banglish_list[0].format(0, 0))
+                self.tableWidget.setItem(r,2, item1)
+
+                if len(banglish_list) > 1:
+                    item1 = QTableWidgetItem(banglish_list[1].format(0, 0))
+                    self.tableWidget.setItem(r,3, item1)
+
+                    if len(banglish_list) == 3:
+                        item1 = QTableWidgetItem(banglish_list[2].format(0, 0))
+                        self.tableWidget.setItem(r,4, item1)
+
+
+                if stableEngla !=  banglish_list[0]:   
+                    self.tableWidget.item(r, 2).setBackground(QColor(183, 28, 28, 255)) 
+            except Exception:
+                pass     
+        pass    
+
+    def eventFilter(self, obj, event):
+        if obj is self.plainTextEdit:
+            if event.type() == QtCore.QEvent.KeyPress:
+                currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+                if event.text() not in banglaAlphabates and event.key() not in (Qt.Key_Backspace, Qt.Key_Delete) and currentTable.currentColumn() == 0 and currentTable in [self.tableWidget, self.EnglaTableWidget]:
+                    event.ignore()
+                    return True 
+                elif event.text() not in englishAlphabets and event.key() not in (Qt.Key_Backspace, Qt.Key_Delete) and currentTable.currentColumn() != 0 and currentTable in [self.tableWidget, self.EnglaTableWidget]:
+                    event.ignore()
+                    return True            
+        return super().eventFilter(obj, event)
 
     def saveCurrentTableFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
@@ -126,6 +254,7 @@ class wordManagerClass(QMainWindow):
             return          
         self.writeDownContentsToFile(path, txt) 
         self.indicateTabContentChanged(self.tabWidget.currentIndex(), False)
+        self.setUnsevedSaveButton(False)   
 
     def writeDownContentsToFile(self, path, txt):
         with io.open(path, "w", encoding="utf-8") as file:
@@ -144,11 +273,21 @@ class wordManagerClass(QMainWindow):
     def TabChanged(self, index):
         self.currentItem = ""
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        
         currentTable.setCurrentCell(0, 0, QItemSelectionModel.Current)
+        if index == 0 and self.contentWasEdited_ofTable_1 == True or index == 1 and self.contentWasEdited_ofTable_2 == True or index == 2 and self.contentWasEdited_ofTable_3 == True or index == 3 and self.contentWasEdited_ofTable_4 == True:
+            self.setUnsevedSaveButton(True)
+        else:
+            self.setUnsevedSaveButton(False)
+
+    def setUnsevedSaveButton(self, state):
+        if state == True:
+            self.SavePushButton.setStyleSheet('QPushButton{\n padding-top:2px;\nfont: 10pt "MS Shell Dlg 2l";\nbackground-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(8, 237, 255, 255), stop:1 rgba(255, 91, 253, 255));\nborder:1px solid rgb(253, 254, 254);\ncolor: rgb(255, 255, 255);\nborder-radius:2px;\n}\nQPushButton:hover{\ncolor: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));\n background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(60, 138, 255, 255));\n}\nQPushButton:pressed{\nbackground-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));"\n}')    
+        else:
+            self.SavePushButton.setStyleSheet('')    
+
     def clearUndoList(self):
-        self.changes_for_tab_1.clear()
-        self.redoReserve_for_tab_1.clear()
+        self.changes_for_tab_1 = []
+        self.redoReserve_for_tab_1 = []
 
         self.changes_for_tab_2.clear()
         self.redoReserve_for_tab_2.clear()
@@ -167,31 +306,61 @@ class wordManagerClass(QMainWindow):
         return text
     def copyFunc(self):
         pc.copy(self.currentCellText()) 
-    def CutFunc(self):
-        self.copyFunc()
-        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        c_item = QTableWidgetItem("".format(0, 0))
-        currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)
-        pass
     def PasteFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        copied_text = pc.paste()
+        copied_text = (pc.paste())
+        if len(copied_text) > 50 and currentTable in [self.tableWidget, self.EnglaTableWidget, self.EnglishTableWidget]:
+            self.showError(f"Text of clipboard doesn't seem like a word!\nClipBoard Text:{pc.paste()}")
+            return
+        c_c = currentTable.currentColumn()
+        text_in = self.identifi_str(copied_text) 
+        if text_in == "bangla":  
+            if currentTable in [self.tableWidget, self.EnglaTableWidget]:
+                if c_c != 0:
+                    return
+            elif currentTable == self.tableWidget_3:
+                c_c != 1
+                return
+            else:
+                return
+        elif text_in == "english":
+            if currentTable == self.tableWidget or currentTable == self.EnglaTableWidget:
+                if c_c == 0:
+                    return     
         self.setCurrentCellText(currentTable, copied_text)
+    def identifi_str(self, string):
+        string_lang = "mixed"
+        if string[0] in banglaAlphabates:
+            string_lang = "bangla"
+            for i in range(len(string)):
+                if string[i] not in banglaAlphabates:
+                    string_lang = "mixed"
+                    break
+        if string[0] in englishAlphabets:
+            string_lang = "english"
+            for i in range(len(string)):
+                if string[i] not in englishAlphabets:
+                    string_lang = "mixed"
+                    break
+        return string_lang
+
     def setCurrentCellText(self,currentTable, txt):
         c_item = QTableWidgetItem(txt.format(0, 0))
         currentTable.setItem(currentTable.currentRow() , currentTable.currentColumn(), c_item)    
     def currentTable(self):
         if self.tabWidget.currentIndex() == 0:
-            return self.tableWidget,self.changes_for_tab_1,self.redoReserve_for_tab_1
+            return self.tableWidget, self.changes_for_tab_1,self.redoReserve_for_tab_1
         if self.tabWidget.currentIndex() == 1:
             return self.EnglaTableWidget,self.changes_for_tab_2,self.redoReserve_for_tab_2 
         if self.tabWidget.currentIndex() == 2:
             return self.EnglishTableWidget,self.changes_for_tab_3,self.redoReserve_for_tab_3 
         if self.tabWidget.currentIndex() == 3:
             return self.tableWidget_3,self.changes_for_tab_4,self.redoReserve_for_tab_4      
+    
     def getTextFormTable(self, table):
         row_count = table.rowCount()
         colum_count = table.columnCount()
+        
         text_ = ''
         for no in range(row_count):
             wordStr = ""
@@ -200,29 +369,57 @@ class wordManagerClass(QMainWindow):
                     txtFromColumn = (table.item(no, c).text()).replace(" ", "")
                 except Exception:
                     break    
-                if txtFromColumn != "":   
+                if txtFromColumn != "": 
                     wordStr += f"{txtFromColumn},"
             if wordStr != "":    
                 text_ += f"{wordStr[:-1]}|"
-        return text_[:-1]
+        return text_[:-1] 
     def saveAsFunction(self):
-        path, _ = QFileDialog.getSaveFileName(
+        save_as_path, _ = QFileDialog.getSaveFileName(
             parent=self,
             caption='Save file as',
             directory= 'C:\\Users\\ui\\Desktop',
             filter ='Text Document (*.txt)'
         )                               
-        if not path:
+        if not save_as_path:
             return
         else:
             try:
                 currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
                 
                 textFromTable = self.getTextFormTable(currentTable)
-                with io.open(path, "w", encoding="utf-8") as file:
+
+                # self.ProgressGroupBox.setVisible(True)
+
+                # self.getTextFromTableThread = GetTextThreadClass(currentTable)
+                # self.getTextFromTableThread.return_text_signal.connect(self.saveTextToPath)
+                # self.getTextFromTableThread.progration_signal.connect(self.setProgressFunc)
+                # self.getTextFromTableThread.start()
+
+                with io.open(save_as_path, "w", encoding="utf-8") as file:
                     file.write(textFromTable)
+
             except Exception as e:
+                print(traceback.format_exc()) 
+
                 self.showError(e)
+    def stopSaveThread(self):
+        try:
+            self.getTextFromTableThread.stop()
+        except Exception as e:
+            print(e)    
+    def setProgressFunc(self, prog):
+        self.progressBar.setValue(prog)
+    def saveTextToPath(self, textFromTable):
+        try:
+            with io.open(self.save_as_path, "w", encoding="utf-8") as file:
+                file.write(textFromTable)
+        except Exception:
+            print(traceback.format_exc())   
+            self.showError(traceback.format_exc()) 
+    def setProgress(self, progress):
+        pass            
+
     def loadAbbribiations(self):
         header = self.tableWidget_3.horizontalHeader()       
         header.setSectionResizeMode(1, QHeaderView.Stretch)
@@ -268,7 +465,7 @@ class wordManagerClass(QMainWindow):
                 wrd_list = words_str.split("|") 
                 currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
                    
-                self.loadWords(wrd_list, currentTable)
+                self.loadWords(wrd_list, currentTable, True)
                 if len(wrd_list) > 0:
                     self.recognize_Changes(currentTable)
         except Exception as e:
@@ -281,15 +478,23 @@ class wordManagerClass(QMainWindow):
             filter ='Text Document (*.txt)'
         )
         if path:
-            # self.tableWidget.clear()
-            while (self.tableWidget.rowCount() > 0):
-                self.tableWidget.removeRow(0)
-            # self.loadBanglaWords(path)
+            self.itemChangedByUndoFunc = True
+            currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+            while (currentTable.rowCount() > 0):
+                currentTable.removeRow(0)
+            
+            with io.open(path, "r", encoding="utf-8") as wordTxt:
+                wordsSTR = wordTxt.read()
+            wrdList = wordsSTR.split("|")
+
+            self.loadWords(wrdList,currentTable)   
+            self.itemChangedByUndoFunc = False
     def addFunc(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        rowPosition = currentTable.rowCount()
+
+        rowPosition = currentTable.currentRow() + 1
         currentTable.insertRow(rowPosition)
-        currentTable.scrollToBottom()
+        # currentTable.scrollToItem(item)
         
         self.addRowUnDoReserveFunc(rowPosition, Current_changes_list, currentTable)  # , Current_changes_list, currentTable
     def addRowUnDoReserveFunc(self, rowPosition, changes, currentTable): # , changes, currentTable
@@ -346,7 +551,6 @@ class wordManagerClass(QMainWindow):
 
     def selectAnItem(self, item):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        
         currentTable.setCurrentItem(item)  
         currentTable.setCurrentCell(currentTable.currentRow(), currentTable.currentColumn()) 
         self.MatchedNumberLineEdit.setText(str(self.currentMatchedIndex+1) + "/"+str(len(self.matching_items)))
@@ -360,8 +564,11 @@ class wordManagerClass(QMainWindow):
         if self.MatchCaseCheckBox.isChecked() == False:
             self.matching_items = currentTable.findItems(s, Qt.MatchContains)
         else:
-             self.matching_items = currentTable.findItems(s, Qt.MatchExactly)   
+            self.matching_items = currentTable.findItems(s, Qt.MatchExactly)   
         self.MatchedNumberLineEdit.setText(str(self.currentMatchedIndex+1) + "/"+str(len(self.matching_items)))
+        if len(self.matching_items) == 0:
+            self.MatchedNumberLineEdit.setText(str(0) + "/"+str(len(self.matching_items)))
+
         if self.matching_items:
             item = self.matching_items[0] 
             self.selectAnItem(item) 
@@ -387,42 +594,110 @@ class wordManagerClass(QMainWindow):
             self.selectAnItem(item)
             pass
         pass
-
+        
     def itemChangedFunc(self, citem):
+        if self.tableWidget.isVisible() == True or self.EnglaTableWidget.isVisible() == True :
+            if self.tableWidget.currentColumn() == 0 or self.EnglaTableWidget.currentColumn() == 0 or self.tableWidget_3.currentColumn() == 0:
+                if self.tableWidget.isVisible() == True:
+                    table = self.tableWidget
+                elif self.tableWidget_3.isVisible() == True:
+                    table = self.tableWidget_3
+                else:
+                    table = self.EnglaTableWidget
+                found_items = table.findItems(citem.text(), Qt.MatchExactly)
+                if len(found_items) > 1:
+                    table.itemChanged.disconnect(self.itemChangedFunc)
+                    table.setItem(citem.row(), citem.column(), QTableWidgetItem(""))
+                    item = found_items[0]
+                    self.selectAnItem(item)
+                    table.itemChanged.connect(self.itemChangedFunc)
+                    return
+        if self.EnglishTableWidget.isVisible() == True or self.tableWidget_3.isVisible() == True:  
+            if self.EnglishTableWidget.isVisible() == True:
+                table = self.EnglishTableWidget
+            else:
+                table = self.tableWidget_3
+            found_items = table.findItems(citem.text(), Qt.MatchExactly)
+            if len(found_items) > 1:
+                table.itemChanged.disconnect(self.itemChangedFunc)
+                table.setItem(citem.row(), citem.column(), QTableWidgetItem(""))
+                item = found_items[0]
+                self.selectAnItem(item)
+                table.itemChanged.connect(self.itemChangedFunc)
+                return         
+        # print("inItemChangedFunc")
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        # print(type(citem))
-        # if currentTable == self.tableWidget and currentTable.currentColumn() == 0: 
-        #     if self.currentCellText() not in banglaAlphabates:
-        #         self.setCurrentCellText(currentTable, citem.text())
-        #         return
 
-        changedData = []
-        changedData.append(self.currentItem)
-        changedData.append(currentTable.currentRow())
-        changedData.append(currentTable.currentColumn())
         if self.itemChangedByUndoFunc == False:
+            changedData = []
+            if currentTable == self.tableWidget and currentTable.currentColumn() == 0:    
+                self.setEnglaWord(currentTable)
+
+                c_row = currentTable.currentRow()
+                
+                changedData.append("|*|added_New_File_content|*|")
+                row_contents = []
+                row_infos = [] # 1st row position 
+                row_infos.append(c_row) # <-- Undo Reserve Function Call
+                row_items = []
+                for c in range(currentTable.columnCount()):
+                    try:    
+                        txtFromColumn = (currentTable.item(c_row, c).text()).replace(" ", "")
+                    except Exception:
+                        txtFromColumn = ""    
+                    row_items.append(txtFromColumn)
+                row_infos.append(row_items) # <-- row_contents 
+                row_contents.append(row_infos)
+                changedData.append(row_contents) 
+
+            else:    
+                changedData.append(self.currentItem)
+                changedData.append(currentTable.currentRow())
+                changedData.append(currentTable.currentColumn())
+
             Current_changes_list.insert(0, changedData)
             Current_changes_list = Current_changes_list[:50]
             self.currentItem = citem.text() 
-        self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
+            self.saveChangesForUndo_Redo(currentTable, Current_changes_list)
 
-        if currentTable == self.tableWidget and currentTable.currentColumn() == 0:    
-            self.setEnglaWord(currentTable)
-        
-        self.recognize_Changes(currentTable)
-    def recognize_Changes(self, currentTable):
-        if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == False:
-            self.contentWasEdited_ofTable_1 = True
-            self.indicateTabContentChanged(0,True)
-        if currentTable == self.EnglaTableWidget and self.contentWasEdited_ofTable_2 == False:
-            self.contentWasEdited_ofTable_2 = True
-            self.indicateTabContentChanged(1,True)
-        if currentTable == self.EnglishTableWidget and self.contentWasEdited_ofTable_3 == False:
-            self.contentWasEdited_ofTable_3 = True
-            self.indicateTabContentChanged(2,True)
-        if currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == False:
-            self.contentWasEdited_ofTable_4 = True        
-            self.indicateTabContentChanged(3,True)
+            
+            self.recognize_Changes(currentTable)
+
+            self.itemChangedByUndoFunc = True       
+            
+            self.itemChangedByUndoFunc = False  
+
+            # print(Current_changes_list)
+
+    def recognize_Changes(self, currentTable, state=True):  # if changes undone state == False 
+        if state == True:    
+            if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == False:
+                self.contentWasEdited_ofTable_1 = True
+                self.indicateTabContentChanged(0,True)
+            if currentTable == self.EnglaTableWidget and self.contentWasEdited_ofTable_2 == False:
+                self.contentWasEdited_ofTable_2 = True
+                self.indicateTabContentChanged(1,True)
+            if currentTable == self.EnglishTableWidget and self.contentWasEdited_ofTable_3 == False:
+                self.contentWasEdited_ofTable_3 = True
+                self.indicateTabContentChanged(2,True)
+            if currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == False:
+                self.contentWasEdited_ofTable_4 = True        
+                self.indicateTabContentChanged(3,True)
+            self.setUnsevedSaveButton(True)
+        else:
+            if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == True:
+                self.contentWasEdited_ofTable_1 = False
+                self.indicateTabContentChanged(0,False)
+            if currentTable == self.EnglaTableWidget and self.contentWasEdited_ofTable_2 == True:
+                self.contentWasEdited_ofTable_2 = False
+                self.indicateTabContentChanged(1,False)
+            if currentTable == self.EnglishTableWidget and self.contentWasEdited_ofTable_3 == True:
+                self.contentWasEdited_ofTable_3 = False
+                self.indicateTabContentChanged(2,False)
+            if currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == True:
+                self.contentWasEdited_ofTable_4 = False        
+                self.indicateTabContentChanged(3,False)
+            self.setUnsevedSaveButton(False)    
 
     def indicateTabContentChanged(self, index, state):
         if state:
@@ -459,6 +734,7 @@ class wordManagerClass(QMainWindow):
             if currentTable == self.tableWidget_3:
                 self.redoReserve_for_tab_4 = curren_redoReserve                              
     def currentItemChangedFunc(self, current, previous):
+        
         if current != None:    
             self.currentItem = current.text()
         else:
@@ -467,8 +743,14 @@ class wordManagerClass(QMainWindow):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         position = f"{currentTable.currentRow()+1}, {currentTable.currentColumn()+1}"
         self.RowColumnLineEdit.setText(position)
-        pass    
-    def loadWords(self, wordsList, tableWidget):
+        if currentTable in [self.tableWidget, self.EnglaTableWidget]: 
+            if currentTable.currentColumn() != 0:
+                self.tableWidget.setItemDelegate(EnglishDelegate(currentTable)) 
+                
+            if currentTable.currentColumn() == 0:
+                self.tableWidget.setItemDelegate(BanglaDelegate(currentTable)) 
+
+    def loadWords(self, wordsList, tableWidget, adding_from_newFile = False):
         self.itemChangedByUndoFunc = True
         
         changedData = []
@@ -476,22 +758,32 @@ class wordManagerClass(QMainWindow):
         row_contents = []  
         for wrd in wordsList:
             wordArray = wrd.split(",")
-            if wrd in [" ", ""]:
+            if wrd in [" ", ""]:   # < we have to put the if condition in here 
                 continue
+
+            # this code prevents adding dublicate words ==========
+            if adding_from_newFile:
+                main_wrd = wordArray[0]
+                found_items = tableWidget.findItems(main_wrd, Qt.MatchExactly)
+                if len(found_items) > 0:
+                    continue
+
             rowPosition = tableWidget.rowCount()
             tableWidget.insertRow(rowPosition)
             row_infos = [] # 1st row position 
             row_infos.append(rowPosition) # <-- Undo Reserve Function Call
             row_items = []
             c = 0
-            for w in wordArray[:2]:
+            for w in wordArray[:5]:
                 item = QTableWidgetItem(w.format(0, 0))
                 row_items.append(w)
                 tableWidget.setItem(rowPosition,c, item)
                 c+=1
             row_infos.append(row_items) # <-- row_contents 
             row_contents.append(row_infos)
-            tableWidget.item(rowPosition, 0).setBackground(QColor(1, 87, 155, 255)) 
+            
+            if adding_from_newFile == False:    
+                tableWidget.item(rowPosition, 0).setBackground(QColor(1, 87, 155, 255)) 
         changedData.append(row_contents) 
         
         tableWidget.scrollToBottom() 
@@ -513,6 +805,34 @@ class wordManagerClass(QMainWindow):
             self.changes_for_tab_4 = self.changes_for_tab_4[:50]         
         self.itemChangedByUndoFunc = False
 
+    def convertTableToMultidimentionalArray(self, table):
+        unique_words = []
+        unique_multy_dymentional_array = []
+        row_count = table.rowCount()
+        colum_count = table.columnCount()
+        for r in range(row_count):
+            word_infos = []
+            try:    
+                main_wrd_or_row = table.item(r, 0).text()
+            except Exception:
+                continue    
+            if main_wrd_or_row not in unique_words:
+                unique_words.append(main_wrd_or_row)
+                word_infos.append(main_wrd_or_row)   
+            column_values = []    
+            for c in range(colum_count)[1:]:
+                try:
+                    cc = table.item(r, c).text()
+                except Exception:
+                    cc = ""
+                    break
+                if cc not in [" ", ''] and cc not in column_values:
+                    column_values.append(cc)  
+            if len(column_values) != 0:
+                word_infos.append(column_values)   
+                unique_multy_dymentional_array.append(word_infos)           
+      
+        return unique_multy_dymentional_array
     def undo(self):
         try:    
             currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
@@ -530,7 +850,7 @@ class wordManagerClass(QMainWindow):
             self.plainEditTextChanged()
         except Exception:
             pass
-    def undo_func(self,current_table , changes_list, redoReserve_list):
+    def undo_func(self, current_table , changes_list, redoReserve_list):
         # print(changes_list)
         if len(changes_list) != 0:    
             self.itemChangedByUndoFunc = True
@@ -572,7 +892,11 @@ class wordManagerClass(QMainWindow):
                     # print(f"last change: {lastChange}")
                     
                     change = []
-                    change.append((current_table.item(lastChange[1], lastChange[2])).text())
+                    try:    
+                        itemText = (current_table.item(lastChange[1], lastChange[2])).text()
+                    except Exception:
+                        itemText = ""    
+                    change.append(itemText)
                     change.append(lastChange[1])
                     change.append(lastChange[2])
 
@@ -587,6 +911,9 @@ class wordManagerClass(QMainWindow):
                 
                 redoReserve_list = redoReserve_list[:50]
                 changes_list.remove(lastChange)
+                # print(changes_list)
+                if len(changes_list) == 0:
+                    self.recognize_Changes(current_table,False)
                 return changes_list, redoReserve_list 
 
             except Exception as e:
@@ -594,6 +921,9 @@ class wordManagerClass(QMainWindow):
                 print(traceback.format_exc())
                 pass
             self.itemChangedByUndoFunc = False
+        else:
+            self.recognize_Changes(current_table,False)
+            pass 
     def redo_func(self,current_table, changes_list, redoReserve_list):
         # print(redoReserve_list)
         if len(redoReserve_list) != 0:
@@ -651,8 +981,14 @@ class wordManagerClass(QMainWindow):
                 print(traceback.format_exc())
                 pass
             self.itemChangedByUndoFunc = False
+            
+            if len(redoReserve_list) == 0:
+                self.recognize_Changes(current_table,True)
             return changes_list,redoReserve_list 
-   
+        else:
+            self.recognize_Changes(current_table,True)
+            pass      
+
     def showError(self, error_msg):
         msg = QMessageBox()
         msg.setStyleSheet("QMessageBox{\n"
