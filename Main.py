@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+import re
 import time
 from tkinter.tix import Tree
 import keyboard as kb2
@@ -2485,9 +2486,55 @@ class Ui(QtWidgets.QMainWindow):
                 self.initialize()
                 return
         
-        
-        if self.current_language == "English":
+        # =====================================
+        stringKey = (str(key)).replace("'", "")
+        if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
+            self.initialize()
+            self.initThread_signal.emit("init")
             return
+        
+        if str(key) == "Key.backspace":
+            if wordSofar != "":    
+                if len(wordSofar) > 1:   
+                    wordSofar = wordSofar[:-1]
+                    englishWordSofar = englishWordSofar[:-1]
+                    self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
+                else:
+                    self.initialize() 
+            return        
+        if self.listClass.isHidden() == False:
+            if str(key) == "Key.down":
+                if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
+                    self.listClass.listWidget.setCurrentRow(1)
+                else:
+                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
+                try:
+                    kb2.block_key(28)
+                except Exception as e:
+                    pass    
+            if str(key) == "Key.up":
+                if self.listClass.listWidget.currentRow() == 1:
+                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
+                else:    
+                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1)       
+            # if str(key) == "Key.space":
+            #     self.listClass.currentRow = 0
+            #     self.listClass.populateWords([])
+            if str(key) == "Key.enter":
+                if self.listClass.listWidget.currentRow() != -1:    
+                    item = self.listClass.listWidget.currentItem()
+                    self.WordClicked(item.text())
+                    # initGlobal()
+                    self.listClass.showHideFunc("hide")
+
+        if self.current_language == "English":
+            wordSofar += stringKey
+            englishWordSofar = wordSofar
+            self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
+            return
+
+
+        # ===========================================    
         try: 
             if str(key) == "Key.shift": # and self.shiftKeyBlocked == False
                 for i in self.keysToUnlock:
@@ -2509,41 +2556,41 @@ class Ui(QtWidgets.QMainWindow):
                 kb.type("।")
                 self.initialize()
                 return
-            if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
-                self.initialize()
-                self.initThread_signal.emit("init")
-            if str(key) == "Key.backspace":
-                if wordSofar != "":    
-                    if len(wordSofar) > 1:   
-                        wordSofar = wordSofar[:-1]
-                        englishWordSofar = englishWordSofar[:-1]
-                        self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
-                    else:
-                        self.initialize() 
-            if self.listClass.isHidden() == False:
-                if str(key) == "Key.down":
-                    if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
-                        self.listClass.listWidget.setCurrentRow(1)
-                    else:
-                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
-                    try:
-                        kb2.block_key(28)
-                    except Exception as e:
-                        pass    
-                if str(key) == "Key.up":
-                    if self.listClass.listWidget.currentRow() == 1:
-                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
-                    else:    
-                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1)       
-                # if str(key) == "Key.space":
-                #     self.listClass.currentRow = 0
-                #     self.listClass.populateWords([])
-                if str(key) == "Key.enter":
-                    if self.listClass.listWidget.currentRow() != -1:    
-                        item = self.listClass.listWidget.currentItem()
-                        self.WordClicked(item.text())
-                        # initGlobal()
-                        self.listClass.showHideFunc("hide")
+            # if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
+            #     self.initialize()
+            #     self.initThread_signal.emit("init")
+            # if str(key) == "Key.backspace":
+            #     if wordSofar != "":    
+            #         if len(wordSofar) > 1:   
+            #             wordSofar = wordSofar[:-1]
+            #             englishWordSofar = englishWordSofar[:-1]
+            #             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
+            #         else:
+            #             self.initialize() 
+            # if self.listClass.isHidden() == False:
+            #     if str(key) == "Key.down":
+            #         if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
+            #             self.listClass.listWidget.setCurrentRow(1)
+            #         else:
+            #             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
+            #         try:
+            #             kb2.block_key(28)
+            #         except Exception as e:
+            #             pass    
+            #     if str(key) == "Key.up":
+            #         if self.listClass.listWidget.currentRow() == 1:
+            #             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
+            #         else:    
+            #             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1)       
+            #     # if str(key) == "Key.space":
+            #     #     self.listClass.currentRow = 0
+            #     #     self.listClass.populateWords([])
+            #     if str(key) == "Key.enter":
+            #         if self.listClass.listWidget.currentRow() != -1:    
+            #             item = self.listClass.listWidget.currentItem()
+            #             self.WordClicked(item.text())
+            #             # initGlobal()
+            #             self.listClass.showHideFunc("hide")
             
             
             if completorTraegered == True:
@@ -3327,7 +3374,6 @@ class Ui(QtWidgets.QMainWindow):
                 print('line 620')
                 pass
             try:
-                self.thread.any_signal.connect()
                 self.thread.stop()
                 self.reactor_thread.stop()
                 self.Listining_label.setVisible(False)   

@@ -21,7 +21,7 @@ import re
 class LoadWordsThreadClass(QtCore.QThread):	
     # insert_row_signal = QtCore.pyqtSignal(i)
     setRowItems_signal = QtCore.pyqtSignal(str)
-    changedData_signal = QtCore.pyqtSignal(list)
+
     prog_signal = QtCore.pyqtSignal(int, str)
     finished_signal = QtCore.pyqtSignal(list)
     def __init__(self, wordsList, tableWidget, adding_from_newFile):
@@ -50,7 +50,7 @@ class LoadWordsThreadClass(QtCore.QThread):
                 main_wrd = wordArray[0]
                 found_items = self.tableWidget.findItems(main_wrd, Qt.MatchContains)
                 if len(found_items) > 0:
-                    print(main_wrd)
+                    # print(main_wrd)
                     continue
             rowPosition += 1
             
@@ -82,7 +82,7 @@ class LoadWordsThreadClass(QtCore.QThread):
         
         changedData.append(row_contents) 
         self.finished_signal.emit(changedData)
-        # self.changedData_signal.emit(changedData)
+
     def stop(self):
         self.is_running = False
         self.terminate() 
@@ -820,7 +820,6 @@ class wordManagerClass(QMainWindow):
         self.loadThread = LoadWordsThreadClass(wordsList, tableWidget, adding_from_newFile)
         # self.loadThread.insert_row_signal.connect(self.insertRowFunc)
         # self.loadThread.setRowItems_signal.connect(self.insertRowFunc)
-        # self.loadThread.changedData_signal.connect(self.setChangedData)
         self.loadThread.prog_signal.connect(lambda prog: self.progressBar.setValue(prog))
         self.loadThread.finished_signal.connect(self.setNewWrds)
         self.ProgressGroupBox.setVisible(True)
@@ -829,27 +828,6 @@ class wordManagerClass(QMainWindow):
 
         self.CancelPushButton.setEnabled(True)
         self.CancelPushButton.clicked.connect(lambda:self.loadThread.stop())
-    def setChangedData(self,changedData):
-        self.loadTable.scrollToBottom() 
-        self.ProgressGroupBox.setVisible(False)
-        
-        if self.loadTable == self.tableWidget:    
-            self.changes_for_tab_1.insert(0, changedData)
-            self.changes_for_tab_1 = self.changes_for_tab_1[:50]
-
-        if self.loadTable == self.EnglaTableWidget:    
-            self.changes_for_tab_2.insert(0, changedData)
-            self.changes_for_tab_2 = self.changes_for_tab_2[:50]
-
-        if self.loadTable == self.EnglishTableWidget:    
-            self.changes_for_tab_3.insert(0, changedData)
-            self.changes_for_tab_3 = self.changes_for_tab_3[:50]    
-
-        if self.loadTable == self.tableWidget_3:    
-            self.changes_for_tab_4.insert(0, changedData)
-            self.changes_for_tab_4 = self.changes_for_tab_4[:50]         
-        self.itemChangedByUndoFunc = False
-        self.CancelPushButton.setEnabled(False)
 
     def setNewWrds(self,changedData):
         # print(changedData)
