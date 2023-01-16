@@ -1,4 +1,3 @@
-range_ = 4
+this_list = ["sdag","dsfd","dsfd","dsfd","dsfd","ytuyu","poiio","ertqwe"]
 
-for i in range(range_ )[1:]:
-    print(i)
+print(int(5235.756756))

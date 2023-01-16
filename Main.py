@@ -1739,7 +1739,13 @@ class OSK_UI(QtWidgets.QMainWindow):
         # self.hide()  
 
 
-
+class listContextClass(QtWidgets.QMainWindow):
+    def __init__(self):
+        super(listContextClass, self).__init__()
+        uic.loadUi('.//Uis//ListContextUi.ui', self)
+        self.setWindowFlags(Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        User32.SetWindowLongW(int(self.winId()), -20, 134217728)
 class listViewClass(QtWidgets.QMainWindow):
     def __init__(self):
         super(listViewClass, self).__init__()
@@ -1773,20 +1779,29 @@ class listViewClass(QtWidgets.QMainWindow):
         self.listWidget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.listWidget.customContextMenuRequested.connect(self.open_menu)
         # self.listWidget.installEventFilter(self)
+
+        self.contextClass = listContextClass()
+        self.contextClass.listWidget.itemClicked.connect(self.ContextMenuClicked)
+
     def open_menu(self, position):
         # indexes = self.listWidget.selectedIndexes()
         # print(indexes)
         # if len(indexes) > 0:
         #     self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
-
-        print(position)
+        x, y = pyautogui.position()
         self.index = self.listWidget.indexAt(position)
         # Select the item
         self.listWidget.setCurrentIndex(self.index)
         if self.index.isValid():
             # print(self.context_menu.winId())
-            self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
-
+            # self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
+            self.contextClass.show()
+            self.contextClass.setGeometry(x, y, 100, 100)
+    def ContextMenuClicked(self, item):
+        print(item.text())
+        
+        c_i = self.listWidget.currentItem()
+        print(c_i.text())
 
     def action1_triggered(self):
         # selected_item = self.listWidget.currentItem()
@@ -2065,13 +2080,15 @@ class Ui(QtWidgets.QMainWindow):
         self.settingsGUIClass.AutoCloseCheckBox.stateChanged.connect(self.autoCloseBra)
         self.settingsGUIClass.UseAbrisCheckBox.stateChanged.connect(self.useAbries)
         self.settingsGUIClass.ShowReacorCheckBox.stateChanged.connect(self.showAudioReactor)
+        self.settingsGUIClass.NumOfWrdPredictionSpinBox.valueChanged.connect(self.predictionValueChanged)
         try:
             self.settingsGUIClass.RunAtAtartUpCheckBox.setChecked(bool(self.main_settings.value("runAtStartUp")))  
             self.settingsGUIClass.AutoCloseCheckBox.setChecked(bool(self.main_settings.value("AutoCloseBrackets"))) 
             self.AutoCloseBra = bool(self.main_settings.value("AutoCloseBrackets"))
             self.settingsGUIClass.UseAbrisCheckBox.setChecked(bool(self.main_settings.value("UseAbries")))  
             self.settingsGUIClass.ShowReacorCheckBox.setChecked(bool(self.main_settings.value("ShowAudioReactor")))  
-            self.ShowReactor = bool(self.main_settings.value("ShowAudioReactor"))        
+            self.ShowReactor = bool(self.main_settings.value("ShowAudioReactor"))   
+            self.settingsGUIClass.NumOfWrdPredictionSpinBox.setValue(self.main_settings.value("NumberOfPrediction"))     
         except Exception as e:
             print(e)
 
@@ -2204,6 +2221,8 @@ class Ui(QtWidgets.QMainWindow):
 
         self.listClass.listWidget.itemClicked.connect(self.WordClickedMiddleFunc)
         self.autoCompletedWord = ""
+    def predictionValueChanged(self, val):
+        self.main_settings.setValue("NumberOfPrediction", val)
     def BanglishCheckBoxStateChanged(self):
         if self.oskClass.BanglishCheckBox.isChecked() == True:
             self.oskClass.pushButton_52.setText("বাংলা")
@@ -2545,11 +2564,10 @@ class Ui(QtWidgets.QMainWindow):
         #     print(hwnd)
         # print(self.listClass.context_menu.windowTitle())
         # print(GetWindowText(WindowFromPoint(GetCursorPos())))
-        if GetWindowText(WindowFromPoint(GetCursorPos())) not in [self.listClass.windowTitle(), self.oskClass.windowTitle(), self.listClass.context_menu.windowTitle()]:
+        if GetWindowText(WindowFromPoint(GetCursorPos())) not in [self.listClass.windowTitle(), self.oskClass.windowTitle(), self.listClass.contextClass.windowTitle()]:
             self.lastActiveWindow = GetWindowText(WindowFromPoint(GetCursorPos()))
             self.initialize()
 
-            
 
     def on_release(self, key):
         if self.current_language == "English":
@@ -2939,6 +2957,7 @@ class Ui(QtWidgets.QMainWindow):
         ruledOut = False 
         self.listClass.initSelf()
         self.oskClass.cleanRecomendations()
+        self.listClass.contextClass.hide()
     def rb1Clicked(self):
         self.WordClicked(str(self.oskClass.RB1.text()))
     def rb2Clicked(self):

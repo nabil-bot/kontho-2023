@@ -379,6 +379,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
        </property>
        <item row="1" column="2">
         <widget class="QPushButton" name="CancelPushButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Cancel</string>
          </property>
@@ -400,10 +403,12 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
        <item row="1" column="0">
         <widget class="QLabel" name="Progresslabel">
          <property name="styleSheet">
-          <string notr="true">color: rgb(255, 255, 255);</string>
+          <string notr="true">color: rgb(255, 255, 255);
+font: 57 9pt &quot;Hind Siliguri Medium&quot;, &quot;Kalpurush&quot;;
+</string>
          </property>
          <property name="text">
-          <string>TextLabel</string>
+          <string/>
          </property>
         </widget>
        </item>
@@ -412,7 +417,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
          <property name="styleSheet">
           <string notr="true">QProgressBar{
 	border:1px solid white;
-	border-radius: 9px;
+	border-radius: 2px;
 	color: Black;
 }
 QProgressBar::chunk {

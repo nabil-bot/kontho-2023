@@ -18,16 +18,71 @@ import io
 import re
 
 
-class GetTextThreadClass(QtCore.QThread):	
-    return_text_signal = QtCore.pyqtSignal(str)
-    progration_signal = QtCore.pyqtSignal(int)
-    def __init__(self, table, parent=None):
-        super(GetTextThreadClass, self).__init__(parent)
+class LoadWordsThreadClass(QtCore.QThread):	
+    # insert_row_signal = QtCore.pyqtSignal(i)
+    setRowItems_signal = QtCore.pyqtSignal(str)
+    changedData_signal = QtCore.pyqtSignal(list)
+    prog_signal = QtCore.pyqtSignal(int, str)
+    finished_signal = QtCore.pyqtSignal(list)
+    def __init__(self, wordsList, tableWidget, adding_from_newFile):
+        super(LoadWordsThreadClass, self).__init__()
         self.is_running = True
-        self.table = table
+        self.wordsList = wordsList
+        self.tableWidget = tableWidget
+        self.adding_from_newFile = adding_from_newFile
     def run(self):
+        changedData = []
+        changedData.append("|*|added_New_File_content|*|") # ["|*|added_New_File_content|*|", [[row_pos,[row_contents]],....]]
+        row_contents = []  
+    
+        rowPosition = self.tableWidget.rowCount()
+
+        length = len(self.wordsList)
+        count = 0
+        # multiDimen_array_to_send = []
+        for wrd in self.wordsList:
+            wordArray = wrd.split(",")
+            if wrd in [" ", ""]:   # < we have to put the if condition in here 
+                continue
+
+            # this code prevents adding dublicate words ==========
+            if self.adding_from_newFile == True:
+                main_wrd = wordArray[0]
+                found_items = self.tableWidget.findItems(main_wrd, Qt.MatchContains)
+                if len(found_items) > 0:
+                    print(main_wrd)
+                    continue
+            rowPosition += 1
+            
+
+            self.tableWidget.insertRow(rowPosition)
+            # self.insert_row_signal.emit(rowPosition)
+
+
+            row_infos = [] # 1st row position 
+            row_infos.append(rowPosition) # <-- Undo Reserve Function Call
+            row_items = []
+            c = 0
+            for w in wordArray[:5]:
+                item = QTableWidgetItem(w.format(0, 0))
+                row_items.append(w)
+                self.tableWidget.setItem(rowPosition,c, item)
+                self.setRowItems_signal.emit(w)
+
+                c+=1
+            row_infos.append(row_items) # <-- row_contents 
+            row_contents.append(row_infos)
+            
+            # if self.adding_from_newFile == False:    
+            #     tableWidget.item(rowPosition, 0).setBackground(QColor(1, 87, 155, 255)) 
+            # multiDimen_array_to_send.append(word_infos)
+            count += 1
+            progress = (count/length*100)
+            self.prog_signal.emit(int(progress), wordArray[0])
         
-        pass
+        changedData.append(row_contents) 
+        self.finished_signal.emit(changedData)
+        # self.changedData_signal.emit(changedData)
     def stop(self):
         self.is_running = False
         self.terminate() 
@@ -97,7 +152,7 @@ class wordManagerClass(QMainWindow):
         
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
         self.loadWords(englaList, self.EnglaTableWidget)
-        self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
         self.loadAbbribiations()
 
         self.clearUndoList()
@@ -258,6 +313,7 @@ class wordManagerClass(QMainWindow):
 
         for r in range(currentTable.rowCount()):
             currentTable.item(r, 0).setBackground(QColor(1, 87, 155, 255)) 
+        self.recognize_Changes(currentTable, False)    
 
     def writeDownContentsToFile(self, path, txt):
         with io.open(path, "w", encoding="utf-8") as file:
@@ -549,14 +605,20 @@ class wordManagerClass(QMainWindow):
         currentTable.removeRow(current_row)
 
         # recognizing Changes 
-        if row_contents[0] not in [" ", ""] and row_contents[1] not in [" ", ""]:
-            self.recognize_Changes(currentTable)
+        try:    
+            if row_contents[0] not in [" ", ""] and row_contents[1] not in [" ", ""]:
+                self.recognize_Changes(currentTable)
+        except Exception:
+            pass        
 
     def selectAnItem(self, item):
-        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        currentTable.setCurrentItem(item)  
-        currentTable.setCurrentCell(currentTable.currentRow(), currentTable.currentColumn()) 
-        self.MatchedNumberLineEdit.setText(str(self.currentMatchedIndex+1) + "/"+str(len(self.matching_items)))
+        try:    
+            currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+            currentTable.setCurrentItem(item)  
+            currentTable.setCurrentCell(currentTable.currentRow(), currentTable.currentColumn()) 
+            self.MatchedNumberLineEdit.setText(str(self.currentMatchedIndex+1) + "/"+str(len(self.matching_items)))
+        except Exception:
+            pass    
     def search(self, s):
         if not s:
             return
@@ -753,12 +815,97 @@ class wordManagerClass(QMainWindow):
             if currentTable.currentColumn() == 0:
                 self.tableWidget.setItemDelegate(BanglaDelegate(currentTable)) 
 
+    def loadWords_from_thread(self, wordsList, tableWidget, adding_from_newFile = False):
+        self.loadTable = tableWidget
+        self.loadThread = LoadWordsThreadClass(wordsList, tableWidget, adding_from_newFile)
+        # self.loadThread.insert_row_signal.connect(self.insertRowFunc)
+        # self.loadThread.setRowItems_signal.connect(self.insertRowFunc)
+        # self.loadThread.changedData_signal.connect(self.setChangedData)
+        self.loadThread.prog_signal.connect(lambda prog: self.progressBar.setValue(prog))
+        self.loadThread.finished_signal.connect(self.setNewWrds)
+        self.ProgressGroupBox.setVisible(True)
+        
+        self.loadThread.start()
+
+        self.CancelPushButton.setEnabled(True)
+        self.CancelPushButton.clicked.connect(lambda:self.loadThread.stop())
+    def setChangedData(self,changedData):
+        self.loadTable.scrollToBottom() 
+        self.ProgressGroupBox.setVisible(False)
+        
+        if self.loadTable == self.tableWidget:    
+            self.changes_for_tab_1.insert(0, changedData)
+            self.changes_for_tab_1 = self.changes_for_tab_1[:50]
+
+        if self.loadTable == self.EnglaTableWidget:    
+            self.changes_for_tab_2.insert(0, changedData)
+            self.changes_for_tab_2 = self.changes_for_tab_2[:50]
+
+        if self.loadTable == self.EnglishTableWidget:    
+            self.changes_for_tab_3.insert(0, changedData)
+            self.changes_for_tab_3 = self.changes_for_tab_3[:50]    
+
+        if self.loadTable == self.tableWidget_3:    
+            self.changes_for_tab_4.insert(0, changedData)
+            self.changes_for_tab_4 = self.changes_for_tab_4[:50]         
+        self.itemChangedByUndoFunc = False
+        self.CancelPushButton.setEnabled(False)
+
+    def setNewWrds(self,changedData):
+        # print(changedData)
+        multiDimenArray = changedData[1]  # [[row_pos,[c1_content, c2_content,..]],[row_pos,[row_contents]]]
+        for word_infos in multiDimenArray:
+            self.loadTable.insertRow(self.loadTable.rowCount())
+        for word_infos in multiDimenArray:
+            row_no = int(word_infos[0])-1
+            r_c = word_infos[1]
+            # self.loadTable.insertRow(self.loadTable.rowCount())
+            c_no = 0
+            for content in r_c:
+
+                item = QTableWidgetItem((content).format(0, 0))
+                self.loadTable.setItem(row_no,c_no, item)
+
+                c_no += 1
+
+
+        self.loadTable.scrollToBottom() 
+        self.ProgressGroupBox.setVisible(False)
+        
+        if self.loadTable == self.tableWidget:    
+            self.changes_for_tab_1.insert(0, changedData)
+            self.changes_for_tab_1 = self.changes_for_tab_1[:50]
+
+        if self.loadTable == self.EnglaTableWidget:    
+            self.changes_for_tab_2.insert(0, changedData)
+            self.changes_for_tab_2 = self.changes_for_tab_2[:50]
+
+        if self.loadTable == self.EnglishTableWidget:    
+            self.changes_for_tab_3.insert(0, changedData)
+            self.changes_for_tab_3 = self.changes_for_tab_3[:50]    
+
+        if self.loadTable == self.tableWidget_3:    
+            self.changes_for_tab_4.insert(0, changedData)
+            self.changes_for_tab_4 = self.changes_for_tab_4[:50]         
+        self.itemChangedByUndoFunc = False
+        self.CancelPushButton.setEnabled(False)    
+
+    def insertRowFunc(self, wrd):
+        # currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        # self.loadTable.insertRow(self.loadTable.rowCount())
+        self.Progresslabel.setText(wrd)
+
     def loadWords(self, wordsList, tableWidget, adding_from_newFile = False):
         self.itemChangedByUndoFunc = True
+        
+        if adding_from_newFile:
+            self.loadWords_from_thread(wordsList, tableWidget, adding_from_newFile = True)
+            return
         
         changedData = []
         changedData.append("|*|added_New_File_content|*|") # ["|*|added_New_File_content|*|", [[row_pos,[row_contents]],....]]
         row_contents = []  
+
         for wrd in wordsList:
             wordArray = wrd.split(",")
             if wrd in [" ", ""]:   # < we have to put the if condition in here 
@@ -1011,7 +1158,10 @@ class wordManagerClass(QMainWindow):
         self.close()     
              
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    ex = wordManagerClass()
-    ex.show()
-    sys.exit(app.exec_())         
+    try:
+        app = QApplication(sys.argv)
+        ex = wordManagerClass()
+        ex.show()
+        sys.exit(app.exec_())  
+    except Exception as e:
+        print(traceback.format_exc())           
