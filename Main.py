@@ -38,14 +38,17 @@ import ctypes
 import difflib
 import win32process
 import win32api
+import pyperclip as pc
+
 User32 = ctypes.WinDLL('User32.dll')
 
 from win32gui import GetWindowText, GetCursorPos, WindowFromPoint, GetForegroundWindow, GetWindowRect, GetCaretPos, GetCursorInfo
 from AddNewWord import AddNewWordsClass
 from WordManager import wordManagerClass
-from LoadWords import wordsList,englaList,EnglishwordsList,englishLatters, banglaNumbs
+from LoadWords import *
 from pynput import keyboard
 import NumberToWord
+
 
 
 # ++++++++++++++++global variables ====================
@@ -556,6 +559,8 @@ class similarityThread(QtCore.QThread):
         else:
             currentwordsList = EnglishwordsList
 
+        if len(self.englishWordSoFar) > 40:
+            return
 
         for wrd in currentwordsList[:]: 
             if self.currentLang == "bangla":
@@ -575,7 +580,7 @@ class similarityThread(QtCore.QThread):
             else:
                 englishWord = wrd     
             
-            similarity = self.similarity_ration_btween(englishWord, englishWordSofar)   
+            similarity = self.similarity_ration_btween(englishWord, self.englishWordSoFar)   
             if len(englishWordSofar) < 5:
                 minimumSimi = minimun_Similarity_Ratio
             else:
@@ -595,13 +600,13 @@ class similarityThread(QtCore.QThread):
                         self.similarWords.append(englishWord)
 
                         
-            if len(self.similarWords) > 9 or self.newCharacterIsPressed == True:
+            if len(self.similarWords) > 9 or self.newCharacterIsPressed == True:  #<------ causing the problem      
                 if self.newCharacterIsPressed == True:  
                     self.brokenByNewCharacter = True
                     # print("broken By new character")
-                    # return
+                    return
                 break
-        if len(self.similarWords) == 0:
+        if len(self.similarWords) == 0: #  and self.brokenByNewCharacter == False
             self.ruledOutSimi = True
             self.ruledOutSimiSignal.emit(True)
             return
@@ -677,8 +682,10 @@ class WhileloopThroughListThread(QtCore.QThread):
                             if len(self.matchedWords) == 0:
                                 self.ruledOut = True
 
+                        # print(f"len(self.matchedWords):{len(self.matchedWords)}, self.ruledOutSimi: {self.ruledOutSimi}")
                         if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
                             self.startSimilarityThread(englishWordSofar, 'english')
+                            # print("i am calling the function!")
                         # print(self.matchedWords)
 
                     # ========================================
@@ -717,7 +724,7 @@ class WhileloopThroughListThread(QtCore.QThread):
             for wrd in wordArray[:]:
                 if mainWord in self.matchedWords:
                     break
-                if index == 0 and wrd[:len(wordSofar)] == wordSofar : # and wrd not in self.matchedWords
+                if index == 0 and wrd[:len(wordSofar)] == wordSofar and wrd not in self.matchedWords: # and wrd not in self.matchedWords
                     self.matchedWords.append(mainWord)
                     break
                 elif (wrd[:len(englishWordSofar_local)]).lower() == (englishWordSofar_local).lower() and mainWord not in self.matchedWords: # and wrd not in self.matchedWords
@@ -1770,39 +1777,44 @@ class listViewClass(QtWidgets.QMainWindow):
         self.SpellCheckPushButton.clicked.connect(self.spellCheckFunc)
         self.threadRunning = False
 
-        self.context_menu = QMenu(self.listWidget)
-        self.context_menu.setTitle("conTitle")
-        self.action1 = QAction("Action 1", self)
-        self.action1.triggered.connect(self.action1_triggered)
-        self.context_menu.addAction(self.action1)
+        # self.context_menu = QMenu(self.listWidget)
+        # self.context_menu.setTitle("conTitle")
+        # self.action1 = QAction("Action 1", self)
+        # self.action1.triggered.connect(self.action1_triggered)
+        # self.context_menu.addAction(self.action1)
         
 
-        self.listWidget.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.listWidget.customContextMenuRequested.connect(self.open_menu)
-        # self.listWidget.installEventFilter(self)
+        # self.listWidget.setContextMenuPolicy(Qt.CustomContextMenu)
+        # self.listWidget.customContextMenuRequested.connect(self.open_menu)
+        # # self.listWidget.installEventFilter(self)
 
-        self.contextClass = listContextClass()
-        self.contextClass.listWidget.itemClicked.connect(self.ContextMenuClicked)
+        # self.contextClass = listContextClass()
+        # self.contextClass.listWidget.itemClicked.connect(self.ContextMenuClicked)
 
-    def open_menu(self, position):
-        # indexes = self.listWidget.selectedIndexes()
-        # print(indexes)
-        # if len(indexes) > 0:
-        #     self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
-        x, y = pyautogui.position()
-        self.index = self.listWidget.indexAt(position)
-        # Select the item
-        self.listWidget.setCurrentIndex(self.index)
-        if self.index.isValid():
-            # print(self.context_menu.winId())
-            # self.context_menu.exec_(self.listWidget.viewport().mapToGlobal(position))
-            self.contextClass.show()
-            self.contextClass.setGeometry(x, y, 100, 100)
-    def ContextMenuClicked(self, item):
-        print(item.text())
+    # def open_menu(self, position):
+
+    #     x, y = pyautogui.position()
+    #     self.index = self.listWidget.indexAt(position)
+    #     # Select the item
+    #     self.listWidget.setCurrentIndex(self.index)
+    #     if self.index.isValid():
+
+    #         self.contextClass.show()
+    #         self.contextClass.setGeometry(x, y, 100, 100)
+    # def ContextMenuClicked(self, item):
+    #     print(item.text())  # menu clicked 
+    #     c_i = self.listWidget.currentItem()
+    #     print(c_i.text()) # the word 
         
-        c_i = self.listWidget.currentItem()
-        print(c_i.text())
+    #     menu_tag = item.text()
+    #     wrd = c_i.text()
+
+    #     if menu_tag == "Copy":
+    #         pc.copy(wrd) 
+           
+
+    #     self.contextClass.hide()   
+
 
     def action1_triggered(self):
         # selected_item = self.listWidget.currentItem()
@@ -1848,7 +1860,12 @@ class listViewClass(QtWidgets.QMainWindow):
         while("" in words):
             words.remove("")
         self.listWidget.clear()
-        self.listWidget.addItems(words)
+        for item in words:
+            if self.listWidget.findItems(item, Qt.MatchExactly):
+                continue
+            self.listWidget.addItem(item)    
+            
+            # self.listWidget.addItems(words)
         self.currentRow = 0
         self.listWidget.setFixedSize(self.listWidget.sizeHintForColumn(0) + 10 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 2 * self.listWidget.frameWidth())   
         # self.GetCaretPosInWindow()
@@ -1880,14 +1897,6 @@ class listViewClass(QtWidgets.QMainWindow):
                 try:
                     if self.comButtonsBlocked == True:
                         kb2.unhook_all()
-                        # for i in [28, 80, 72]:    
-                        #     try:    
-                        #         kb2.unblock_key(i)
-                        #     except Exception as e:
-                        #         # print(e)  
-                        #         pass
-                        for i in keysToBlock:
-                            kb2.block_key(i)
                         self.comButtonsBlocked = False         
                 except Exception as e:
                     pass 
@@ -2198,6 +2207,12 @@ class Ui(QtWidgets.QMainWindow):
         self.lastActiveWindow = ""
         self.firstTime = True
 
+
+        self.listClass.listWidget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.listClass.listWidget.customContextMenuRequested.connect(self.open_menu)
+        
+        self.contextClass = listContextClass()
+        self.contextClass.listWidget.itemClicked.connect(self.ContextMenuClicked)
         
         self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
         self.listener.start()
@@ -2222,6 +2237,44 @@ class Ui(QtWidgets.QMainWindow):
 
         self.listClass.listWidget.itemClicked.connect(self.WordClickedMiddleFunc)
         self.autoCompletedWord = ""
+
+        
+        # kb2.unhook_all()
+
+
+        # ================
+        
+        
+
+
+    def open_menu(self, position):
+
+        x, y = pyautogui.position()
+        self.index = self.listClass.listWidget.indexAt(position)
+        # Select the item
+        self.listClass.listWidget.setCurrentIndex(self.index)
+        if self.index.isValid():
+            self.contextClass.show()
+            self.contextClass.setGeometry(x, y, 100, 100)
+    def ContextMenuClicked(self, item):
+        print(item.text())  # menu clicked 
+        c_i = self.listClass.listWidget.currentItem()
+        print(c_i.text()) # the word 
+        
+        menu_tag = item.text()
+        wrd = c_i.text()
+
+        if menu_tag == "Copy":
+            pc.copy(wrd) 
+        if menu_tag == "Edit":
+            self.wordManagerClass.show()
+            self.wordManagerClass.search(wrd)
+        if menu_tag == "Search Google":
+            webbrowser.open('https://www.google.com/search?q='+wrd)
+            pass    
+           
+
+        self.contextClass.hide()   
     def predictionValueChanged(self, val):
         self.main_settings.setValue("NumberOfPrediction", val)
     def BanglishCheckBoxStateChanged(self):
@@ -2371,7 +2424,8 @@ class Ui(QtWidgets.QMainWindow):
                 kb2.add_abbreviation(parts[0], parts[1])   
         except Exception as e:
             self.showError(e)
-        self.blockKeys()
+        if self.current_language != "English":
+            self.blockKeys()
     def blockKeys(self):
         if self.current_language == "Bangla":
             self.listener.stop()
@@ -2380,7 +2434,7 @@ class Ui(QtWidgets.QMainWindow):
             self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
             self.listener.start()
             self.listClass.hide()
-            self.initialize()
+            # self.initialize()
     def trim(self, l):
         global wordSofar
         self.listener.stop()
@@ -2528,9 +2582,15 @@ class Ui(QtWidgets.QMainWindow):
                     self.listClass.showHideFunc("hide")
 
         if self.current_language == "English":
-            wordSofar += stringKey
-            englishWordSofar = wordSofar
-            self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
+            
+            if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"]: 
+                self.initialize()
+                return
+            stringKey = (str(key)).replace("'", "")
+            if stringKey in englishAlphabets:     
+                wordSofar += stringKey
+                englishWordSofar = wordSofar
+                self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
             return
 
 
@@ -2544,11 +2604,11 @@ class Ui(QtWidgets.QMainWindow):
                         pass
                 self.shiftKeyBlocked = True
                 
-            # print(str(key))
+
             if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"] and self.keysBlocked == True: 
                 kb2.unhook_all()
                 self.keysBlocked = False
-                self.initialize()
+                self.old_initialize()
                 return
             if self.keysBlocked == False:
                 return        
@@ -2604,22 +2664,16 @@ class Ui(QtWidgets.QMainWindow):
             print(traceback.format_exc())
         pass
     def on_click(self, x, y, button, pressed):
-        
-        # cursor_info = GetCursorInfo()
-        # if cursor_info:
-        #     hwnd = WindowFromPoint((cursor_info[2][0], cursor_info[2][1]))
-        #     print(hwnd)
-        # print(self.listClass.context_menu.windowTitle())
-        # print(GetWindowText(WindowFromPoint(GetCursorPos())))
-        if GetWindowText(WindowFromPoint(GetCursorPos())) not in [self.listClass.windowTitle(), self.oskClass.windowTitle(), self.listClass.contextClass.windowTitle()]:
+        if GetWindowText(WindowFromPoint(GetCursorPos())) not in [self.listClass.windowTitle(), self.oskClass.windowTitle(), self.contextClass.windowTitle()]:
             self.lastActiveWindow = GetWindowText(WindowFromPoint(GetCursorPos()))
             self.initialize()
 
 
     def on_release(self, key):
+        
         if self.current_language == "English":
             return
-        
+        # print("I am the bitch u r looking for")
         if str(key) == "Key.shift":
             for i in self.keysToUnlock:
                 kb2.block_key(i)
@@ -3003,8 +3057,28 @@ class Ui(QtWidgets.QMainWindow):
         self.formar_previous_formar_previous_word = "" 
         ruledOut = False 
         self.listClass.initSelf()
+        self.blockKeys()
         self.oskClass.cleanRecomendations()
-        self.listClass.contextClass.hide()
+        self.contextClass.hide()   
+    def old_initialize(self):
+        global wordSofar
+        global englishWordSofar
+        global previous_word
+        global formar_previous_word
+        global ruledOut 
+        global CurrentWord
+        CurrentWord = ""
+        self.autoCompletedWord = ""
+        previous_word = ""
+        wordSofar = ""
+        englishWordSofar = ""
+        formar_previous_word = ""
+        self.previous_formar_previous_word = ""
+        self.formar_previous_formar_previous_word = "" 
+        ruledOut = False 
+        self.listClass.initSelf()
+        self.oskClass.cleanRecomendations()
+        self.contextClass.hide() 
     def rb1Clicked(self):
         self.WordClicked(str(self.oskClass.RB1.text()))
     def rb2Clicked(self):
@@ -3547,7 +3621,7 @@ class Ui(QtWidgets.QMainWindow):
             self.Lang_Button.setText("English")
             kb2.unhook_all()
             
-            self.listener.stop()
+            # self.listener.stop()
 
             self.initialize()
             
@@ -3565,6 +3639,7 @@ class Ui(QtWidgets.QMainWindow):
             self.listener.start()
             self.listClass.hide()
             self.initialize()
+
             pass
         try:
             sound_thread = threading.Thread(target=lambda:winsound.PlaySound('.//SFX//Switch_lang_SFX.wav', winsound.SND_FILENAME))

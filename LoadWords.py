@@ -10,6 +10,7 @@ englaDictionaryPath = './/Res//Dictionaries//engla.txt' #  result.txt
 with io.open(englaDictionaryPath, "r", encoding="utf-8") as wordTxt:
     wordsSTR = wordTxt.read()
 englaList = wordsSTR.split("|")
+# englaList = []
 
 englishDictionaryPath = './/Res//Dictionaries//EnglishWords.txt'
 with io.open(englishDictionaryPath, "r", encoding="utf-8") as wordTxt:
@@ -43,6 +44,7 @@ for l in range(26)[:]:
     englishAlphabets.append(englishLatter[l])
     englishAlphabets.append(englishLatterUpper[l])
 
+# print(englishAlphabets)
 
 banglaAlphabates_str = "অআইঈউঊঋএঐওঔািীুূৃেৈোৌকখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহড়ঢ়য়ৎংঃঁ্র্য্"
 banglaUnicodesStr = "অআইঈউঊঋএঐওঔািীুূৃেৈোৌকখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহড়ঢ়য়ৎংঃঁ্র্য্০১২৩৪৫৬৭৮৯"

@@ -152,7 +152,7 @@ class wordManagerClass(QMainWindow):
         
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
         self.loadWords(englaList, self.EnglaTableWidget)
-        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        self.loadWords(EnglishwordsList, self.EnglishTableWidget)
         self.loadAbbribiations()
 
         self.clearUndoList()
