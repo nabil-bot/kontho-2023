@@ -1,9 +1,11 @@
 # -*- coding:utf-8 -*-
 
-import transliterate
 
-def english_to_bangla_phonetics(word):
-    return transliterate.translit(word, 'bn', reversed=True)
+dictionary = {}
+keys = ["h", "r", "u", "idk"]
+values = ["how", "are", "you", "i dont know"]
 
-print(english_to_bangla_phonetics("transliterate"))    
+for key, value in zip(keys, values):
+    dictionary[key] = value
 
+print(dictionary)

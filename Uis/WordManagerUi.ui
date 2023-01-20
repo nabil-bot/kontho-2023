@@ -993,6 +993,9 @@ QCheckBox::indicator:checked:hover {
        <property name="plainText">
         <string/>
        </property>
+       <property name="cursorWidth">
+        <number>1</number>
+       </property>
       </widget>
      </item>
     </layout>

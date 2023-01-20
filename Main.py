@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+from pickletools import pystring
 import re
 import time
 from tkinter.tix import Tree
@@ -43,11 +44,12 @@ import pyperclip as pc
 User32 = ctypes.WinDLL('User32.dll')
 
 from win32gui import GetWindowText, GetCursorPos, WindowFromPoint, GetForegroundWindow, GetWindowRect, GetCaretPos, GetCursorInfo
-from AddNewWord import AddNewWordsClass
 from WordManager import wordManagerClass
 from LoadWords import *
 from pynput import keyboard
 import NumberToWord
+
+
 
 
 
@@ -65,6 +67,8 @@ completorTraegered = False
 CurrentWord = ""
 ruledOut = False
 minimun_Similarity_Ratio = 0.70
+
+block_up_down = False
 
 def initGlobal():
     global previous_word 
@@ -84,7 +88,6 @@ def initGlobal():
     englishWordSofar = ""
     shiftKeyBlocked = False
     keysBlocked = True
-
 
 
 
@@ -1746,7 +1749,6 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.close()
         # self.hide()  
 
-
 class listContextClass(QtWidgets.QMainWindow):
     def __init__(self):
         super(listContextClass, self).__init__()
@@ -1758,13 +1760,21 @@ class listViewClass(QtWidgets.QMainWindow):
     def __init__(self):
         super(listViewClass, self).__init__()
         uic.loadUi('.//Uis//Completor.ui', self)
-        self.setWindowFlags(Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         User32.SetWindowLongW(int(self.winId()), -20, 134217728)
 
+        GWL_EXSTYLE = -20
+        WS_EX_NOACTIVATE = 0x08000000
+        
+        hWnd = int(self.winId())
+        currentStyle = ctypes.windll.user32.GetWindowLongW(hWnd, GWL_EXSTYLE)
+
+        ctypes.windll.user32.SetWindowLongW(hWnd, GWL_EXSTYLE, currentStyle | WS_EX_NOACTIVATE)
+
         self.pined = False
         self.PinPushButton.clicked.connect(self.pinStateChanged)
-        # self.listWidget.itemClicked.connect(self.WordClicked)
+        # self.listWidget.itemClicked.connect(self.WordClicked)c
         self.listWidget.setUniformItemSizes(True)
         self.matchedWords = []
         self.currentWords = []
@@ -1776,45 +1786,6 @@ class listViewClass(QtWidgets.QMainWindow):
 
         self.SpellCheckPushButton.clicked.connect(self.spellCheckFunc)
         self.threadRunning = False
-
-        # self.context_menu = QMenu(self.listWidget)
-        # self.context_menu.setTitle("conTitle")
-        # self.action1 = QAction("Action 1", self)
-        # self.action1.triggered.connect(self.action1_triggered)
-        # self.context_menu.addAction(self.action1)
-        
-
-        # self.listWidget.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.listWidget.customContextMenuRequested.connect(self.open_menu)
-        # # self.listWidget.installEventFilter(self)
-
-        # self.contextClass = listContextClass()
-        # self.contextClass.listWidget.itemClicked.connect(self.ContextMenuClicked)
-
-    # def open_menu(self, position):
-
-    #     x, y = pyautogui.position()
-    #     self.index = self.listWidget.indexAt(position)
-    #     # Select the item
-    #     self.listWidget.setCurrentIndex(self.index)
-    #     if self.index.isValid():
-
-    #         self.contextClass.show()
-    #         self.contextClass.setGeometry(x, y, 100, 100)
-    # def ContextMenuClicked(self, item):
-    #     print(item.text())  # menu clicked 
-    #     c_i = self.listWidget.currentItem()
-    #     print(c_i.text()) # the word 
-        
-    #     menu_tag = item.text()
-    #     wrd = c_i.text()
-
-    #     if menu_tag == "Copy":
-    #         pc.copy(wrd) 
-           
-
-    #     self.contextClass.hide()   
-
 
     def action1_triggered(self):
         # selected_item = self.listWidget.currentItem()
@@ -1943,6 +1914,7 @@ class Ui(QtWidgets.QMainWindow):
         self.progressBar.setVisible(False)
         # self.OCR_Btn.clicked.connect(self.Open_OCR)
 
+        self.abbries_dic = {}
     # imgs ====================================
         # pixmap = QtGui.QPixmap(".//Uis//Imgs//Cursor.png")
         # cursor = QCursor(pixmap, 0, 0)
@@ -2007,18 +1979,20 @@ class Ui(QtWidgets.QMainWindow):
         self.Restart_menu.triggered.connect(self.restart_function)
         self.application_menue.addAction(self.exit_menu)
         self.application_menue.addAction(self.Restart_menu)
-        self.Ansi_ = QAction('Output as ANSI', self, checkable=True, checked=False)
+        self.Ansi_ = QAction('as ANSI', self, checkable=True, checked=False)
         self.Ansi_.triggered.connect(self.Ansi)
-        self.Unicode_ = QAction('Output as Unicode', self, checkable=True, checked=True)
+        self.Unicode_ = QAction('as Unicode', self, checkable=True, checked=True)
         self.Unicode_.triggered.connect(self.Unicode)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        self.taking_commend = QAction('Take single Cdm.', self, checkable=True, checked=False)
+        self.taking_commend = QAction('Bijoy classic', self, checkable=True, checked=False)
         self.taking_commend.triggered.connect(self.Take_commend)
         self.taking_cmd = False 
-        Speech_to_text_menu = self.Settings_menu.addMenu('Speech to text')
-        Speech_to_text_menu.addAction(self.taking_commend)
-        Speech_to_text_menu.addAction(self.Ansi_)
-        Speech_to_text_menu.addAction(self.Unicode_)
+        Bangla_output = self.Settings_menu.addMenu('Bangla Output')
+        
+        Bangla_output.addAction(self.Unicode_)
+        Bangla_output.addAction(self.Ansi_)
+        Bangla_output.addAction(self.taking_commend)
+        
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         self.Settings_menu.addSeparator() # =================== menue
         # self.Settings_menu.addAction(self.taking_commend)
@@ -2043,22 +2017,13 @@ class Ui(QtWidgets.QMainWindow):
         #     self.RunAtAtartUpCheckBox.setChecked(False)
         # self.RunAtAtartUpCheckBox.stateChanged.connect(self.Run_startup_fun)
         self.Settings_menu.addSeparator() # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        self.trackClipSetting = QSettings("TrackClip")
+        # self.trackClipSetting = QSettings("TrackClip")
         
-        self.VocabularyMeni = self.Settings_menu.addMenu('Vocabulary List')
-        self.AddNewWordMenu = QAction('Add New Words', self)
-        self.AddNewWordMenu.triggered.connect(self.ShowAddWordsClass)
-
-        if bool(self.trackClipSetting.value('checked')) == True:
-            try:
-                # self.Track_clip_thread.start()  
-                pass
-            except Exception as e:
-                print(e)    
+        # self.VocabularyMeni = self.Settings_menu.addMenu('Vocabulary List')
+   
         self.wordManagerMenu = QAction('Word Manager', self)
         self.wordManagerMenu.triggered.connect(self.ShowWordManager)
-        self.VocabularyMeni.addAction(self.AddNewWordMenu)
-        self.VocabularyMeni.addAction(self.wordManagerMenu)
+        self.Settings_menu.addAction(self.wordManagerMenu)
         self.Settings_menu.addSeparator()
         self.About = self.Settings_menu.addAction('about Nms Kontho')
         Kontho_icon = QtGui.QIcon()
@@ -2214,8 +2179,12 @@ class Ui(QtWidgets.QMainWindow):
         self.contextClass = listContextClass()
         self.contextClass.listWidget.itemClicked.connect(self.ContextMenuClicked)
         
+        kb2.on_press(self.on_press_2)
+        
         self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
         self.listener.start()
+
+        
 
         self.MouseListener = mouse.Listener(on_click = self.on_click)
         self.MouseListener.start()
@@ -2241,12 +2210,7 @@ class Ui(QtWidgets.QMainWindow):
         
         # kb2.unhook_all()
 
-
         # ================
-        
-        
-
-
     def open_menu(self, position):
 
         x, y = pyautogui.position()
@@ -2291,12 +2255,6 @@ class Ui(QtWidgets.QMainWindow):
         self.AutoCloseBra = state
     def useAbries(self, state):
         self.main_settings.setValue("UseAbries", bool(state))  
-        if state:
-            self.loadAbbribiations()
-        else:
-            kb2.unhook_all()
-            self.blockKeys()
-        pass
     def AutoCompleate(self, theWord):
         global wordSofar
         if self.listClass.ACcheckBox.isChecked():
@@ -2331,7 +2289,6 @@ class Ui(QtWidgets.QMainWindow):
         if selectedText[:len(wordSofar)] == wordSofar:
             kb.type(selectedText[len(wordSofar):])
         else:
-            print("i am actually here")
             for i in range(len(wordSofar)):
                 kb.tap(Key.backspace)
             kb.type(selectedText)      
@@ -2415,13 +2372,18 @@ class Ui(QtWidgets.QMainWindow):
                 abriStr = RKS.read()
             abris = abriStr.split("\n")
 
+            self.abbries_dic = {}
+            
             for ab in abris[:]:
                 if ab == "":
                     return
                 parts = ab.split("::")
                 if len(parts) == 0:
                     return
-                kb2.add_abbreviation(parts[0], parts[1])   
+                # kb2.add_abbreviation(parts[0], parts[1]) 
+                
+                self.abbries_dic[parts[0]] = parts[1]
+                # print(self.abbries_dic)
         except Exception as e:
             self.showError(e)
         if self.current_language != "English":
@@ -2524,13 +2486,27 @@ class Ui(QtWidgets.QMainWindow):
             # self.listClass.showHideFunc("hide")
         pass
 
+    def triggerAbbribiation(self, key):
+        self.listener.stop()
+        for i in range(len(key)+1):  
+            kb.tap(Key.backspace)
+        pyautogui.write(self.abbries_dic[key]) 
+        print(self.abbries_dic[key]) 
+        # fullVersion = (self.abbries_dic[key]).split(' ')  
+        # for w in fullVersion:
+        #     kb.type(w)  
+        #     pyautogui.write(' ')     
+        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+        self.listener.start()
+    def on_press_2(self, event):
+        pass
     def on_press(self, key):
-        # print(f"{key} =====")
+
         global wordSofar 
         global englishWordSofar
         global previous_word
         global formar_previous_word
-        
+
         if self.AutoCloseBra:
             qote = (str(key)).replace("'", "")
             if qote in self.qoteDic:
@@ -2539,10 +2515,16 @@ class Ui(QtWidgets.QMainWindow):
                 kb.tap(Key.left)
                 self.initialize()
                 return
-        
+
+        if GetWindowText(GetForegroundWindow()) in ["Word manager"]:
+            # print("i am here!")
+            return  
+                    
         # =====================================
         stringKey = (str(key)).replace("'", "")
         if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
+            if wordSofar in self.abbries_dic and self.settingsGUIClass.UseAbrisCheckBox.isChecked() == True:
+                self.triggerAbbribiation(wordSofar)
             self.initialize()
             self.initThread_signal.emit("init")
             return
@@ -2557,23 +2539,24 @@ class Ui(QtWidgets.QMainWindow):
                     self.initialize() 
             return        
         if self.listClass.isHidden() == False:
+            # print("in if statement")
             if str(key) == "Key.down":
+                
                 if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
                     self.listClass.listWidget.setCurrentRow(1)
                 else:
                     self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
                 try:
-                    kb2.block_key(28)
+                    kb2.block_key(28) # enter key
                 except Exception as e:
-                    pass    
+                    print(traceback.format_exc())     
+
             if str(key) == "Key.up":
                 if self.listClass.listWidget.currentRow() == 1:
                     self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
                 else:    
-                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1)       
-            # if str(key) == "Key.space":
-            #     self.listClass.currentRow = 0
-            #     self.listClass.populateWords([])
+                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1) 
+
             if str(key) == "Key.enter":
                 if self.listClass.listWidget.currentRow() != -1:    
                     item = self.listClass.listWidget.currentItem()
@@ -2655,6 +2638,7 @@ class Ui(QtWidgets.QMainWindow):
             
             if completorTraegered == True:
                 return
+     
             
             self.convertTobangla(key)
             # print("I am being called") 
@@ -2668,9 +2652,12 @@ class Ui(QtWidgets.QMainWindow):
             self.lastActiveWindow = GetWindowText(WindowFromPoint(GetCursorPos()))
             self.initialize()
 
-
     def on_release(self, key):
-        
+        global block_up_down
+        if key == keyboard.Key.up or key == keyboard.Key.down:
+            if block_up_down:
+                return False
+
         if self.current_language == "English":
             return
         # print("I am the bitch u r looking for")
@@ -3030,6 +3017,11 @@ class Ui(QtWidgets.QMainWindow):
         if bnglaKey != "" or stringKey == "o":
             if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
                 self.Doc_pad.activateWindow()
+            if self.lastActiveWindow in [self.wordManagerClass.windowTitle()]:
+                self.wordManagerClass.activateWindow()    
+            if self.lastActiveWindow in [self.converter_gui.windowTitle()]:
+                self.converter_gui.activateWindow()     
+
             kb.type(str(bnglaKey))
             
             wordSofar += str(bnglaKey)
@@ -3039,7 +3031,6 @@ class Ui(QtWidgets.QMainWindow):
             previous_word = stringKey
             englishWordSofar += stringKey
       
-                
     def initialize(self):
         global wordSofar
         global englishWordSofar
@@ -3120,13 +3111,7 @@ class Ui(QtWidgets.QMainWindow):
                 win32process.AttachThreadInput(current_thread, fg_thread, False)     
         caret_x_pos =caret[0]
         caret_y_pos =caret[1]
-        return caret_x_pos + Window_x_pos, caret_y_pos # + Window_y_pos
-    def ShowAddWordsClass(self):
-        try:
-            self.AddNewWordsClass = AddNewWordsClass()
-            self.AddNewWordsClass.show()
-        except Exception as e:
-            self.showError(e)        
+        return caret_x_pos + Window_x_pos, caret_y_pos # + Window_y_pos      
     def Open_OCR_from_screen(self):
         try:
             try:
@@ -3625,7 +3610,7 @@ class Ui(QtWidgets.QMainWindow):
 
             self.initialize()
             
-            self.loadAbbribiations()
+            # self.loadAbbribiations()
 
         else:
             self.current_language = "Bangla"
@@ -4000,6 +3985,8 @@ class Ui_Splash(QWidget):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.progress)
         self.timer.start(10)
+        self.ui = Ui()
+        self.ui.show()
 
     def progress(self):
 
@@ -4018,27 +4005,29 @@ class Ui_Splash(QWidget):
 
         # INCREASE COUNTER
         counter += 1
-        
+
+class Ui_Error(QtWidgets.QMainWindow):
+    def __init__(self):
+        super(Ui_Error, self).__init__() 
+        uic.loadUi('.//Uis//ErrorUi.ui', self)
+    def showError(self, e):
+        self.plainTextEdit.setPlainText(e)
+        self.show()
+
 if __name__ == "__main__":
     print("application openning....")
-    # multiprocessing.freeze_support()
-    # ++++++++============================================================================ Recoarding volium
-    # WM_APPCOMMAND = 0x319
-    # APPCOMMAND_MICROPHONE_VOLUME_UP = 0x1a
-    # APPCOMMAND_VOLUME_MIN = 0x09
-    # win32api.SendMessage(-1, 0x319, 0x30292, APPCOMMAND_MICROPHONE_VOLUME_UP * 0x10000)
-
-    
-    # app = QApplication(sys.argv)
-    # ex = Ui()
-    # # # ex.show()
-    # # ex.showMinimized()
-    # ex.showNormal()
-    # sys.exit(app.exec_())
-
-    app = QApplication(sys.argv)
-    ex = Ui()
-    ex2 = Ui_Splash()
-    ex.show()
-    # ex2.show()
-    sys.exit(app.exec_())
+    try:
+        app = QApplication(sys.argv)
+        ex = Ui()
+        ex2 = Ui_Splash()
+        ex.show()
+        # ex2.show()
+        sys.exit(app.exec_())
+    except Exception as e:
+        print(e)   
+        # print(traceback.format_exc()) 
+        app2 = QApplication(sys.argv)
+        error_class = Ui_Error()
+        error_class.show()
+        error_class.showError(str(traceback.format_exc()))
+        sys.exit(app2.exec_())    
