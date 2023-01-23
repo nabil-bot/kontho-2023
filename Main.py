@@ -1,9 +1,7 @@
 # -*- coding:utf-8 -*-
 
-from pickletools import pystring
-import re
+from distutils.log import FATAL
 import time
-from tkinter.tix import Tree
 import keyboard as kb2
 import speech_recognition as sr
 from pynput.keyboard import Controller, Key
@@ -40,6 +38,7 @@ import difflib
 import win32process
 import win32api
 import pyperclip as pc
+from num2words import num2words
 
 User32 = ctypes.WinDLL('User32.dll')
 
@@ -67,6 +66,7 @@ completorTraegered = False
 CurrentWord = ""
 ruledOut = False
 minimun_Similarity_Ratio = 0.70
+ansi_wordSOFar = ""
 
 block_up_down = False
 
@@ -699,7 +699,18 @@ class WhileloopThroughListThread(QtCore.QThread):
                         for i in range(len(wordSofar)):
                             splitedNumbersInword += f"{NumberToWord.convert_num_to_word(wordSofar[i])} "
                         
-                        self.matchedWords.append(splitedNumbersInword.strip()) 
+                        self.matchedWords.append(splitedNumbersInword.strip())
+
+                    if wordSofar[0] in englishNumbers: # banglaNumbs
+                        numberInWord = num2words(wordSofar)
+                        self.matchedWords.append(numberInWord)
+                        numberInWord = num2words(wordSofar, to='ordinal', lang='en')
+                        self.matchedWords.append(numberInWord) 
+                        splitedNumbersInword = ""
+                        for i in range(len(wordSofar)):
+                            splitedNumbersInword += f"{num2words(wordSofar[i])} "
+                        
+                        self.matchedWords.append(splitedNumbersInword.strip())      
                     # ========================================    
                 except Exception:
                     self.preWord = ""
@@ -2200,17 +2211,35 @@ class Ui(QtWidgets.QMainWindow):
 
         ahk.run_script(ahkScript, blocking=False)
         self.wordManagerClass = wordManagerClass()
-        self.wordManagerClass.save_signal.connect(self.loadAbbribiations)
+        self.wordManagerClass.save_signal.connect(self.UpdateLists)
 
         self.loadAbbribiations()
 
         self.listClass.listWidget.itemClicked.connect(self.WordClickedMiddleFunc)
         self.autoCompletedWord = ""
-
+        self.HotKeyPressed = False
         
         # kb2.unhook_all()
 
         # ================
+    def UpdateLists(self, path):
+        try:
+            with io.open(path, "r", encoding="utf-8") as wordTxt:
+                STR = wordTxt.read()
+            if path == banglaDictionaryPath:
+                global wordsList
+                wordsList = STR.split("|")
+            if path == englaDictionaryPath:
+                global englaList
+                englaList = STR.split("|")    
+            if path == englaDictionaryPath:
+                global EnglishwordsList
+                EnglishwordsList = STR.split("|") 
+            if path == AbbreviationsPath:
+                self.loadAbbribiations()  
+
+        except Exception as e:
+            self.showError(str(traceback.format_exc()))    
     def open_menu(self, position):
 
         x, y = pyautogui.position()
@@ -2272,13 +2301,20 @@ class Ui(QtWidgets.QMainWindow):
             # print(theWord)
         pass
     def smertCompletor(self, word_soFar, the_word):
-        for i in range(len(the_word))[:]:
-            if the_word[i] == word_soFar[i]:
-                pass
-            else:
-                same_index = i
-                break
-        return len(word_soFar[same_index:]), the_word[same_index:]  
+        try:    
+            for i in range(len(the_word)):
+                try:
+                    if the_word[i] == word_soFar[i]:
+                        pass
+                    else:
+                        same_index = i
+                        break
+                except Exception:
+                    same_index = i  
+            return len(word_soFar[same_index:]), the_word[same_index:]
+        except Exception as e:
+            print(e)
+            print(f"word_soFar: {word_soFar}, the_word: {the_word}")      
     def WordClickedMiddleFunc(self, item):
         # print(item.text())
         # self.WordClicked()
@@ -2286,12 +2322,25 @@ class Ui(QtWidgets.QMainWindow):
         selectedText = item.text()
 
         self.listener.stop()
-        if selectedText[:len(wordSofar)] == wordSofar:
-            kb.type(selectedText[len(wordSofar):])
+        if self.Unicode_.isChecked() == True: 
+            if selectedText[:len(wordSofar)] == wordSofar:  
+                kb.type(selectedText[len(wordSofar):])
+            else:
+                times_to_tap_backspace, restOfWord = self.smertCompletor(wordSofar, selectedText)   
+                for i in range(times_to_tap_backspace):
+                    kb.tap(Key.backspace)
+                kb.type(restOfWord)
         else:
-            for i in range(len(wordSofar)):
-                kb.tap(Key.backspace)
-            kb.type(selectedText)      
+            ansi_wordSofar = convert(wordSofar)
+            if convert(selectedText[:len(wordSofar)]) == ansi_wordSofar:  
+                kb.type(convert(selectedText[len(wordSofar):]))
+            else:
+                times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSofar, convert(selectedText))   
+                for i in range(times_to_tap_backspace):
+                    kb.tap(Key.backspace)
+                kb.type(restOfWord)
+        
+        
         self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
         self.listener.start() 
 
@@ -2301,15 +2350,14 @@ class Ui(QtWidgets.QMainWindow):
         global completorTraegered
         global wordSofar
         global CurrentWord
-        # print("in this function")
         
         try:
-            wordSelected = item
+            wordSelected = item   # this item is a string 
 
             if len(wordSofar) == 0 and len(item) > 1:
-                c_wrd = CurrentWord
+                c_wrd = CurrentWord    # this means current word is written by the OSk 
             else:
-                c_wrd = wordSofar
+                c_wrd = wordSofar   # current word written by keyboard 
 
             # print(wordSelected)
             # print(c_wrd)
@@ -2401,8 +2449,9 @@ class Ui(QtWidgets.QMainWindow):
         global wordSofar
         self.listener.stop()
         wordSofar = wordSofar[:-l]
-        for i in range(l):  
-            kb.tap(Key.backspace)
+        if self.Unicode_.isChecked() == True:
+            for i in range(l):  
+                kb.tap(Key.backspace)
         self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
         self.listener.start()
     
@@ -2507,78 +2556,98 @@ class Ui(QtWidgets.QMainWindow):
         global previous_word
         global formar_previous_word
 
-        if self.AutoCloseBra:
-            qote = (str(key)).replace("'", "")
-            if qote in self.qoteDic:
-                kb.release(Key.shift)
-                kb.type(self.qoteDic[qote])
-                kb.tap(Key.left)
-                self.initialize()
-                return
+        global ansi_wordSOFar
+        try:
+            if self.AutoCloseBra:
+                qote = (str(key)).replace("'", "")
+                if qote in self.qoteDic:
+                    kb.release(Key.shift)
+                    kb.type(self.qoteDic[qote])
+                    kb.tap(Key.left)
+                    self.initialize()
+                    return
 
-        if GetWindowText(GetForegroundWindow()) in ["Word manager"]:
-            # print("i am here!")
-            return  
-                    
-        # =====================================
-        stringKey = (str(key)).replace("'", "")
-        if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
-            if wordSofar in self.abbries_dic and self.settingsGUIClass.UseAbrisCheckBox.isChecked() == True:
-                self.triggerAbbribiation(wordSofar)
-            self.initialize()
-            self.initThread_signal.emit("init")
-            return
-        
-        if str(key) == "Key.backspace":
-            if wordSofar != "":    
-                if len(wordSofar) > 1:   
-                    wordSofar = wordSofar[:-1]
-                    englishWordSofar = englishWordSofar[:-1]
-                    self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
-                else:
-                    self.initialize() 
-            return        
-        if self.listClass.isHidden() == False:
-            # print("in if statement")
-            if str(key) == "Key.down":
-                
-                if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
-                    self.listClass.listWidget.setCurrentRow(1)
-                else:
-                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
-                try:
-                    kb2.block_key(28) # enter key
-                except Exception as e:
-                    print(traceback.format_exc())     
-
-            if str(key) == "Key.up":
-                if self.listClass.listWidget.currentRow() == 1:
-                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
-                else:    
-                    self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1) 
-
-            if str(key) == "Key.enter":
-                if self.listClass.listWidget.currentRow() != -1:    
-                    item = self.listClass.listWidget.currentItem()
-                    self.WordClicked(item.text())
-                    # initGlobal()
-                    self.listClass.showHideFunc("hide")
-
-        if self.current_language == "English":
-            
-            if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"]: 
-                self.initialize()
-                return
+            if GetWindowText(GetForegroundWindow()) in ["Word manager"]:
+                # print("i am here!")
+                return  
+                        
+            # =====================================
             stringKey = (str(key)).replace("'", "")
-            if stringKey in englishAlphabets:     
-                wordSofar += stringKey
-                englishWordSofar = wordSofar
-                self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
-            return
+            if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
+                if wordSofar in self.abbries_dic and self.settingsGUIClass.UseAbrisCheckBox.isChecked() == True:
+                    self.triggerAbbribiation(wordSofar)
+                self.initialize()
+                self.initThread_signal.emit("init")
+                return
+            
+            if str(key) == "Key.backspace":
+                if wordSofar != "":    
+                    if len(wordSofar) > 1:   
+                        wordSofar = wordSofar[:-1]
+                        englishWordSofar = englishWordSofar[:-1]
+                        self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
+                    else:
+                        self.initialize() 
+                return        
+            if self.listClass.isHidden() == False:
+                # print("in if statement")
+                if str(key) == "Key.down":
+                    
+                    if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
+                        self.listClass.listWidget.setCurrentRow(1)
+                    else:
+                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
+                    try:
+                        kb2.block_key(28) # enter key
+                    except Exception as e:
+                        print(traceback.format_exc())     
+
+                if str(key) == "Key.up":
+                    if self.listClass.listWidget.currentRow() == 1:
+                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
+                    else:    
+                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1) 
+
+                if str(key) == "Key.enter":
+                    if self.listClass.listWidget.currentRow() != -1:    
+                        item = self.listClass.listWidget.currentItem()
+                        self.WordClicked(item.text())
+                        # initGlobal()
+                        self.listClass.showHideFunc("hide")
+
+            
+            if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"] and self.keysBlocked == True: 
+                if self.current_language != "English":    
+                    kb2.unhook_all()
+                    self.keysBlocked = False
+                self.HotKeyPressed = True    
+                self.old_initialize()
+                return
+            
+            
+            if self.current_language == "English":
+                
+                if self.HotKeyPressed == True : 
+                    self.initialize()
+                    return
+
+                if stringKey in englishNumbers:
+                    if wordSofar != "":
+                        if wordSofar[0] not in englishNumbers:
+                            self.initialize()
+                    wordSofar += stringKey
+                    self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
+                    # self.initialize()
+                    return    
+                if stringKey in englishAlphabets:     
+                    wordSofar += stringKey
+                    englishWordSofar = wordSofar
+                    self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
+                return
 
 
         # ===========================================    
-        try: 
+         
             if str(key) == "Key.shift": # and self.shiftKeyBlocked == False
                 for i in self.keysToUnlock:
                     try: 
@@ -2588,64 +2657,51 @@ class Ui(QtWidgets.QMainWindow):
                 self.shiftKeyBlocked = True
                 
 
-            if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"] and self.keysBlocked == True: 
-                kb2.unhook_all()
-                self.keysBlocked = False
-                self.old_initialize()
-                return
+            
             if self.keysBlocked == False:
                 return        
             if str(key) == "'.'":
                 kb.type("।")
                 self.initialize()
                 return
-            # if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
-            #     self.initialize()
-            #     self.initThread_signal.emit("init")
-            # if str(key) == "Key.backspace":
-            #     if wordSofar != "":    
-            #         if len(wordSofar) > 1:   
-            #             wordSofar = wordSofar[:-1]
-            #             englishWordSofar = englishWordSofar[:-1]
-            #             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
-            #         else:
-            #             self.initialize() 
-            # if self.listClass.isHidden() == False:
-            #     if str(key) == "Key.down":
-            #         if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
-            #             self.listClass.listWidget.setCurrentRow(1)
-            #         else:
-            #             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
-            #         try:
-            #             kb2.block_key(28)
-            #         except Exception as e:
-            #             pass    
-            #     if str(key) == "Key.up":
-            #         if self.listClass.listWidget.currentRow() == 1:
-            #             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
-            #         else:    
-            #             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1)       
-            #     # if str(key) == "Key.space":
-            #     #     self.listClass.currentRow = 0
-            #     #     self.listClass.populateWords([])
-            #     if str(key) == "Key.enter":
-            #         if self.listClass.listWidget.currentRow() != -1:    
-            #             item = self.listClass.listWidget.currentItem()
-            #             self.WordClicked(item.text())
-            #             # initGlobal()
-            #             self.listClass.showHideFunc("hide")
-            
             
             if completorTraegered == True:
                 return
-     
-            
-            self.convertTobangla(key)
-            # print("I am being called") 
+
+            if self.Unicode_.isChecked() == True:    
+                self.convertTobangla(key)
+            if self.Ansi_.isChecked() == True: 
+                # print(f"as ANSI:{key}")  
+                
+                try:    
+                    bangla_wordSoFar_unicode = self.convertTobangla(key) 
+                    ansi_Bangla =  convert(bangla_wordSoFar_unicode)  
+                except Exception as e:
+                    print(e)
+
+                
+                self.listener.stop()
+                if ansi_wordSOFar != "":    
+                    if ansi_Bangla[:len(ansi_wordSOFar)] == ansi_wordSOFar:
+                        restOfWord = ansi_Bangla[len(ansi_wordSOFar):]
+                    else:
+                        times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSOFar, ansi_Bangla)   
+                        for i in range(times_to_tap_backspace):
+                            kb.tap(Key.backspace)
+                else:
+                    restOfWord = ansi_Bangla        
+                kb.type(restOfWord)
+                ansi_wordSOFar = ansi_Bangla
+
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                self.listener.start()
+
+
             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
         except Exception as e:
             # print(e)
             print(traceback.format_exc())
+            # self.showError(traceback.format_exc())
         pass
     def on_click(self, x, y, button, pressed):
         if GetWindowText(WindowFromPoint(GetCursorPos())) not in [self.listClass.windowTitle(), self.oskClass.windowTitle(), self.contextClass.windowTitle()]:
@@ -2659,6 +2715,8 @@ class Ui(QtWidgets.QMainWindow):
                 return False
 
         if self.current_language == "English":
+            if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"]: # and keysBlocked == False
+                self.HotKeyPressed = False
             return
         # print("I am the bitch u r looking for")
         if str(key) == "Key.shift":
@@ -2670,12 +2728,12 @@ class Ui(QtWidgets.QMainWindow):
             for i in self.keysToBlock:    
                 kb2.block_key(i)
             self.keysBlocked = True 
-            if self.listClass.isHidden() == False:
-                for i in [28, 72, 80]:
-                    kb2.block_key(i)
+            
+            # if self.listClass.isHidden() == False:
+            #     for i in [28, 72, 80]:
+            #         kb2.block_key(i)
     
     def convertTobangla(self, key):
-        
         global wordSofar 
         global englishWordSofar
         global previous_word
@@ -2697,6 +2755,370 @@ class Ui(QtWidgets.QMainWindow):
                 bnglaKey = "আ"
             elif previous_word == "a":
                 bnglaKey = "্য"
+            # elif previous_word == formar_previous_word and previous_word != "" and previous_word in ["c", ]:
+            #     self.trim(1)
+            #     bnglaKey = "্যা"
+            else:
+                if wordSofar[-1] == "ং":
+                    self.trim(1)
+                    bnglaKey = "ঙা"
+                else:
+                    bnglaKey = "া"
+        if stringKey == "A":
+            bnglaKey = "আ"
+        if stringKey == "b":
+            if previous_word in ["b","r"]:
+                bnglaKey= "্ব"
+            else:
+                bnglaKey= "ব"
+        if stringKey == "c":
+            if previous_word in ["c","h"]:
+                bnglaKey = "্চ"
+            elif previous_word in ["n","G"]:
+                bnglaKey = "ঞ্চ"
+                self.trim(1)
+            else:
+                bnglaKey= "চ"  
+        if stringKey == "d":
+            if previous_word in ["n","b", "d", "l", "k"]:
+                bnglaKey = "্দ"    
+            else:
+                bnglaKey = "দ"    
+        if stringKey == "D":
+            if previous_word in ["n","D", "l"]:
+                bnglaKey = "্ড"    
+            else:
+                bnglaKey = "ড"
+        if stringKey == "e":
+            if wordSofar == "":
+                bnglaKey = "এ"
+            elif previous_word == 't' and formar_previous_word == 'n':
+                bnglaKey = "তে"
+                self.trim(2)
+            else:
+                bnglaKey = "ে"
+        if stringKey == "E":
+            if wordSofar == "":
+                bnglaKey = "ঈ"
+            else:
+                bnglaKey = "ী"
+        if stringKey == "f" or stringKey == "F":
+            bnglaKey = "ফ"
+        if stringKey == "g":
+            if previous_word == "n" or previous_word == "N":
+                if previous_word == "n": 
+                    bnglaKey= "ং"
+                if previous_word == "N": 
+                    bnglaKey= "ঙ"
+                self.trim(1)
+            elif previous_word == "r": 
+                bnglaKey= "্গ"
+            elif previous_word == "g":
+                bnglaKey= "জ্ঞ" 
+                self.trim(1)
+            else: 
+                bnglaKey= "গ" 
+        if stringKey == "G":
+            if previous_word == "N":
+                bnglaKey= "ঞ" 
+                self.trim(1) 
+            else:
+                bnglaKey= "ঘ" 
+        if stringKey == "h":
+            if previous_word == "K":
+                bnglaKey = "্ষ"
+            elif previous_word == "c":
+                bnglaKey= "ছ" 
+                self.trim(1)
+            elif previous_word == "j":
+                bnglaKey = "ঝ" 
+                self.trim(1) 
+            elif previous_word == "k": 
+                if formar_previous_word == "k":
+                    bnglaKey = "ষ"     
+                else:
+                    bnglaKey = "খ"
+                    self.trim(1)    
+            elif previous_word == "p":
+                bnglaKey = "ফ"
+                self.trim(1)  
+            elif previous_word == "g":
+                bnglaKey = "ঘ"
+                self.trim(1)  
+            elif previous_word == "d":
+                if formar_previous_word == "g":
+                    bnglaKey = "্ধ"
+                    self.trim(1)
+                else:
+                    bnglaKey = "ধ"
+                self.trim(1)  
+            elif previous_word == "D":
+                bnglaKey = "ঢ"
+                self.trim(1)
+            elif previous_word == "b":
+                if formar_previous_word == "d":
+                    bnglaKey = "্ভ"
+                else:
+                    bnglaKey = "ভ"
+                self.trim(1)
+            elif previous_word == "R":
+                bnglaKey = "ঢ়"
+                self.trim(1) 
+            elif previous_word == "s":
+                bnglaKey = "শ"
+                self.trim(1)
+            elif previous_word == "S":
+                self.trim(1)
+                bnglaKey = "ষ"
+                
+            elif previous_word == "t":
+                bnglaKey = "থ"
+                self.trim(1)  
+            elif previous_word == "T":
+                bnglaKey = "ঠ"
+                self.trim(1)  
+            elif previous_word == "v":
+                pass
+            else:
+                bnglaKey = "হ" 
+        if stringKey == "H":
+            if previous_word == "K":
+                bnglaKey = "্ষ"
+            elif previous_word == "T":
+                bnglaKey = "ৎ"
+                self.trim(1)
+        if stringKey == "i":
+            if wordSofar == "" or wordSofar[-1] in self.karList or wordSofar[-1] in ["এ","ও","ঔ", "অ", "আ","উ","ই","ঊ", "ঋ", "ঐ", "ঔ"]:
+                bnglaKey= "ই"
+            elif previous_word == "r" and formar_previous_word == "r":
+                bnglaKey= "ৃ"
+                self.trim(3)
+            elif previous_word == "o" or previous_word == "O":
+                if formar_previous_word == "":
+                    bnglaKey= "ঐ"
+                    self.trim(1)
+                else:
+                    bnglaKey= "ৈ"
+            else:
+                bnglaKey= "ি"
+        if stringKey == "I":
+            if previous_word == "o" or previous_word == "O":
+                if formar_previous_word == "":
+                    bnglaKey= "ঐ"
+                    self.trim(1)
+                else:
+                    bnglaKey= "ৈ"
+            elif wordSofar == "" or wordSofar[-1] in self.karList:
+                bnglaKey = "ঈ"    
+            else:
+                bnglaKey = "ী"
+        if stringKey == "j":
+            if previous_word == "n":
+                bnglaKey= "ঞ্জ"
+                self.trim(1)
+            elif previous_word in ["j", "J"]:
+                bnglaKey= "্জ" 
+            else:
+                bnglaKey= "জ"
+        if stringKey == "J":
+            bnglaKey= "ঝ"    
+        if stringKey == "k":
+            if previous_word in ["k", "K", "l", "s", "r"]:
+                bnglaKey = "্ক"
+            elif previous_word == "h" and formar_previous_word == "s":
+                bnglaKey = "ষ্ক"
+                self.trim(1)  
+            elif previous_word == "n":
+                bnglaKey = "ঙ্ক"
+                self.trim(1)      
+            elif previous_word == "g" and formar_previous_word == "N":
+                bnglaKey = "্ক"
+            else:
+                bnglaKey = "ক"
+        if stringKey == "K":
+            bnglaKey = "খ"
+        if stringKey == "l":
+            if previous_word == "l":
+                bnglaKey= "্ল"
+            else:
+                bnglaKey= "ল"         
+        if stringKey == "m":
+            if previous_word == "h":
+                bnglaKey = "হ্ম"
+                self.trim(1) 
+            elif previous_word in ["d", "l", "n", "r", "s", "t", "g", "m"]:
+                bnglaKey = "্ম" 
+            else:
+                bnglaKey = "ম" 
+        if stringKey == "M":
+            bnglaKey = "মো" 
+        if stringKey == "n":
+            # print(previous_word)
+            if previous_word in ["n", "p", "t", "g", "h", "m", "s", "r"]:
+                bnglaKey= "্ন"
+            else:
+                bnglaKey= "ন"      
+        if stringKey == "N":
+            if previous_word == "r":
+                bnglaKey = "্ণ" 
+            else:
+                bnglaKey = "ণ" 
+        if stringKey == "o":
+            if previous_word == formar_previous_word != "": 
+                if previous_word == "g":
+                    bnglaKey = "্য"
+                else:
+                    self.trim(1) 
+                    bnglaKey = "য"   
+            elif wordSofar == "":
+                bnglaKey = "অ"
+            elif previous_word == "g" and formar_previous_word == "n":
+                bnglaKey = "ঙ্গ"
+                self.trim(1)  
+            # elif previous_word == "h" and formar_previous_word == "r":   
+            # elif previous_word == formar_previous_word and 
+            elif previous_word in ["p", "s", "t", "T", "c", "d", "z", "m", "O", "k", "b", "n", "r", "g", "j", "l", "h", "y", "S"]: 
+                previous_word = "o"
+                pass 
+            else:
+                if wordSofar[-1] in self.karList:    
+                    bnglaKey = "ো"
+                else:    
+                    bnglaKey = "ও"
+        if stringKey == "O":
+            if wordSofar == "":
+                bnglaKey = "ও"
+            else:
+                bnglaKey = "ো"
+        if stringKey in ["p", "P"] :
+            if previous_word == "s":
+                bnglaKey = "্প"
+            else:
+                bnglaKey = "প"
+        if stringKey in ["q", "Q"]:
+            bnglaKey = "ক"
+        if stringKey == "r":
+            if previous_word in ["t","b","k","f","g","h","j","c","d","n","p","s","v","T","D","z","F", "m"]:
+                bnglaKey = "্র" 
+            else:
+                bnglaKey = "র"
+        if stringKey == "R":
+            if wordSofar == "":
+                bnglaKey = "ঋ" 
+            else:
+                bnglaKey = "ড়"  
+        if stringKey == "s":
+            if previous_word == "r":
+                bnglaKey = "্স" 
+            elif previous_word == "H":
+                bnglaKey = "্"
+                self.trim(1)
+            else:
+                bnglaKey = "স"  
+        if stringKey == "S":
+            bnglaKey = "শ" 
+        if stringKey == "t":
+            if previous_word in ["n","t", "p", "r"]:
+                bnglaKey = "্ত"
+            elif previous_word == "k": 
+                bnglaKey = "ক্ত"
+                self.trim(1)
+            elif previous_word == "s":
+                bnglaKey = "স্ত"
+                self.trim(1)
+            else:
+                bnglaKey = "ত"
+        if stringKey == "T":
+            # print(wordSofar)
+            if previous_word in ["h", "k","l","n", "p", "s","T"] and formar_previous_word not in ["g"]:
+                bnglaKey = "্ট"
+            else:
+                bnglaKey = "ট"
+        if stringKey == "u":
+            if previous_word in ["O", "o"]:
+                bnglaKey = "ঔ"
+                self.trim(1)  
+            elif wordSofar == "":
+                bnglaKey = "উ"  
+            else:
+                bnglaKey = "ু"      
+        if stringKey == "U":
+            if wordSofar == "":
+                bnglaKey = "ঊ"
+            elif previous_word == "O":
+                if formar_previous_word == "":
+                    bnglaKey = "ঔ"
+                else:
+                    bnglaKey = "ৌ"
+                self.trim(1) 
+            else:
+                bnglaKey = "ূ"
+        if stringKey in ["v", "V"] : 
+            if previous_word in ["m", "d"]:
+                bnglaKey = "্ভ"
+            else:
+                bnglaKey = "ভ"
+        if stringKey in  ["w", "W"]:
+            if wordSofar == "":
+                bnglaKey = "ও"
+            else:
+                bnglaKey = "্ব"
+        if stringKey in  ["y", "Y"]:
+                bnglaKey = "য়"
+        if stringKey == "z":
+            if previous_word == "r":
+                bnglaKey = "্য"
+            else:
+                bnglaKey = "য"
+        if stringKey == "Z":
+            bnglaKey== "্য"   
+        if bnglaKey != "" or stringKey == "o":
+            
+
+
+            # if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
+            #     self.Doc_pad.activateWindow()
+            # if self.lastActiveWindow in [self.wordManagerClass.windowTitle()]:
+            #     self.wordManagerClass.activateWindow()    
+            # if self.lastActiveWindow in [self.converter_gui.windowTitle()]:
+            #     self.converter_gui.activateWindow()     
+
+            
+            
+            wordSofar += str(bnglaKey)
+            self.formar_previous_formar_previous_word = self.previous_formar_previous_word
+            self.previous_formar_previous_word = formar_previous_word
+            formar_previous_word = previous_word
+            previous_word = stringKey
+            englishWordSofar += stringKey
+
+            if self.Ansi_.isChecked() == True:
+                return wordSofar
+            kb.type(str(bnglaKey))    
+
+    def convertTo_ANSI(self, key):
+        
+        global wordSofar 
+        global englishWordSofar
+        global previous_word
+        global formar_previous_word
+        bnglaKey = ""
+        stringKey = (str(key)).replace("'", "")
+        # takes english characters one by one as banglish word latters and types bangla
+        if stringKey in self.numDic:
+            kb.type(self.numDic[stringKey])
+            
+            if wordSofar != "":
+                if wordSofar[0] not in banglaNumbs:
+                    self.initialize()
+            wordSofar += self.numDic[stringKey]
+            # self.initialize()
+            return
+        if stringKey == "a":
+            if wordSofar == "":
+                bnglaKey = "Av"
+            elif previous_word == "a":
+                bnglaKey = "্য"
             elif previous_word == formar_previous_word and previous_word != "" and previous_word in ["c", ]:
                 self.trim(1)
                 bnglaKey = "্যা"
@@ -2705,7 +3127,7 @@ class Ui(QtWidgets.QMainWindow):
                     self.trim(1)
                     bnglaKey = "ঙা"
                 else:
-                    bnglaKey = "া"
+                    bnglaKey = "v"
         if stringKey == "A":
             bnglaKey = "আ"
         if stringKey == "b":
@@ -3022,6 +3444,7 @@ class Ui(QtWidgets.QMainWindow):
             if self.lastActiveWindow in [self.converter_gui.windowTitle()]:
                 self.converter_gui.activateWindow()     
 
+            # return str(bnglaKey)
             kb.type(str(bnglaKey))
             
             wordSofar += str(bnglaKey)
@@ -3029,8 +3452,7 @@ class Ui(QtWidgets.QMainWindow):
             self.previous_formar_previous_word = formar_previous_word
             formar_previous_word = previous_word
             previous_word = stringKey
-            englishWordSofar += stringKey
-      
+            englishWordSofar += stringKey  
     def initialize(self):
         global wordSofar
         global englishWordSofar
@@ -3038,10 +3460,12 @@ class Ui(QtWidgets.QMainWindow):
         global formar_previous_word
         global ruledOut 
         global CurrentWord
+        global ansi_wordSOFar
         CurrentWord = ""
         self.autoCompletedWord = ""
         previous_word = ""
         wordSofar = ""
+        ansi_wordSOFar = ""
         englishWordSofar = ""
         formar_previous_word = ""
         self.previous_formar_previous_word = ""
@@ -3609,8 +4033,7 @@ class Ui(QtWidgets.QMainWindow):
             # self.listener.stop()
 
             self.initialize()
-            
-            # self.loadAbbribiations()
+    
 
         else:
             self.current_language = "Bangla"
@@ -4019,9 +4442,7 @@ if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
         ex = Ui()
-        ex2 = Ui_Splash()
         ex.show()
-        # ex2.show()
         sys.exit(app.exec_())
     except Exception as e:
         print(e)   

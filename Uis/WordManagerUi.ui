@@ -288,46 +288,6 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_5">
-       <attribute name="title">
-        <string>Add more</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_10">
-        <item row="0" column="0">
-         <widget class="QFrame" name="frame">
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_11">
-           <item row="0" column="0">
-            <widget class="QPlainTextEdit" name="plainTextEdit_2">
-             <property name="styleSheet">
-              <string notr="true">color: rgb(255, 255, 255);
-font: 57 11pt &quot;Hind Siliguri Medium&quot;;</string>
-             </property>
-             <property name="plainText">
-              <string/>
-             </property>
-             <property name="placeholderText">
-              <string>paste multiple words or paragraphs here</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="pushButton_3">
-             <property name="text">
-              <string>Detect New Words</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
     <item row="1" column="0">

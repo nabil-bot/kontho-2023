@@ -124,6 +124,10 @@ class AbbribiationContentDelegate(QStyledItemDelegate):
         validator = QtGui.QRegExpValidator(QtCore.QRegExp(".*")) 
         editor.setValidator(validator)
         return editor 
+    def setEditorData(self, editor, index):
+        editor.setText(index.data())
+    def setModelData(self, editor, model, index):
+        model.setData(index, editor.text())
 
 class EnglishDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
@@ -146,6 +150,10 @@ class BanglaDelegate(QStyledItemDelegate):
         validator = QtGui.QRegExpValidator(QtCore.QRegExp('[\u0980-\u09E3]+')) 
         editor.setValidator(validator)
         return editor
+    def setEditorData(self, editor, index):
+        editor.setText(index.data())
+    def setModelData(self, editor, model, index):
+        model.setData(index, editor.text())
 
 
 class Ui_Splash(QWidget):
@@ -183,10 +191,10 @@ class wordManagerClass(QMainWindow):
         
         
 
-        self.loadWords(wordsList, self.tableWidget)   # loading bangla words
-        self.loadWords(englaList, self.EnglaTableWidget)
-        self.loadWords(EnglishwordsList, self.EnglishTableWidget)
-        self.loadAbbribiations()
+        # self.loadWords(wordsList, self.tableWidget)   # loading bangla words
+        # self.loadWords(englaList, self.EnglaTableWidget)
+        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        # self.loadAbbribiations()
 
         header = self.tableWidget_3.horizontalHeader()       
         header.setSectionResizeMode(1, QHeaderView.Stretch)
@@ -365,11 +373,12 @@ class wordManagerClass(QMainWindow):
             currentTable.item(r, 0).setBackground(QColor(1, 87, 155, 255)) 
         self.recognize_Changes(currentTable, False)  
 
-        self.save_signal.emit("")  
+        self.save_signal.emit(path)  
 
     def writeDownContentsToFile(self, path, txt):
         with io.open(path, "w", encoding="utf-8") as file:
             file.write(txt)
+
     def saveChangesOfPlainTextEdit(self):
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         c_item = QTableWidgetItem(self.plainTextEdit.toPlainText().format(0, 0))
@@ -892,10 +901,9 @@ class wordManagerClass(QMainWindow):
         
         if currentTable in [self.tableWidget, self.EnglaTableWidget]: 
             if currentTable.currentColumn() != 0:
-                self.tableWidget.setItemDelegate(EnglishDelegate(currentTable)) 
-                
+                currentTable.setItemDelegate(EnglishDelegate(currentTable)) 
             if currentTable.currentColumn() == 0:
-                self.tableWidget.setItemDelegate(BanglaDelegate(currentTable)) 
+                currentTable.setItemDelegate(BanglaDelegate(currentTable)) 
         if currentTable == self.tableWidget_3:
             if currentTable.currentColumn() == 0:
                 self.tableWidget_3.setItemDelegate(AbbribiationDelegate(currentTable))
@@ -1243,7 +1251,6 @@ if __name__ == "__main__":
 
         ex = wordManagerClass()
         ex.show()
-
 
         sys.exit(app.exec_())  
     except Exception as e:
