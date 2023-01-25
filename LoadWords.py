@@ -57,3 +57,20 @@ for i in range(len(banglaAlphabates_str)):
     banglaAlphabates.append(banglaAlphabates_str[i])  
 
 banglaNumbs = ["১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯", "০"]
+
+DefultThemePath = './/Res//DefultTheme.txt'
+with io.open(DefultThemePath, "r", encoding="utf-8") as wordTxt:
+    DefultTheme = wordTxt.read()
+
+BlueThemePath = './/Res//BlueTheme.txt'
+with io.open(BlueThemePath, "r", encoding="utf-8") as wordTxt:
+    BlueTheme = wordTxt.read()   
+
+YellowThemePath = './/Res//YellowTheme.txt'
+with io.open(YellowThemePath, "r", encoding="utf-8") as wordTxt:
+    YellowTheme = wordTxt.read()   
+
+
+RedThemePath = './/Res//RedTheme.txt'
+with io.open(RedThemePath, "r", encoding="utf-8") as wordTxt:
+    RedTheme = wordTxt.read()        

@@ -49,9 +49,6 @@ from pynput import keyboard
 import NumberToWord
 
 
-
-
-
 # ++++++++++++++++global variables ====================
 similarTheredIsRunning = False
 previous_word = ""
@@ -100,6 +97,8 @@ upDownKey = [ 79 , 80]
 
 
 def convert(text):
+    if text == None:
+        return ""
     text = text.replace('ড়', 'ড়')
     text = text.replace('ঢ়', 'ঢ়')
     text = text.replace('য়', 'য়')
@@ -582,6 +581,11 @@ class similarityThread(QtCore.QThread):
                     continue 
             else:
                 englishWord = wrd     
+
+            # ========================================================= this block is excelerate the loop 
+            # if englishWord[0] != self.englishWordSoFar[0]:
+            #     continue
+            #  ========================================================= >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  
             
             similarity = self.similarity_ration_btween(englishWord, self.englishWordSoFar)   
             if len(englishWordSofar) < 5:
@@ -645,7 +649,7 @@ class WhileloopThroughListThread(QtCore.QThread):
         self.ruledOut = False
         self.ruledOutEngla = False
         self.preWord = ""
-
+        self.preEngWrd = ""
         self.ruledOutSimi = False
         self.similarTheredIsRunning = False
 
@@ -654,8 +658,7 @@ class WhileloopThroughListThread(QtCore.QThread):
         while self.is_running:
             global wordSofar
             global englishWordSofar
-            if self.preWord != wordSofar and wordSofar != "":   
-
+            if  (self.preEngWrd != englishWordSofar and englishWordSofar != "") or (self.preWord != wordSofar and wordSofar != ""):   
                 self.newCherecterIspressed.emit(True)
                 self.matchedWords = []
                 try:
@@ -664,6 +667,9 @@ class WhileloopThroughListThread(QtCore.QThread):
                             self.loopThroughList(wordsList,wordSofar,englishWordSofar)    # this gonna check in main dictionary
                             if len(self.matchedWords) == 0:
                                 self.ruledOut = True
+                            elif len(self.matchedWords) != 0 and self.ruledOut == True: 
+                                self.themeSignal.emit("green") 
+                                self.ruledOut = False
 
                         if self.ruledOut == True and self.ruledOutEngla == False:  # englawords dictionary
                             self.loopThroughList(englaList,wordSofar,englishWordSofar)
@@ -684,6 +690,9 @@ class WhileloopThroughListThread(QtCore.QThread):
                             self.loopThroughList(EnglishwordsList,wordSofar,englishWordSofar)
                             if len(self.matchedWords) == 0:
                                 self.ruledOut = True
+                            elif len(self.matchedWords) != 0 and self.ruledOut == True: 
+                                self.themeSignal.emit("green") 
+                                self.ruledOut = False    
 
                         # print(f"len(self.matchedWords):{len(self.matchedWords)}, self.ruledOutSimi: {self.ruledOutSimi}")
                         if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
@@ -710,7 +719,8 @@ class WhileloopThroughListThread(QtCore.QThread):
                         for i in range(len(wordSofar)):
                             splitedNumbersInword += f"{num2words(wordSofar[i])} "
                         
-                        self.matchedWords.append(splitedNumbersInword.strip())      
+                        self.matchedWords.append(splitedNumbersInword.strip())  
+                    
                     # ========================================    
                 except Exception:
                     self.preWord = ""
@@ -719,6 +729,7 @@ class WhileloopThroughListThread(QtCore.QThread):
 
                 self.matchedWordsSignal.emit(self.matchedWords)
                 self.preWord = wordSofar
+                self.preEngWrd = englishWordSofar
             time.sleep(0.1)
      
     def newCharecterIsPressedStateChange(self, state):
@@ -1887,13 +1898,13 @@ class listViewClass(QtWidgets.QMainWindow):
     def changeTheme(self, theme):
         
         if theme == "green":
-            self.listWidget.setStyleSheet('QListWidget{\n	font: 12pt "Kalpurush";\n	border-radius:2px;\n	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));\n	border: 2px solid rgb(0, 255, 0);\n}')
+            self.listWidget.setStyleSheet(DefultTheme)
         if theme == "red":
-            self.listWidget.setStyleSheet('QListWidget{\n	font: 12pt "Kalpurush";\n	border-radius:2px;\n	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));\n	border: 2px solid rgb(255, 0, 0);\n}')
+            self.listWidget.setStyleSheet(RedTheme)
         if theme == "blue":
-            self.listWidget.setStyleSheet('QListWidget{\n	font: 12pt "Kalpurush";\n	border-radius:2px;\n	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));\n	border: 2px solid rgb(0, 0, 255);\n}')  
+            self.listWidget.setStyleSheet(BlueTheme)  
         if theme == "yellow":
-            self.listWidget.setStyleSheet('QListWidget{\n	font: 12pt "Kalpurush";\n	border-radius:2px;\n	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));\n	border: 2px solid rgb(255, 255, 0);\n}')              
+            self.listWidget.setStyleSheet(YellowTheme)
     def paintEvent(self, event):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor(128, 128, 128, 0))
@@ -2002,8 +2013,19 @@ class Ui(QtWidgets.QMainWindow):
         
         Bangla_output.addAction(self.Unicode_)
         Bangla_output.addAction(self.Ansi_)
-        Bangla_output.addAction(self.taking_commend)
+        # Bangla_output.addAction(self.taking_commend)
+
+        keyboard_layout_menu = self.Settings_menu.addMenu('Keyboard Layout')
+
+        self.Banglish_layout = QAction('Banglish', self, checkable=True, checked=True)
+        self.Banglish_layout.triggered.connect(lambda:self.Bijoy_layout.setChecked(not self.Banglish_layout.isChecked()))
+        self.Bijoy_layout = QAction('Bijoy', self, checkable=True, checked=False)
+        self.Bijoy_layout.triggered.connect(lambda: self.Banglish_layout.setChecked(not self.Bijoy_layout.isChecked()))
         
+        keyboard_layout_menu.addAction(self.Banglish_layout)
+        keyboard_layout_menu.addAction(self.Bijoy_layout)
+
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         self.Settings_menu.addSeparator() # =================== menue
         # self.Settings_menu.addAction(self.taking_commend)
@@ -2217,10 +2239,11 @@ class Ui(QtWidgets.QMainWindow):
 
         self.listClass.listWidget.itemClicked.connect(self.WordClickedMiddleFunc)
         self.autoCompletedWord = ""
+        self.reserved = ""
         self.HotKeyPressed = False
         
         # kb2.unhook_all()
-
+        self.bijoy_Uni_Map = {"q":"ঙ","w":"য","e":"ড","r":"প","t":"ট","y":"চ","u":"জ","i":"হ","o":"গ","p":"ড়","a":"ৃ","s":"ু","d":"ি","f":"া","g":"্","h":"ব","j":"ক","k":"ত","l":"দ","z":"্র","x":"ও","c":"ে","v":"র","b":"ন","n":"স","m":"ম","1":"১","2":"২","3":"৩","4":"৪","5":"৫","6":"৬","7":"৭","8":"৮","9":"৯","0":"০","Q":"ং","W":"য়","E":"ঢ","R":"ফ","T":"ঠ","Y":"ছ","U":"ঝ","I":"ঞ","O":"ঘ","P":"ঢ়","A":"র্","S":"ূ","D":"ী","F":"অ","G":"।","H":"ভ","J":"খ","K":"থ","L":"ধ","Z":"্য","X":"ৗ","C":"ৈ","V":"ল","B":"ণ","N":"ষ","M":"শ","$":"৳","&":"ঁ"}
         # ================
     def UpdateLists(self, path):
         try:
@@ -2285,21 +2308,24 @@ class Ui(QtWidgets.QMainWindow):
     def useAbries(self, state):
         self.main_settings.setValue("UseAbries", bool(state))  
     def AutoCompleate(self, theWord):
-        global wordSofar
-        if self.listClass.ACcheckBox.isChecked():
-            self.listener.stop() 
+        try:
+            global wordSofar
+            if self.listClass.ACcheckBox.isChecked():
+                self.listener.stop() 
 
-            times_to_tap_backspace, restOfWord = self.smertCompletor(wordSofar, theWord) 
-            for i in range(times_to_tap_backspace):
-                kb.tap(Key.backspace)
-            kb.type(restOfWord)
+                times_to_tap_backspace, restOfWord = self.smertCompletor(wordSofar, theWord) 
+                for i in range(times_to_tap_backspace):
+                    kb.tap(Key.backspace)
+                kb.type(restOfWord)
 
-            self.autoCompletedWord = theWord
-            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-            self.listener.start() 
-            
-            # print(theWord)
-        pass
+                self.autoCompletedWord = theWord
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                self.listener.start() 
+                
+                # print(theWord)
+            pass
+        except Exception:
+            pass
     def smertCompletor(self, word_soFar, the_word):
         try:    
             for i in range(len(the_word)):
@@ -2645,19 +2671,17 @@ class Ui(QtWidgets.QMainWindow):
                     self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
                 return
 
-
-        # ===========================================    
-         
-            if str(key) == "Key.shift": # and self.shiftKeyBlocked == False
+        # ===========================================
+            if str(key) == "Key.shift" and self.Unicode_.isChecked() == True: # and self.shiftKeyBlocked == False
                 for i in self.keysToUnlock:
-                    try: 
+                    try:
                         kb2.unblock_key(i)
                     except Exception:
                         pass
                 self.shiftKeyBlocked = True
+            if str(key) == "Key.shift" and self.Unicode_.isChecked() == False:
+                return 
                 
-
-            
             if self.keysBlocked == False:
                 return        
             if str(key) == "'.'":
@@ -2669,33 +2693,32 @@ class Ui(QtWidgets.QMainWindow):
                 return
 
             if self.Unicode_.isChecked() == True:    
-                self.convertTobangla(key)
+                if self.Banglish_layout.isChecked() == True:    
+                    self.convertTobangla(key)
+                if self.Bijoy_layout.isChecked() == True: 
+                    self.convertToBijoy(stringKey)
             if self.Ansi_.isChecked() == True: 
-                # print(f"as ANSI:{key}")  
-                
                 try:    
                     bangla_wordSoFar_unicode = self.convertTobangla(key) 
                     ansi_Bangla =  convert(bangla_wordSoFar_unicode)  
+                    self.listener.stop()
+                    if ansi_wordSOFar != "":    
+                        if ansi_Bangla[:len(ansi_wordSOFar)] == ansi_wordSOFar:
+                            restOfWord = ansi_Bangla[len(ansi_wordSOFar):]
+                            print("in if")
+                        else:
+                            print('in else')
+                            times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSOFar, ansi_Bangla)   
+                            for i in range(times_to_tap_backspace):
+                                kb.tap(Key.backspace)
+                    else:
+                        restOfWord = ansi_Bangla        
+                    kb2.write(restOfWord)
+                    ansi_wordSOFar = ansi_Bangla
+                    self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                    self.listener.start()
                 except Exception as e:
                     print(e)
-
-                
-                self.listener.stop()
-                if ansi_wordSOFar != "":    
-                    if ansi_Bangla[:len(ansi_wordSOFar)] == ansi_wordSOFar:
-                        restOfWord = ansi_Bangla[len(ansi_wordSOFar):]
-                    else:
-                        times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSOFar, ansi_Bangla)   
-                        for i in range(times_to_tap_backspace):
-                            kb.tap(Key.backspace)
-                else:
-                    restOfWord = ansi_Bangla        
-                kb.type(restOfWord)
-                ansi_wordSOFar = ansi_Bangla
-
-                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-                self.listener.start()
-
 
             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
         except Exception as e:
@@ -2733,6 +2756,41 @@ class Ui(QtWidgets.QMainWindow):
             #     for i in [28, 72, 80]:
             #         kb2.block_key(i)
     
+    def convertToBijoy(self, key):
+        if key not in englishAlphabets:
+            return
+        global wordSofar 
+        global englishWordSofar
+        global previous_word
+        global formar_previous_word
+        
+        
+        if key in ['d', 'c', 'C']:
+            self.reserved = self.bijoy_Uni_Map[key]
+            return
+
+        
+        if self.reserved != "":
+            toSendKey = f"{self.bijoy_Uni_Map[key]}{self.reserved}"
+            print(toSendKey)
+        else:
+            toSendKey = self.bijoy_Uni_Map[key]    
+        
+        self.listener.stop()
+        kb.type(toSendKey)
+        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+        self.listener.start()
+
+        if self.reserved != "":
+            self.reserved = ""
+
+        wordSofar += str(toSendKey)
+        self.formar_previous_formar_previous_word = self.previous_formar_previous_word
+        self.previous_formar_previous_word = formar_previous_word
+        formar_previous_word = previous_word
+        previous_word = toSendKey
+        englishWordSofar += toSendKey
+        pass
     def convertTobangla(self, key):
         global wordSofar 
         global englishWordSofar
@@ -3076,12 +3134,12 @@ class Ui(QtWidgets.QMainWindow):
             
 
 
-            # if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
-            #     self.Doc_pad.activateWindow()
-            # if self.lastActiveWindow in [self.wordManagerClass.windowTitle()]:
-            #     self.wordManagerClass.activateWindow()    
-            # if self.lastActiveWindow in [self.converter_gui.windowTitle()]:
-            #     self.converter_gui.activateWindow()     
+            if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
+                self.Doc_pad.activateWindow()
+            if self.lastActiveWindow in [self.wordManagerClass.windowTitle()]:
+                self.wordManagerClass.activateWindow()    
+            if self.lastActiveWindow in [self.converter_gui.windowTitle()]:
+                self.converter_gui.activateWindow()     
 
             
             
