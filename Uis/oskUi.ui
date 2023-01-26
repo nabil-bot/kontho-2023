@@ -5991,55 +5991,13 @@ background-color: qlineargradient(spread:repeat, x1:0.415, y1:0, x2:0.418, y2:0.
       <string>✖</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="MinimizeButton">
-     <property name="geometry">
-      <rect>
-       <x>445</x>
-       <y>1</y>
-       <width>57</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>20</height>
-      </size>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QPushButton{
-	
-	color: rgb(255, 255, 255);
-	
-	font: 10pt &quot;MS Shell Dlg 2&quot;;
-	
-	background-color: qlineargradient(spread:reflect, x1:1, y1:0.517, x2:1, y2:1, stop:0 rgba(156, 181, 207, 255), stop:1 rgba(206, 222, 239, 255));
-
-}
-
-
-QPushButton:hover{
-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(63, 63, 63, 255), stop:1 rgba(33, 33, 33, 255));
- background-color: qlineargradient(spread:pad, x1:0.505636, y1:0.221, x2:0.431818, y2:1, stop:0 rgba(89, 255, 255, 255), stop:1 rgba(9, 198, 250, 200));
-
-}
-
-QPushButton:pressed{
-background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(3, 115, 255, 255));\n&quot;
-
-}</string>
-     </property>
-     <property name="text">
-      <string>–</string>
-     </property>
-    </widget>
    </widget>
    <widget class="QFrame" name="frame_2">
     <property name="geometry">
      <rect>
       <x>297</x>
       <y>10</y>
-      <width>159</width>
+      <width>217</width>
       <height>21</height>
      </rect>
     </property>

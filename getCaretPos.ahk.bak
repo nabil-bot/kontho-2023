@@ -1,0 +1,40 @@
+﻿#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+
+
+global pinedState := 0
+reviousXPos := 0
+previousYPos := 0
+SetTimer, setPos, 100
+setPos:
+global pinedState
+if pinedState = 0
+{
+WinGetActiveTitle, wintitle
+WinGetPos, perant_X, perant_Y,,, %wintitle%
+position_X := A_CaretX + perant_X
+position_Y := A_CaretY + perant_Y
+if position_X != previousXPos and position_Y != previousYPos
+WinMove, Nms_completer,, position_X, position_Y
+previousXPos = %position_X%
+previousYPos = %position_Y%
+}
+IfWinNotExist, Nms Voice pad
+{
+ExitApp
+}
+return
+F23::
+global pinedState
+if pinedState = 0
+{
+pinedState = 1
+return
+}
+if pinedState = 1
+{
+pinedState = 0
+}
+return

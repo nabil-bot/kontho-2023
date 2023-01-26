@@ -1,0 +1,7 @@
+﻿WinGetActiveTitle, wintitle
+WinGetPos, perant_X, perant_Y,,, %wintitle%
+position_X := A_CaretX + perant_X
+position_Y := A_CaretY + perant_Y
+send_str := %position_X%,%position_Y%
+FileAppend, %send_str%, *, UTF-8
+ExitApp

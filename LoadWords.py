@@ -73,4 +73,8 @@ with io.open(YellowThemePath, "r", encoding="utf-8") as wordTxt:
 
 RedThemePath = './/Res//RedTheme.txt'
 with io.open(RedThemePath, "r", encoding="utf-8") as wordTxt:
-    RedTheme = wordTxt.read()        
+    RedTheme = wordTxt.read()  
+
+getCaretPosPath = './/Res//getCaretPos.txt'
+with io.open(getCaretPosPath, "r", encoding="utf-8") as wordTxt:
+    getCaretPos_Script = wordTxt.read()            

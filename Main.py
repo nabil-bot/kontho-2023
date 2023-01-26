@@ -89,7 +89,7 @@ def initGlobal():
 
 
 
-ahkScript = "global pinedState := 0 \nreviousXPos := 0\npreviousYPos := 0\nSetTimer, setPos, 100\nsetPos:\nglobal pinedState\nif pinedState = 0\n{\n	WinGetActiveTitle, wintitle\n	WinGetPos, perant_X, perant_Y,,, %wintitle%\n	position_X := A_CaretX + perant_X\n	position_Y := A_CaretY + perant_Y\n	if position_X != previousXPos and position_Y != previousYPos\n		WinMove, Nms_completer,, position_X, position_Y\n		previousXPos = %position_X%\n		previousYPos = %position_Y%\n}\nIfWinNotExist, Nms Voice pad\n{\n	ExitApp\n}\nreturn\nF23::\nglobal pinedState\nif pinedState = 0\n{\n	pinedState = 1\n	return\n}\nif pinedState = 1\n{\n	pinedState = 0\n}\nreturn\nF12::\nExitApp"
+ahkScript = "global pinedState := 0 \nreviousXPos := 0\npreviousYPos := 0\nSetTimer, setPos, 100\nsetPos:\nglobal pinedState\nif pinedState = 0\n{\n	WinGetActiveTitle, wintitle\n	WinGetPos, perant_X, perant_Y,,, %wintitle%\n	position_X := A_CaretX + perant_X\n	position_Y := A_CaretY + perant_Y\n	if position_X != previousXPos and position_Y != previousYPos\n		WinMove, Nms_completer,, position_X, position_Y\n		previousXPos = %position_X%\n		previousYPos = %position_Y%\n}\nIfWinNotExist, Nms Voice pad\n{\n	ExitApp\n}\nreturn\nF23::\nglobal pinedState\nif pinedState = 0\n{\n	pinedState = 1\n	return\n}\nif pinedState = 1\n{\n	pinedState = 0\n}\nreturn"
 
 
 keysToBlock = [2,3,4,5,6,7,8,9,10,11,  16,17,18,19,20,21,22,23,24,25,   30,31,32,33,34,35,36,37,38,   44,45,46,47,48,49,50,  52]    
@@ -638,9 +638,8 @@ class WhileloopThroughListThread(QtCore.QThread):
     ruledOutSignal = QtCore.pyqtSignal(bool)
     newCherecterIspressed = QtCore.pyqtSignal(bool)
     themeSignal = QtCore.pyqtSignal(str)
-
     acSignal = QtCore.pyqtSignal(str) # autoCurrect
-
+    caretPosSignal = QtCore.pyqtSignal(int, int)
     def __init__(self, parent=None):
         super(WhileloopThroughListThread, self).__init__(parent)
         
@@ -730,6 +729,14 @@ class WhileloopThroughListThread(QtCore.QThread):
                 self.matchedWordsSignal.emit(self.matchedWords)
                 self.preWord = wordSofar
                 self.preEngWrd = englishWordSofar
+
+                # caretPos_str = ahk.run_script(getCaretPos_Script)
+                # caretPos = str(caretPos_str).split(" ")
+                # try:
+                #     self.caretPosSignal.emit(int(caretPos[0]),int(caretPos[1]))
+                # except Exception:
+                #     pass
+
             time.sleep(0.1)
      
     def newCharecterIsPressedStateChange(self, state):
@@ -770,15 +777,23 @@ class WhileloopThroughListThread(QtCore.QThread):
         # print("init signal")
     
     def startSimilarityThread(self,englishWordSofar_local,currentLang):
-        
-        self.similarityThread = similarityThread(englishWordSofar_local, currentLang)
-        if self.similarityThread.isRunning() == False:
-            self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-            self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
-            self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
-            self.similarityThread.start()
-        else:
-            print("thread is running")    
+        try:
+            self.similarityThread = similarityThread(englishWordSofar_local, currentLang)
+            if self.similarityThread.isRunning():
+                self.similarityThread.quit()
+                self.similarityThread.wait()
+
+                self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
+                self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
+                self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
+                self.similarityThread.start() 
+            else:
+                self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
+                self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
+                self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
+                self.similarityThread.start() 
+        except Exception as e:
+            print(e)           
     def ruledOutSimiStateChange(self, state):
         self.ruledOutSimi = state
         self.similarTheredIsRunning = False
@@ -803,7 +818,7 @@ class wordThread(QtCore.QThread):
 
     newCherecterIspressed = QtCore.pyqtSignal(bool)
     initSignal = QtCore.pyqtSignal(str)
-
+    caretPosSignal = QtCore.pyqtSignal(int, int)
     def __init__(self):
         super(wordThread, self).__init__()
         self.is_running = True
@@ -818,6 +833,7 @@ class wordThread(QtCore.QThread):
 
         self.whileLoopThread = WhileloopThroughListThread()
         self.whileLoopThread.matchedWordsSignal.connect(self.addSimiWordsFunc)
+        self.whileLoopThread.caretPosSignal.connect(self.emitCaretPos)
         self.whileLoopThread.acSignal.connect(self.sendAcSignal)
         self.whileLoopThread.finished.connect(self.whileLoopThread.deleteLater)
         self.whileLoopThread.themeSignal.connect(self.emitTheme)
@@ -827,7 +843,9 @@ class wordThread(QtCore.QThread):
 
         self.whileLoopThread.start()
 
-
+    def emitCaretPos(self, posX, posY):
+        self.caretPosSignal.emit(posX, posY)
+    
     def run(self, wordSofar = "", englishWordSofar_local = "", currentLang = ""):
         
         # self.currentLang = currentLang
@@ -1064,7 +1082,7 @@ class OSK_UI(QtWidgets.QMainWindow):
         # User32.SetWindowLongW(int(self.dockWidget.winId()), -20, 134217728)
         # print(int(self.dockWidget.winId()))
         self.CloseButton.clicked.connect(lambda: self.close())
-        self.MinimizeButton.clicked.connect(lambda: self.showMinimized())
+        # self.MinimizeButton.clicked.connect(lambda: self.showMinimized())
         self.clicked = False
         self.WinOsk.clicked.connect(self.oenWinOsk)
         self.tabWidget.currentChanged.connect(self.tabChangedFunc)
@@ -1809,6 +1827,13 @@ class listViewClass(QtWidgets.QMainWindow):
         self.SpellCheckPushButton.clicked.connect(self.spellCheckFunc)
         self.threadRunning = False
 
+        self.Settings_menu_for_completor = QMenu()
+
+        self.dont_show_on_this_window_menu = QAction('Do not suggest for this window', self)
+        
+
+        self.Settings_btn.setMenu(self.Settings_menu_for_completor)
+
     def action1_triggered(self):
         # selected_item = self.listWidget.currentItem()
         
@@ -1849,12 +1874,12 @@ class listViewClass(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot(list)
     def populateWords(self, words):
         # self.show()
-        # print(words)
+        print(words)
         while("" in words):
             words.remove("")
         self.listWidget.clear()
         for item in words:
-            if self.listWidget.findItems(item, Qt.MatchExactly):
+            if self.listWidget.findItems(item, Qt.MatchExactly) or "েৌ" in item or "েো" in item:
                 continue
             self.listWidget.addItem(item)    
             
@@ -2006,6 +2031,14 @@ class Ui(QtWidgets.QMainWindow):
         self.Unicode_ = QAction('as Unicode', self, checkable=True, checked=True)
         self.Unicode_.triggered.connect(self.Unicode)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        self.listClass = listViewClass()
+        self.listClass.hide()
+
+
+        self.listClass.dont_show_on_this_window_menu.triggered.connect(self.DontShowFunc)
+
+
+
         self.taking_commend = QAction('Bijoy classic', self, checkable=True, checked=False)
         self.taking_commend.triggered.connect(self.Take_commend)
         self.taking_cmd = False 
@@ -2116,8 +2149,7 @@ class Ui(QtWidgets.QMainWindow):
         self.keysToBlock = [2,3,4,5,6,7,8,9,10,11,  16,17,18,19,20,21,22,23,24,25,   30,31,32,33,34,35,36,37,38,   44,45,46,47,48,49,50,  52]    
         self.keysToUnlock = [2,3,4,5,6,7,8,9,10,11,52]
         
-        self.listClass = listViewClass()
-        self.listClass.hide()
+        
 
         self.oskClass = OSK_UI()
         
@@ -2224,6 +2256,7 @@ class Ui(QtWidgets.QMainWindow):
 
         self.wordThread_ = wordThread()
         self.wordThread_.matched_Word_signal.connect(self.getRecomendedWords)
+        self.wordThread_.caretPosSignal.connect(self.setListPos)
         self.wordThread_.acWordSignal.connect(self.AutoCompleate)
         self.wordThread_.hideSignal.connect(self.listClass.showHideFunc)
         self.wordThread_.themeSignal.connect(self.listClass.changeTheme)
@@ -2231,7 +2264,7 @@ class Ui(QtWidgets.QMainWindow):
         self.initThread_signal.connect(self.wordThread_.initFunc)
         # self.wordThread_.start()
 
-        ahk.run_script(ahkScript, blocking=False)
+        ahk.run_script(ahkScript, blocking=False)   # <-------------- 3333333333
         self.wordManagerClass = wordManagerClass()
         self.wordManagerClass.save_signal.connect(self.UpdateLists)
 
@@ -2245,6 +2278,11 @@ class Ui(QtWidgets.QMainWindow):
         # kb2.unhook_all()
         self.bijoy_Uni_Map = {"q":"ঙ","w":"য","e":"ড","r":"প","t":"ট","y":"চ","u":"জ","i":"হ","o":"গ","p":"ড়","a":"ৃ","s":"ু","d":"ি","f":"া","g":"্","h":"ব","j":"ক","k":"ত","l":"দ","z":"্র","x":"ও","c":"ে","v":"র","b":"ন","n":"স","m":"ম","1":"১","2":"২","3":"৩","4":"৪","5":"৫","6":"৬","7":"৭","8":"৮","9":"৯","0":"০","Q":"ং","W":"য়","E":"ঢ","R":"ফ","T":"ঠ","Y":"ছ","U":"ঝ","I":"ঞ","O":"ঘ","P":"ঢ়","A":"র্","S":"ূ","D":"ী","F":"অ","G":"।","H":"ভ","J":"খ","K":"থ","L":"ধ","Z":"্য","X":"ৗ","C":"ৈ","V":"ল","B":"ণ","N":"ষ","M":"শ","$":"৳","&":"ঁ"}
         # ================
+    def DontShowFunc(self):
+        print("I am here")
+        pass
+    def setListPos(self, posX, posY):
+        self.listClass.move(posX, posY)
     def UpdateLists(self, path):
         try:
             with io.open(path, "r", encoding="utf-8") as wordTxt:
@@ -2597,8 +2635,8 @@ class Ui(QtWidgets.QMainWindow):
                 # print("i am here!")
                 return  
                         
-            # =====================================
-            stringKey = (str(key)).replace("'", "")
+            # ====================================
+            stringKey = (str(key)).replace("'","")
             if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
                 if wordSofar in self.abbries_dic and self.settingsGUIClass.UseAbrisCheckBox.isChecked() == True:
                     self.triggerAbbribiation(wordSofar)
@@ -2615,31 +2653,38 @@ class Ui(QtWidgets.QMainWindow):
                     else:
                         self.initialize() 
                 return        
-            if self.listClass.isHidden() == False:
-                # print("in if statement")
-                if str(key) == "Key.down":
-                    
-                    if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
-                        self.listClass.listWidget.setCurrentRow(1)
-                    else:
-                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
-                    try:
-                        kb2.block_key(28) # enter key
-                    except Exception as e:
-                        print(traceback.format_exc())     
+            
+            if str(key) in ["Key.down", "Key.up", "Key.enter"]:
+                if self.listClass.isHidden() == False:
+                    if str(key) == "Key.down":
+                        print("i am here!")
+                        if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
+                            self.listClass.listWidget.setCurrentRow(1)
+                        else:
+                            self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
+                        try:
+                            kb2.block_key(28) # enter key
+                        except Exception as e:
+                            print(traceback.format_exc())     
 
-                if str(key) == "Key.up":
-                    if self.listClass.listWidget.currentRow() == 1:
-                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
-                    else:    
-                        self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1) 
+                    if str(key) == "Key.up":
+                        if self.listClass.listWidget.currentRow() == 1:
+                            self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
+                        else:    
+                            self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1) 
 
-                if str(key) == "Key.enter":
-                    if self.listClass.listWidget.currentRow() != -1:    
-                        item = self.listClass.listWidget.currentItem()
-                        self.WordClicked(item.text())
-                        # initGlobal()
-                        self.listClass.showHideFunc("hide")
+                    if str(key) == "Key.enter":
+                        if self.listClass.listWidget.currentRow() != -1:    
+                            item = self.listClass.listWidget.currentItem()
+                            self.WordClicked(item.text())
+                            self.listClass.showHideFunc("hide")
+                        else:
+                            self.initialize()
+                            self.initThread_signal.emit("init")   
+                else:
+                    self.initialize()
+                    self.initThread_signal.emit("init")
+                    return
 
             
             if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"] and self.keysBlocked == True: 
@@ -2652,9 +2697,10 @@ class Ui(QtWidgets.QMainWindow):
             
             
             if self.current_language == "English":
-                
-                if self.HotKeyPressed == True : 
+                print(self.HotKeyPressed) 
+                if self.HotKeyPressed == True and stringKey in englishNumbers: 
                     self.initialize()
+                    self.HotKeyPressed = False
                     return
 
                 if stringKey in englishNumbers:
@@ -2665,7 +2711,8 @@ class Ui(QtWidgets.QMainWindow):
                     self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
                     # self.initialize()
                     return    
-                if stringKey in englishAlphabets:     
+                if stringKey in englishAlphabets: 
+                    print("i am in english alpha")    
                     wordSofar += stringKey
                     englishWordSofar = wordSofar
                     self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
@@ -2698,6 +2745,8 @@ class Ui(QtWidgets.QMainWindow):
                 if self.Bijoy_layout.isChecked() == True: 
                     self.convertToBijoy(stringKey)
             if self.Ansi_.isChecked() == True: 
+                if stringKey not in englishLatters:
+                    return
                 try:    
                     bangla_wordSoFar_unicode = self.convertTobangla(key) 
                     ansi_Bangla =  convert(bangla_wordSoFar_unicode)  
@@ -2768,13 +2817,23 @@ class Ui(QtWidgets.QMainWindow):
         if key in ['d', 'c', 'C']:
             self.reserved = self.bijoy_Uni_Map[key]
             return
+   
 
-        
+        # if len(wordSofar)> 0:
+        #     print(key)
+        #     print(wordSofar[-1])
+
         if self.reserved != "":
             toSendKey = f"{self.bijoy_Uni_Map[key]}{self.reserved}"
-            print(toSendKey)
+        elif key in ["f", 'X'] and wordSofar[-1] == "ে":
+            self.trim(1)
+
+            if key == "f":
+                toSendKey = "ো"
+            if key == "X":
+                toSendKey = "ৌ"
         else:
-            toSendKey = self.bijoy_Uni_Map[key]    
+            toSendKey = self.bijoy_Uni_Map[key]
         
         self.listener.stop()
         kb.type(toSendKey)
