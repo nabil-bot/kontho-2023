@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 from distutils.log import FATAL
+from shutil import ExecError
 import time
 import keyboard as kb2
 import speech_recognition as sr
@@ -9,7 +10,7 @@ kb = Controller()
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 import sys
 from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QRect, QTimer, QSettings, QEasingCurve, QEvent
-from PyQt5.QtWidgets import QWidget, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox
+from PyQt5.QtWidgets import QWidget, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox, QSystemTrayIcon
 from PyQt5.QtGui import QPainter, QColor 
 import os
 import io 
@@ -47,7 +48,7 @@ from WordManager import wordManagerClass
 from LoadWords import *
 from pynput import keyboard
 import NumberToWord
-
+import ast
 
 # ++++++++++++++++global variables ====================
 similarTheredIsRunning = False
@@ -64,6 +65,17 @@ CurrentWord = ""
 ruledOut = False
 minimun_Similarity_Ratio = 0.70
 ansi_wordSOFar = ""
+
+using_tab = True
+using_arrow = True
+
+emojiDictionary = []
+emoji_list = []
+suggestEmoji = False
+
+word_submitted_for_similarity = ""
+word_submitted_lang = ""
+newCharacterIsPressed = False
 
 block_up_down = False
 
@@ -86,7 +98,11 @@ def initGlobal():
     shiftKeyBlocked = False
     keysBlocked = True
 
-
+def sendClip(txt):
+    reserved_clip = pc.paste()         
+    pc.copy(txt)
+    pyautogui.hotkey('ctrl', 'v')
+    pc.copy(reserved_clip)  
 
 
 ahkScript = "global pinedState := 0 \nreviousXPos := 0\npreviousYPos := 0\nSetTimer, setPos, 100\nsetPos:\nglobal pinedState\nif pinedState = 0\n{\n	WinGetActiveTitle, wintitle\n	WinGetPos, perant_X, perant_Y,,, %wintitle%\n	position_X := A_CaretX + perant_X\n	position_Y := A_CaretY + perant_Y\n	if position_X != previousXPos and position_Y != previousYPos\n		WinMove, Nms_completer,, position_X, position_Y\n		previousXPos = %position_X%\n		previousYPos = %position_Y%\n}\nIfWinNotExist, Nms Voice pad\n{\n	ExitApp\n}\nreturn\nF23::\nglobal pinedState\nif pinedState = 0\n{\n	pinedState = 1\n	return\n}\nif pinedState = 1\n{\n	pinedState = 0\n}\nreturn"
@@ -95,15 +111,12 @@ ahkScript = "global pinedState := 0 \nreviousXPos := 0\npreviousYPos := 0\nSetTi
 keysToBlock = [2,3,4,5,6,7,8,9,10,11,  16,17,18,19,20,21,22,23,24,25,   30,31,32,33,34,35,36,37,38,   44,45,46,47,48,49,50,  52]    
 upDownKey = [ 79 , 80]
 
-
-def convert(text):
-    if text == None:
-        return ""
+def Custom_convert(text):
     text = text.replace('ড়', 'ড়')
     text = text.replace('ঢ়', 'ঢ়')
     text = text.replace('য়', 'য়')
     test = converter.Unicode()
-    demo_text = ('2007 এ ফিলিস্তিনের নির্ধারিত গাজা ভূখণ্ডে নির্ধারণ প্রতিষ্ঠা করা হয়')
+    demo_text = '2007 এ ফিলিস্তিনের নির্ধারিত গাজা ভূখণ্ডে নির্ধারণ প্রতিষ্ঠা করা হয়'
     toPrint = test.convertUnicodeToBijoy(f'{demo_text} {text}')
     rang = len(toPrint)
     if '©' in toPrint:      # this reset rep  
@@ -157,9 +170,6 @@ def convert(text):
     if 'i‌¨v' in custom_text:
         fixed_text = custom_text.replace('i‌¨v', 'i¨v')
         custom_text = fixed_text
-    if 'h©v' in custom_text: 
-        fixed_text = custom_text.replace('h©v', 'i¨v')
-        custom_text = fixed_text  
     B_f_words = custom_text.split(" ")
     new_text = ''
     for w in B_f_words[10:]:
@@ -170,6 +180,15 @@ def convert(text):
     custom_text  = new_text
     return custom_text 
 
+def convert(text):
+    if text == None:
+        return ""
+    text = text.replace('ড়', 'ড়')
+    text = text.replace('ঢ়', 'ঢ়')
+    text = text.replace('য়', 'য়')
+    test = converter.Unicode()
+    toPrint = test.convertUnicodeToBijoy(f'{text}')
+    return toPrint 
 
 
 class ThreadClass(QtCore.QThread):	
@@ -193,10 +212,32 @@ class ThreadClass(QtCore.QThread):
     def stop(self):
         self.is_running = False
         self.terminate() 
-        
+
+
+class OwnSettings():
+    def __init__(self):
+        pass
+    def setValue(self, setting_name, value):
+        try:
+            with io.open(f".//Res//{setting_name}.txt", 'w', encoding="utf-16") as f:
+                f.write(str(value))
+        except Exception as e:
+            print(e)
+    def value(self, setting_name):
+        try:
+            with io.open(f".//Res//{setting_name}.txt", 'r', encoding="utf-16") as f:
+                value = f.read()
+            if value in ["True", "False"]:
+                value = ast.literal_eval(value)
+                return ((value))
+        except Exception as e:
+            value = e
+            print(e) 
+        return value 
 
 class Main_recognation(QtCore.QThread):	
     recognize_signal = QtCore.pyqtSignal(str)
+    listener_signal = QtCore.pyqtSignal(str)
     def __init__(self, lang, UANSI_pos, audio, taking_cmd, parent=None):
         super(Main_recognation, self).__init__(parent)
         self.is_running = True
@@ -271,24 +312,34 @@ class Main_recognation(QtCore.QThread):
                     words = txt_.split(' ')
                     if words[-1] in ["কি", "কেন", "কীভাবে", "কোথায়", "কোথাকার"]: 
                         words[-1] = words[-1]+"?"    
-                    for w in words:
-                        kb.type(w)  
-                        pyautogui.write(' ') 
+                    reserved_clip = pc.paste()
+                    
+                    pc.copy(txt_)
+                    pyautogui.hotkey('ctrl', 'v')
+                    # for w in words:
+                    #     # kb.type(w) 
+                    #     pc.copy(w)
+                    #     pyautogui.hotkey('ctrl', 'v')
+                    #     pyautogui.write(' ') 
+                    pc.copy(reserved_clip)    
                     
                 except Exception as e:
                     print('type error; UANSI_pos == False')
                     print(e)
             if self.UANSI_pos == 'True':    
                 if self.lang == 'bn-BD':    
-                    toPrint = convert(text)
+                    toPrint = Custom_convert(text)
                 else:
                     toPrint = text
                 try:
-
-                    words = toPrint.split(' ')
-                    for w in words:
-                        kb.type(w)  
-                        pyautogui.write(' ')    
+                    reserved_clip = pc.paste()
+                    pc.copy(toPrint)
+                    pyautogui.hotkey('ctrl', 'v')
+                    pc.copy(reserved_clip)
+                    # words = toPrint.split(' ')
+                    # for w in words:
+                    #     kb.type(w)
+                    #     pyautogui.write(' ')  
                 except Exception as e:
                     print('type error; UANSI_pos == True')
                     print(e)
@@ -358,6 +409,7 @@ class whileThreadClass(QtCore.QThread):
                             break
                         self.recognizer_thread = Main_recognation(self.lang, self.UANSI_pos, audio, self.taking_cmd)
                         self.recognizer_thread.recognize_signal.connect(self.send_signal)
+                        # self.recognizer_thread.listener_signal.connect(self.send_signal)
                         self.recognizer_thread.finished.connect(self.recognizer_thread.deleteLater)
                         self.recognizer_thread.start()
                 else:
@@ -439,7 +491,7 @@ class whileThreadClass(QtCore.QThread):
                                 print(e)
                         if self.UANSI_pos == True:    
                             if self.lang == 'bn-BD':    
-                                toPrint = convert(text)
+                                toPrint = Custom_convert(text)
                             else:
                                 toPrint = text
                             try:
@@ -591,7 +643,8 @@ class similarityThread(QtCore.QThread):
             if len(englishWordSofar) < 5:
                 minimumSimi = minimun_Similarity_Ratio
             else:
-                minimumSimi = minimun_Similarity_Ratio   
+                minimumSimi = minimun_Similarity_Ratio 
+            # print(minimun_Similarity_Ratio)      
             if similarity > minimumSimi:
                 if similarity > self.heighestMatchedRatio:
                     if self.currentLang == "bangla":    
@@ -632,6 +685,92 @@ class similarityThread(QtCore.QThread):
         self.terminate()
         
 
+class similarity_While_Thread(QtCore.QThread):
+    mostMatchedWords = QtCore.pyqtSignal(list)
+    def __init__(self, parent=None):
+        super(similarity_While_Thread, self).__init__(parent)
+        self.is_running = True
+        self.ruledOutSimi = False
+        self.brokenByNewCharacter = False
+        self.preEngWrd = ""
+    def run(self):
+        while self.is_running:
+            global minimun_Similarity_Ratio
+            global word_submitted_for_similarity
+            global word_submitted_lang
+
+            if self.preEngWrd != word_submitted_for_similarity and word_submitted_for_similarity != "":
+                self.similarWords = []
+                self.heighestMatchedRatio = 0   # to get the most matched wrd
+
+
+                if self.ruledOutSimi == False or len(word_submitted_for_similarity) < len(self.preEngWrd):
+                    
+                    if word_submitted_lang == "bangla":
+                        currentwordsList = wordsList
+                        for wrd in currentwordsList[:]: 
+                            if word_submitted_lang == "bangla":
+                                try:
+                                    wordArray = wrd.split(",")
+                                    banglaWord = wordArray[0]
+                                    englishWord = wordArray[1]
+                                except Exception:
+                                    continue    
+                                if englishWord in ["", " "]:
+                                    continue
+                                try:    
+                                    if len(wordArray) == 1: #  or englishWord[0] != self.englishWordSofar[0]
+                                        continue
+                                except Exception:
+                                    continue 
+                            else:
+                                englishWord = wrd     
+                            similarity = self.similarity_ration_btween(englishWord, word_submitted_for_similarity)   
+                            minimumSimi = minimun_Similarity_Ratio 
+                            if similarity >= minimumSimi:
+                                if similarity > self.heighestMatchedRatio:
+                                    if word_submitted_lang == "bangla":    
+                                        self.similarWords.insert(0, banglaWord)
+                                    else:
+                                        self.similarWords.insert(0, englishWord)
+                                    self.heighestMatchedRatio = similarity
+
+                            global newCharacterIsPressed            
+                            if newCharacterIsPressed == True:  #<------   # len(self.similarWords) > 30 or    
+                                if newCharacterIsPressed == True:  
+                                    self.brokenByNewCharacter = True
+                                break  
+                    else:
+                        currentwordsList = EnglishwordsList
+                        self.similarWords = self.suggest_word(word_submitted_for_similarity, currentwordsList, minimun_Similarity_Ratio)
+                    
+                    if len(self.similarWords) == 0: #  and self.brokenByNewCharacter == False
+                        self.ruledOutSimi = True
+
+                    else:
+                        self.ruledOutSimi = False
+                    if len(self.similarWords) != 0:    
+                        self.mostMatchedWords.emit(self.similarWords)
+                    self.preEngWrd = word_submitted_for_similarity
+                else:
+                    self.preEngWrd = word_submitted_for_similarity
+
+            time.sleep(0.1)   
+    def similarity_ration_btween(self, x, y):
+        seq = difflib.SequenceMatcher(None,x,y)
+        d = seq.ratio()
+        return d    
+    def suggest_word(self, word, word_list, mini_simi= 0.6):
+        word = word.lower()
+        word_list = [w.lower() for w in word_list]
+        suggestions = difflib.get_close_matches(word, word_list, n=10, cutoff = mini_simi)
+        return suggestions                
+    def initFunc(self, sig):
+        self.ruledOutSimi = False
+        pass
+    def stop(self):
+        self.is_running = False
+        self.terminate()
 
 class WhileloopThroughListThread(QtCore.QThread):
     matchedWordsSignal = QtCore.pyqtSignal(list)
@@ -657,18 +796,22 @@ class WhileloopThroughListThread(QtCore.QThread):
         while self.is_running:
             global wordSofar
             global englishWordSofar
+            global newCherecterIspressed 
+            global suggestEmoji
             if  (self.preEngWrd != englishWordSofar and englishWordSofar != "") or (self.preWord != wordSofar and wordSofar != ""):   
-                self.newCherecterIspressed.emit(True)
+
+                newCherecterIspressed = True
+
                 self.matchedWords = []
                 try:
-                    if wordSofar[0] not in englishLatters and wordSofar[0] not in banglaNumbs:
+                    if wordSofar[0] not in englishLatters and wordSofar[0] not in banglaNumbs:  # for bangla lang
                         if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):  
                             self.loopThroughList(wordsList,wordSofar,englishWordSofar)    # this gonna check in main dictionary
                             if len(self.matchedWords) == 0:
                                 self.ruledOut = True
                             elif len(self.matchedWords) != 0 and self.ruledOut == True: 
-                                self.themeSignal.emit("green") 
-                                self.ruledOut = False
+                                self.themeSignal.emit("green")
+                                self.ruledOut = False 
 
                         if self.ruledOut == True and self.ruledOutEngla == False:  # englawords dictionary
                             self.loopThroughList(englaList,wordSofar,englishWordSofar)
@@ -677,27 +820,34 @@ class WhileloopThroughListThread(QtCore.QThread):
                             else:    
                                 self.themeSignal.emit("blue")
 
-
-                        if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
+                        if len(self.matchedWords) == 0 :  # and self.ruledOutSimi == False
                             self.startSimilarityThread(englishWordSofar, 'bangla')   
 
-                    if wordSofar[0] in englishLatters:
+                    if wordSofar[0] in englishLatters:     # for english
                         # ================================
                         englishWordSofar = wordSofar
                         
+                        # adding emojies ===================================
+                        if suggestEmoji:
+                            for e_pro in emojiDictionary:
+                                emoji = e_pro[0]
+                                emoji_name = e_pro[1]
+                                if emoji_name.lower() == englishWordSofar.lower():
+                                    self.matchedWords.insert(0, emoji) 
+                        # / adding emojies ==================================
+                        
                         if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):
                             self.loopThroughList(EnglishwordsList,wordSofar,englishWordSofar)
+
                             if len(self.matchedWords) == 0:
                                 self.ruledOut = True
                             elif len(self.matchedWords) != 0 and self.ruledOut == True: 
                                 self.themeSignal.emit("green") 
-                                self.ruledOut = False    
+                                self.ruledOut = False 
 
-                        # print(f"len(self.matchedWords):{len(self.matchedWords)}, self.ruledOutSimi: {self.ruledOutSimi}")
+                       
                         if len(self.matchedWords) == 0 and self.ruledOutSimi == False:
                             self.startSimilarityThread(englishWordSofar, 'english')
-                            # print("i am calling the function!")
-                        # print(self.matchedWords)
 
                     # ========================================
                     if wordSofar[0] in banglaNumbs: # banglaNumbs
@@ -727,6 +877,7 @@ class WhileloopThroughListThread(QtCore.QThread):
 
 
                 self.matchedWordsSignal.emit(self.matchedWords)
+
                 self.preWord = wordSofar
                 self.preEngWrd = englishWordSofar
 
@@ -747,6 +898,7 @@ class WhileloopThroughListThread(QtCore.QThread):
  
     def loopThroughList(self, wordList, wordSofar, englishWordSofar_local):
 
+        # print(self.matchedWords)
         for wrd in wordList[:]:
             wordArray = wrd.split(",")
             if len(wordArray) == 1 and wordSofar !=englishWordSofar_local:
@@ -756,10 +908,11 @@ class WhileloopThroughListThread(QtCore.QThread):
             for wrd in wordArray[:]:
                 if mainWord in self.matchedWords:
                     break
+                # print(f"{wrd[:len(wordSofar)]} : {wordSofar}")
                 if index == 0 and wrd[:len(wordSofar)] == wordSofar and wrd not in self.matchedWords: # and wrd not in self.matchedWords
                     self.matchedWords.append(mainWord)
                     break
-                elif (wrd[:len(englishWordSofar_local)]).lower() == (englishWordSofar_local).lower() and mainWord not in self.matchedWords: # and wrd not in self.matchedWords
+                elif (wrd[:len(englishWordSofar_local)]).lower() == (englishWordSofar_local).lower() and mainWord not in self.matchedWords and englishWordSofar_local != "": # and wrd not in self.matchedWords
                     self.matchedWords.append(mainWord)
                     if len(wordSofar) > 3 and wrd.lower() == (englishWordSofar_local).lower() and mainWord != wordSofar:
                         self.acSignal.emit(mainWord)
@@ -770,41 +923,57 @@ class WhileloopThroughListThread(QtCore.QThread):
                 if self.newCharecterState == True:
                     print("loop Was breaked by new cherecter")
                 break 
-          
+
     def initFunc(self, sig):
         self.ruledOut = False
         self.ruledOutSimi = False
         # print("init signal")
     
-    def startSimilarityThread(self,englishWordSofar_local,currentLang):
-        try:
-            self.similarityThread = similarityThread(englishWordSofar_local, currentLang)
-            if self.similarityThread.isRunning():
-                self.similarityThread.quit()
-                self.similarityThread.wait()
+    # def startSimilarityThread(self,englishWordSofar_local,currentLang):
+    #     self.themeSignal.emit("yellow")
+    #     try:
+    #         self.similarityThread = similarityThread(englishWordSofar_local, currentLang)
+    #         if self.similarityThread.isRunning():
+    #             self.similarityThread.quit()
+    #             self.similarityThread.wait()
 
-                self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-                self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
-                self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
-                self.similarityThread.start() 
-            else:
-                self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-                self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
-                self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
-                self.similarityThread.start() 
-        except Exception as e:
-            print(e)           
+    #             self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
+    #             self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
+    #             self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
+    #             self.similarityThread.start() 
+    #         else:
+    #             self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
+    #             self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
+    #             self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
+    #             self.similarityThread.start() 
+    #     except Exception as e:
+    #         print(e)  
+    def startSimilarityThread(self,englishWordSofar_local,currentLang):
+        global word_submitted_lang
+        global word_submitted_for_similarity
+        global newCherecterIspressed 
+
+        newCherecterIspressed  = False
+        word_submitted_lang = currentLang
+        word_submitted_for_similarity = englishWordSofar_local
+          
     def ruledOutSimiStateChange(self, state):
         self.ruledOutSimi = state
         self.similarTheredIsRunning = False
     
     def addSimiWordsFunc(self, wordList):
         self.matchedWordsSignal.emit(wordList)
-        self.themeSignal.emit("yellow")
+        # self.themeSignal.emit("yellow")
     def initFunc(self, sig):
         self.ruledOut = False
         self.ruledOutSimi = False
         self.ruledOutEngla = False
+
+        self.themeSignal.emit("yellow")
+        global word_submitted_lang
+        global word_submitted_for_similarity
+
+        word_submitted_for_similarity = ""
     def stop(self):
         self.is_running = False
         self.terminate()
@@ -819,6 +988,7 @@ class wordThread(QtCore.QThread):
     newCherecterIspressed = QtCore.pyqtSignal(bool)
     initSignal = QtCore.pyqtSignal(str)
     caretPosSignal = QtCore.pyqtSignal(int, int)
+
     def __init__(self):
         super(wordThread, self).__init__()
         self.is_running = True
@@ -842,6 +1012,12 @@ class wordThread(QtCore.QThread):
         # self.ruledOutSig.connect(self.whileLoopThread.initFunc)
 
         self.whileLoopThread.start()
+
+
+        self.whileSimiThread = similarity_While_Thread()
+        self.whileSimiThread.mostMatchedWords.connect(self.addSimiWordsFunc)
+        self.initSignal.connect(self.whileSimiThread.initFunc)
+        self.whileSimiThread.start()
 
     def emitCaretPos(self, posX, posY):
         self.caretPosSignal.emit(posX, posY)
@@ -970,97 +1146,6 @@ class similarityThreadForOsk(QtCore.QThread):
         self.is_running = False
         self.terminate()
 
-class BanglawordThread(QtCore.QThread):
-    matched_Word_signal = QtCore.pyqtSignal(list)
-    newCherecterIspressed = QtCore.pyqtSignal(bool)
-    def __init__(self):
-        super(BanglawordThread, self).__init__()
-        self.is_running = True
-        self.ruledOut = False
-        self.ruledOutSimi = False
-        self.similarTheredIsRunning = False
-        self.preWord = ""
-
-    def run(self, BanglaWord=""):
-        if BanglaWord in ["", " "]:
-            return
-        if self.similarTheredIsRunning == True:    
-            self.newCherecterIspressed.emit(True)
-        self.wordSofar = BanglaWord
-
-        try:
-            self.matchedWords = []
-            self.newCharecterState = False
-            if self.ruledOut == False:
-                for wrd in wordsList[:]:
-                    wordArray = wrd.split(",")
-                    if len(wordArray) == 1:
-                        continue
-                    banglaWord = wordArray[0]
-                    if banglaWord[:len(self.wordSofar)] == self.wordSofar:
-                        self.matchedWords.append(banglaWord)
-
-                    if len(self.matchedWords) > 9 or self.newCharecterState == True:
-                        break  
-                if len(self.matchedWords) == 0:   
-                    self.ruledOut = True 
-
-            if self.ruledOut == True and self.ruledOutSimi == False and self.similarTheredIsRunning == False:  # and self.similarTheredIsRunning == False
-                self.similarityThreadForOsk = similarityThreadForOsk(BanglaWord)
-                self.similarityThreadForOsk.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-                self.similarityThreadForOsk.mostMatchedWords.connect(self.addSimiWordsFunc)
-                self.similarityThreadForOsk.similarTheredIsRunningSignal.connect(self.similarTheredIsRunningStateChange)
-                self.similarTheredIsRunning = True
-                self.newCherecterIspressed.connect(self.similarityThreadForOsk.newCharecterIsPressedStateChange)
-                self.similarityThreadForOsk.start()
-            self.matched_Word_signal.emit(self.matchedWords)
-
-
-        except Exception as e:
-            print(traceback.format_exc()) 
-        
-    def addSimiWordsFunc(self, simiWords):
-        self.matchedWords = []
-        for w in simiWords:
-            self.matchedWords.append(w)
-        self.matched_Word_signal.emit(self.matchedWords)     
-    def similarTheredIsRunningStateChange(self, state, state2, englishWordSofar):
-        self.similarTheredIsRunning = state
-        if state == False and state2 == True:
-            self.similarityThreadForOsk = similarityThreadForOsk(englishWordSofar)
-            self.similarityThreadForOsk.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-            self.similarityThreadForOsk.mostMatchedWords.connect(self.addSimiWordsFunc)
-            self.similarityThreadForOsk.similarTheredIsRunningSignal.connect(self.similarTheredIsRunningStateChange)
-            self.similarTheredIsRunning = True
-            self.newCherecterIspressed.connect(self.similarityThreadForOsk.newCharecterIsPressedStateChange)
-            self.similarityThreadForOsk.start()
-
-    def ruledOutSimiStateChange(self, state):
-        self.ruledOutSimi = state
-        self.similarTheredIsRunning = False
-        
-        # try:    
-        #     self.similarityThreadForOsk.stop()
-        # except Exception:
-        #     pass 
-
-    def initFunc(self, sig):
-        self.ruledOut = False
-        self.ruledOutSimi = False
-        self.similarTheredIsRunning = False
-        try:    
-            self.similarityThreadForOsk.stop()
-        except Exception:
-            pass    
-
-    def similarity_ration_btween(self, x, y):
-        seq = difflib.SequenceMatcher(None,x,y)
-        d = seq.ratio()
-        return d
-    def stop(self):
-        self.is_running = False
-        self.terminate()
-  
 
 class OSK_UI(QtWidgets.QMainWindow):
     bangla_word_signal = pyqtSignal(str)
@@ -1114,102 +1199,102 @@ class OSK_UI(QtWidgets.QMainWindow):
         # self.RestoreCharacPushButton.clicked.connect(self.RestoreCharac)
 
 # banglakeyboard connectors ===========================
-        self.Ao_pushButton.clicked.connect(lambda:self.logIn("অ"))
-        self.Aa_pushButton.clicked.connect(lambda:self.logIn("আ"))
-        self.pushButton_85.clicked.connect(lambda:self.logIn("ই"))
-        self.pushButton_80.clicked.connect(lambda:self.logIn("ঈ"))
-        self.pushButton_82.clicked.connect(lambda:self.logIn("উ"))
-        self.pushButton_88.clicked.connect(lambda:self.logIn("ঊ"))
-        self.pushButton_87.clicked.connect(lambda:self.logIn("ঋ"))
-        self.pushButton_79.clicked.connect(lambda:self.logIn("এ"))
-        self.pushButton_83.clicked.connect(lambda:self.logIn("ঐ"))
-        self.pushButton_86.clicked.connect(lambda:self.logIn("ও"))
-        self.pushButton_89.clicked.connect(lambda:self.logIn("ঔ"))
-        self.pushButton_155.clicked.connect(lambda:self.logIn("া"))
-        self.pushButton_156.clicked.connect(lambda:self.logIn("ি"))
-        self.Deghi_pushButton.clicked.connect(lambda:self.logIn("ী"))
-        self.pushButton_158.clicked.connect(lambda:self.logIn("ু"))
-        self.pushButton_159.clicked.connect(lambda:self.logIn("ূ"))
-        self.pushButton_160.clicked.connect(lambda:self.logIn("ৃ"))
-        self.pushButton_161.clicked.connect(lambda:self.logIn("ে"))
-        self.pushButton_162.clicked.connect(lambda:self.logIn("ৈ"))
-        self.pushButton_163.clicked.connect(lambda:self.logIn("ো"))
-        self.pushButton_164.clicked.connect(lambda:self.logIn("ৌ"))
-        self.pushButton_101.clicked.connect(lambda:self.logIn("ক"))
-        self.pushButton_91.clicked.connect(lambda:self.logIn("খ"))
-        self.pushButton_96.clicked.connect(lambda:self.logIn("গ"))
-        self.pushButton_133.clicked.connect(lambda:self.logIn("ঘ"))
-        self.pushButton_138.clicked.connect(lambda:self.logIn("ঙ"))
-        self.pushButton_148.clicked.connect(lambda:self.logIn("চ"))
-        self.pushButton_93.clicked.connect(lambda:self.logIn("ছ"))
-        self.pushButton_141.clicked.connect(lambda:self.logIn("জ"))
-        self.pushButton_92.clicked.connect(lambda:self.logIn("ঝ"))
-        self.pushButton_145.clicked.connect(lambda:self.logIn("ঞ"))
-        self.pushButton_150.clicked.connect(lambda:self.logIn("ট"))
-        self.pushButton_151.clicked.connect(lambda:self.logIn("ঠ"))
-        self.pushButton_135.clicked.connect(lambda:self.logIn("ড"))
-        self.pushButton_153.clicked.connect(lambda:self.logIn("ঢ"))
-        self.pushButton_140.clicked.connect(lambda:self.logIn("ণ"))
-        self.pushButton_143.clicked.connect(lambda:self.logIn("ত"))
-        self.pushButton_104.clicked.connect(lambda:self.logIn("থ"))
-        self.pushButton_132.clicked.connect(lambda:self.logIn("দ"))
-        self.pushButton_99.clicked.connect(lambda:self.logIn("ধ"))
-        self.pushButton_103.clicked.connect(lambda:self.logIn("ন"))
-        self.pushButton_142.clicked.connect(lambda:self.logIn("প"))
-        self.pushButton_131.clicked.connect(lambda:self.logIn("ফ"))
-        self.pushButton_94.clicked.connect(lambda:self.logIn("ব"))
-        self.pushButton_147.clicked.connect(lambda:self.logIn("ভ"))
-        self.pushButton_100.clicked.connect(lambda:self.logIn("ম"))
-        self.pushButton_95.clicked.connect(lambda:self.logIn("য"))
-        self.pushButton_134.clicked.connect(lambda:self.logIn("র"))
-        self.Lo_pushButton.clicked.connect(lambda:self.logIn("ল"))
-        self.pushButton_90.clicked.connect(lambda:self.logIn("শ"))
-        self.pushButton_97.clicked.connect(lambda:self.logIn("ষ"))
-        self.pushButton_137.clicked.connect(lambda:self.logIn("স"))
-        self.pushButton_146.clicked.connect(lambda:self.logIn("হ"))
-        self.pushButton_149.clicked.connect(lambda:self.logIn("ড়"))
-        self.pushButton_144.clicked.connect(lambda:self.logIn("ঢ়"))
-        self.pushButton_98.clicked.connect(lambda:self.logIn("য়"))
-        self.pushButton_105.clicked.connect(lambda:self.logIn("ৎ"))
-        self.pushButton_136.clicked.connect(lambda:self.logIn("ং"))
-        self.pushButton_139.clicked.connect(lambda:self.logIn("ঃ"))
-        self.pushButton_152.clicked.connect(lambda:self.logIn("ঁ"))
-        self.pushButton_154.clicked.connect(lambda:self.logIn("্"))
-        self.pushButton_165.clicked.connect(lambda:self.logIn("্য"))
-        self.pushButton_166.clicked.connect(lambda:self.logIn("্র"))
-        self.pushButton_170.clicked.connect(lambda:self.logIn("০"))
-        self.pushButton_167.clicked.connect(lambda:self.logIn("১"))
-        self.pushButton_173.clicked.connect(lambda:self.logIn("২"))
-        self.pushButton_169.clicked.connect(lambda:self.logIn("৩"))
-        self.pushButton_171.clicked.connect(lambda:self.logIn("৪"))
-        self.pushButton_172.clicked.connect(lambda:self.logIn("৫"))
-        self.pushButton_168.clicked.connect(lambda:self.logIn("৬"))
-        self.pushButton_175.clicked.connect(lambda:self.logIn("৭"))
-        self.pushButton_174.clicked.connect(lambda:self.logIn("৮"))
-        self.pushButton_176.clicked.connect(lambda:self.logIn("৯"))
-        self.pushButton_186.clicked.connect(lambda:self.logIn("ক্ষ"))
-        self.pushButton_193.clicked.connect(lambda:self.logIn("ঙ্ক"))
-        self.pushButton_185.clicked.connect(lambda:self.logIn("ঙ্গ"))
-        self.pushButton_187.clicked.connect(lambda:self.logIn("ঞ্চ"))
-        self.pushButton_188.clicked.connect(lambda:self.logIn("ঞ্ছ"))
-        self.pushButton_194.clicked.connect(lambda:self.logIn("ঞ্জ"))
-        self.pushButton_191.clicked.connect(lambda:self.logIn("জ্ঞ"))
-        self.pushButton_183.clicked.connect(lambda:self.logIn("হ্ম"))
-        self.pushButton_190.clicked.connect(lambda:self.logIn("ষ্ণ"))
-        self.pushButton_195.clicked.connect(lambda:self.logIn("ষ্ম"))
-        self.pushButton_189.clicked.connect(lambda:self.logIn("ত্ত"))
-        self.pushButton_177.clicked.connect(lambda:self.logIn("।"))
-        self.pushButton_178.clicked.connect(lambda:self.logIn(","))
-        self.pushButton_179.clicked.connect(lambda:self.logIn("?"))
-        self.pushButton_180.clicked.connect(lambda:self.logIn(";"))
-        self.pushButton_181.clicked.connect(lambda:self.logIn(":"))
-        self.pushButton_182.clicked.connect(lambda:self.logIn("৳"))
-        self.pushButton_192.clicked.connect(lambda:self.logIn("!"))
-        self.pushButton_184.clicked.connect(lambda:self.logIn("@"))
-        self.pushButton_196.clicked.connect(lambda:self.logIn("("))
-        self.pushButton.clicked.connect(lambda:self.logIn(")"))
+        # self.Ao_pushButton.clicked.connect(lambda:self.logIn("অ"))
+        # self.Aa_pushButton.clicked.connect(lambda:self.logIn("আ"))
+        # self.pushButton_85.clicked.connect(lambda:self.logIn("ই"))
+        # self.pushButton_80.clicked.connect(lambda:self.logIn("ঈ"))
+        # self.pushButton_82.clicked.connect(lambda:self.logIn("উ"))
+        # self.pushButton_88.clicked.connect(lambda:self.logIn("ঊ"))
+        # self.pushButton_87.clicked.connect(lambda:self.logIn("ঋ"))
+        # self.pushButton_79.clicked.connect(lambda:self.logIn("এ"))
+        # self.pushButton_83.clicked.connect(lambda:self.logIn("ঐ"))
+        # self.pushButton_86.clicked.connect(lambda:self.logIn("ও"))
+        # self.pushButton_89.clicked.connect(lambda:self.logIn("ঔ"))
+        # self.pushButton_155.clicked.connect(lambda:self.logIn("া"))
+        # self.pushButton_156.clicked.connect(lambda:self.logIn("ি"))
+        # self.Deghi_pushButton.clicked.connect(lambda:self.logIn("ী"))
+        # self.pushButton_158.clicked.connect(lambda:self.logIn("ু"))
+        # self.pushButton_159.clicked.connect(lambda:self.logIn("ূ"))
+        # self.pushButton_160.clicked.connect(lambda:self.logIn("ৃ"))
+        # self.pushButton_161.clicked.connect(lambda:self.logIn("ে"))
+        # self.pushButton_162.clicked.connect(lambda:self.logIn("ৈ"))
+        # self.pushButton_163.clicked.connect(lambda:self.logIn("ো"))
+        # self.pushButton_164.clicked.connect(lambda:self.logIn("ৌ"))
+        # self.pushButton_101.clicked.connect(lambda:self.logIn("ক"))
+        # self.pushButton_91.clicked.connect(lambda:self.logIn("খ"))
+        # self.pushButton_96.clicked.connect(lambda:self.logIn("গ"))
+        # self.pushButton_133.clicked.connect(lambda:self.logIn("ঘ"))
+        # self.pushButton_138.clicked.connect(lambda:self.logIn("ঙ"))
+        # self.pushButton_148.clicked.connect(lambda:self.logIn("চ"))
+        # self.pushButton_93.clicked.connect(lambda:self.logIn("ছ"))
+        # self.pushButton_141.clicked.connect(lambda:self.logIn("জ"))
+        # self.pushButton_92.clicked.connect(lambda:self.logIn("ঝ"))
+        # self.pushButton_145.clicked.connect(lambda:self.logIn("ঞ"))
+        # self.pushButton_150.clicked.connect(lambda:self.logIn("ট"))
+        # self.pushButton_151.clicked.connect(lambda:self.logIn("ঠ"))
+        # self.pushButton_135.clicked.connect(lambda:self.logIn("ড"))
+        # self.pushButton_153.clicked.connect(lambda:self.logIn("ঢ"))
+        # self.pushButton_140.clicked.connect(lambda:self.logIn("ণ"))
+        # self.pushButton_143.clicked.connect(lambda:self.logIn("ত"))
+        # self.pushButton_104.clicked.connect(lambda:self.logIn("থ"))
+        # self.pushButton_132.clicked.connect(lambda:self.logIn("দ"))
+        # self.pushButton_99.clicked.connect(lambda:self.logIn("ধ"))
+        # self.pushButton_103.clicked.connect(lambda:self.logIn("ন"))
+        # self.pushButton_142.clicked.connect(lambda:self.logIn("প"))
+        # self.pushButton_131.clicked.connect(lambda:self.logIn("ফ"))
+        # self.pushButton_94.clicked.connect(lambda:self.logIn("ব"))
+        # self.pushButton_147.clicked.connect(lambda:self.logIn("ভ"))
+        # self.pushButton_100.clicked.connect(lambda:self.logIn("ম"))
+        # self.pushButton_95.clicked.connect(lambda:self.logIn("য"))
+        # self.pushButton_134.clicked.connect(lambda:self.logIn("র"))
+        # self.Lo_pushButton.clicked.connect(lambda:self.logIn("ল"))
+        # self.pushButton_90.clicked.connect(lambda:self.logIn("শ"))
+        # self.pushButton_97.clicked.connect(lambda:self.logIn("ষ"))
+        # self.pushButton_137.clicked.connect(lambda:self.logIn("স"))
+        # self.pushButton_146.clicked.connect(lambda:self.logIn("হ"))
+        # self.pushButton_149.clicked.connect(lambda:self.logIn("ড়"))
+        # self.pushButton_144.clicked.connect(lambda:self.logIn("ঢ়"))
+        # self.pushButton_98.clicked.connect(lambda:self.logIn("য়"))
+        # self.pushButton_105.clicked.connect(lambda:self.logIn("ৎ"))
+        # self.pushButton_136.clicked.connect(lambda:self.logIn("ং"))
+        # self.pushButton_139.clicked.connect(lambda:self.logIn("ঃ"))
+        # self.pushButton_152.clicked.connect(lambda:self.logIn("ঁ"))
+        # self.pushButton_154.clicked.connect(lambda:self.logIn("্"))
+        # self.pushButton_165.clicked.connect(lambda:self.logIn("্য"))
+        # self.pushButton_166.clicked.connect(lambda:self.logIn("্র"))
+        # self.pushButton_170.clicked.connect(lambda:self.logIn("০"))
+        # self.pushButton_167.clicked.connect(lambda:self.logIn("১"))
+        # self.pushButton_173.clicked.connect(lambda:self.logIn("২"))
+        # self.pushButton_169.clicked.connect(lambda:self.logIn("৩"))
+        # self.pushButton_171.clicked.connect(lambda:self.logIn("৪"))
+        # self.pushButton_172.clicked.connect(lambda:self.logIn("৫"))
+        # self.pushButton_168.clicked.connect(lambda:self.logIn("৬"))
+        # self.pushButton_175.clicked.connect(lambda:self.logIn("৭"))
+        # self.pushButton_174.clicked.connect(lambda:self.logIn("৮"))
+        # self.pushButton_176.clicked.connect(lambda:self.logIn("৯"))
+        # self.pushButton_186.clicked.connect(lambda:self.logIn("ক্ষ"))
+        # self.pushButton_193.clicked.connect(lambda:self.logIn("ঙ্ক"))
+        # self.pushButton_185.clicked.connect(lambda:self.logIn("ঙ্গ"))
+        # self.pushButton_187.clicked.connect(lambda:self.logIn("ঞ্চ"))
+        # self.pushButton_188.clicked.connect(lambda:self.logIn("ঞ্ছ"))
+        # self.pushButton_194.clicked.connect(lambda:self.logIn("ঞ্জ"))
+        # self.pushButton_191.clicked.connect(lambda:self.logIn("জ্ঞ"))
+        # self.pushButton_183.clicked.connect(lambda:self.logIn("হ্ম"))
+        # self.pushButton_190.clicked.connect(lambda:self.logIn("ষ্ণ"))
+        # self.pushButton_195.clicked.connect(lambda:self.logIn("ষ্ম"))
+        # self.pushButton_189.clicked.connect(lambda:self.logIn("ত্ত"))
+        # self.pushButton_177.clicked.connect(lambda:self.logIn("।"))
+        # self.pushButton_178.clicked.connect(lambda:self.logIn(","))
+        # self.pushButton_179.clicked.connect(lambda:self.logIn("?"))
+        # self.pushButton_180.clicked.connect(lambda:self.logIn(";"))
+        # self.pushButton_181.clicked.connect(lambda:self.logIn(":"))
+        # self.pushButton_182.clicked.connect(lambda:self.logIn("৳"))
+        # self.pushButton_192.clicked.connect(lambda:self.logIn("!"))
+        # self.pushButton_184.clicked.connect(lambda:self.logIn("@"))
+        # self.pushButton_196.clicked.connect(lambda:self.logIn("("))
+        # self.pushButton.clicked.connect(lambda:self.logIn(")"))
 
-        self.pushButton_201.clicked.connect(self.spaceClicked)
+        # self.pushButton_201.clicked.connect(self.spaceClicked)
         self.pushButton_198.clicked.connect(self.tabClicked)            
         self.pushButton_199.clicked.connect(self.BackSpaceClicked)
         self.pushButton_200.clicked.connect(self.deleteClicked)
@@ -1302,25 +1387,16 @@ class OSK_UI(QtWidgets.QMainWindow):
 
         self.previousLetter = ""
     
-        # self.MouseListener = mouse.Listener(on_click = self.on_click)
-        # self.MouseListener.start()
-        # self.RestoreCharacPushButton.setVisible(False)
-        # self.dockWidget.dockLocationChanged.connect(lambda:self.RestoreCharacPushButton.setVisible(True))
 
-        self.BanglawordThread = BanglawordThread()
-        self.BanglawordThread.matched_Word_signal.connect(self.populateWords)
-        self.bangla_word_signal.connect(self.BanglawordThread.run)
-        self.initBanglaThread_signal.connect(self.BanglawordThread.initFunc)
-        self.BanglawordThread.start()
+        # self.BanglawordThread = BanglawordThread()
+        # self.BanglawordThread.matched_Word_signal.connect(self.populateWords)
+        # self.bangla_word_signal.connect(self.BanglawordThread.run)
+        # self.initBanglaThread_signal.connect(self.BanglawordThread.initFunc)
+        # self.BanglawordThread.start()
 
         self.loadCharacters()
         self.loadEmojies()
 
-    # def RestoreCharac(self):
-    #     self.dockWidget.show()
-    #     self.restoreDockWidget(self.dockWidget)
-    #     self.gridLayout_7.addWidget(self.dockWidget)
-    #     self.RestoreCharacPushButton.setVisible(False)
 
 
     def on_click(self, x, y, button, pressed):
@@ -1370,6 +1446,7 @@ class OSK_UI(QtWidgets.QMainWindow):
                 f.write(f"send,{Cha}")
             os.system('AutoHotkeyU64.exe "dalal.ahk"')
         self.initState()
+        self.sfx()
     def tabChangedFunc(self, index):
         global CurrentWord
         
@@ -1405,7 +1482,8 @@ class OSK_UI(QtWidgets.QMainWindow):
             self.winClicked()       
     def escFunc(self):
         kb.tap(Key.esc)
-        self.initState()     
+        self.initState()   
+        self.sfx()  
     def logCha(self, Cha): 
         try:    
             kb.type(Cha) 
@@ -1422,8 +1500,8 @@ class OSK_UI(QtWidgets.QMainWindow):
             for cha, btn in zip(self.CharHistory, self.recentChaBtns):
                 btn.setText(cha)
                 text = btn.text()
-             
         self.initState()
+        self.sfx()
     def winClicked(self):
         if self.winState == False:
             kb.press(Key.cmd)
@@ -1434,7 +1512,8 @@ class OSK_UI(QtWidgets.QMainWindow):
             kb.release(Key.cmd)
             self.winState = False
             self.pushButton_50.setStyleSheet("")
-            return    
+            return  
+        self.sfx()      
     def altClicked(self):
         if self.altState == False:
             kb.press(Key.alt)
@@ -1447,6 +1526,7 @@ class OSK_UI(QtWidgets.QMainWindow):
             self.altState=False
             self.pushButton_51.setStyleSheet("")
             self.pushButton_53.setStyleSheet("")
+        self.sfx()    
     def ctrlClicked(self):
         if self.ctrlState == False:
             kb.press(Key.ctrl)
@@ -1457,7 +1537,8 @@ class OSK_UI(QtWidgets.QMainWindow):
             kb.release(Key.ctrl)
             self.ctrlState = False
             self.pushButton_49.setStyleSheet("")
-            return   
+            return
+        self.sfx()       
     def shiftClicked(self):
         if self.shiftState == False:
             kb.press(Key.shift)
@@ -1484,7 +1565,8 @@ class OSK_UI(QtWidgets.QMainWindow):
             self.pushButton_81.setStyleSheet("")    
             self.pushButton_115.setStyleSheet("")    
 
-            return      
+            return 
+        self.sfx()         
     def CapsClicked(self):    
         if self.capsLocked == False:
             for btn in self.latter_btns:
@@ -1507,7 +1589,8 @@ class OSK_UI(QtWidgets.QMainWindow):
 
             self.pushButton_35.setStyleSheet("")    
             self.capsLocked = False  
-            return  
+            return 
+        self.sfx()     
     def engishLogIn(self, char): 
         if self.BanglishCheckBox.isChecked() == False or any([self.ctrlState, self.altState, self.winState]):
             if any([self.ctrlState, self.altState, self.winState]):
@@ -1520,13 +1603,15 @@ class OSK_UI(QtWidgets.QMainWindow):
             self.initState()     
         elif self.BanglishCheckBox.isChecked() == True:
             self.sendBanglishFor(char) 
-                
+        self.sfx()        
     def EnterClicked(self):
         kb.tap(Key.enter)
         self.initState()
+        self.sfx()
     def deleteClicked(self):
         kb.tap(Key.delete)
         self.initState()
+        self.sfx()
     def BackSpaceClicked(self):
         kb.tap(Key.backspace)
         global wordSofar
@@ -1547,7 +1632,7 @@ class OSK_UI(QtWidgets.QMainWindow):
                 wordSofar = "" 
                 self.cleanRecomendations()
 
-
+        self.sfx()
     def tabClicked(self):
         kb.tap(Key.tab)
         self.initState()
@@ -1609,7 +1694,28 @@ class OSK_UI(QtWidgets.QMainWindow):
 
     def logIn(self, char): # bangla cha log in  ==========================================> 
         global CurrentWord
-        kb.type(char)
+        
+        if self.UnicodeRadioButton.isChecked():   
+            kb.type(char)
+        if char == "ো":
+            kb.tap(Key.left)
+            kb.type(convert("ে"))
+            kb.tap(Key.right)
+            kb.type(convert("া"))
+        if char == "ৌ":
+            kb.tap(Key.left)
+            kb.type(convert("ে"))
+            kb.tap(Key.right)
+            kb.type("X")  
+        if self.ANSI_radioButton.isChecked() and char not in ["ো", "ৌ"]:  
+            sendClip(convert(char))
+            # kb.type(convert(char))  
+            pass
+        CurrentWord += char
+        
+        self.bangla_word_signal.emit(CurrentWord)
+        self.sfx()
+    def sfx(self):
         if self.SFXcheckBox.isChecked() == True:
             try:
                 sound_thread = threading.Thread(target=lambda:winsound.PlaySound('.//SFX//Modern UI Sound_01.wav', winsound.SND_FILENAME))
@@ -1617,10 +1723,6 @@ class OSK_UI(QtWidgets.QMainWindow):
             except Exception:
                 pass 
             pass
-        CurrentWord += char
-        self.bangla_word_signal.emit(CurrentWord)
-
-        
     def spaceClicked(self):
         global CurrentWord
         
@@ -1722,13 +1824,16 @@ class OSK_UI(QtWidgets.QMainWindow):
 
         self.widget2 = QWidget()
         self.verticalLayout2 = QVBoxLayout()
-
+        
         for grp in emojiGroups:
             groupParts = grp.split("|@|")
             
             groupName = groupParts[0] 
-            groupCharec = (groupParts[1].split("|"))
-            
+            try:    
+                groupCharec = (groupParts[1].split("|"))
+            except Exception:
+                print(groupName)
+                continue
             groupBox = QGroupBox()
             groupBox.setTitle(groupName)
 
@@ -1739,32 +1844,44 @@ class OSK_UI(QtWidgets.QMainWindow):
             columnCount = 0
             columnNum = 20
 
+            global emojiDictionary 
+            global emoji_list
+
             for cha in groupCharec[:]:
                 if len(cha) == 0:
                     continue
+                try:
+                    chaParts = cha.split(",")
 
-                chaParts = cha.split(",")
+                    emoji = chaParts[0]
+                    name = chaParts[1].replace("\n", "")
 
-                emoji = chaParts[0]
-                name = chaParts[1]
+                    emoji_propa = []
+                    emoji_propa.append(emoji)
+                    emoji_propa.append(name)
+                    emojiDictionary.append(emoji_propa)
+                    emoji_list.append(emoji) 
 
-                self.btn2 = QPushButton((emoji).replace("\n", ""))
+                    self.btn2 = QPushButton((emoji).replace("\n", ""))
 
-                self.btn2.setMinimumSize(25, 25)
+                    self.btn2.setMinimumSize(25, 25)
 
-                text = self.btn2.text()
-                try:    
-                    self.btn2.clicked.connect(lambda ch, text=text : self.logEmojie(text))
-                except Exception as e:
-                    print(e)
-                    pass
-                self.btn2.setToolTip(name)
-                self.gridLayout2.addWidget(self.btn2,rowcount, columnCount)
-                columnCount +=1
-                if columnCount == columnNum:
-                    rowcount +=1
-                    columnCount = 0 
+                    text = self.btn2.text()
+                    try:    
+                        self.btn2.clicked.connect(lambda ch, text=text : self.logEmojie(text))
+                    except Exception as e:
+                        print(e)
+                        pass
+                    self.btn2.setToolTip(name)
+                    self.gridLayout2.addWidget(self.btn2,rowcount, columnCount)
+                    columnCount +=1
+                    if columnCount == columnNum:
+                        rowcount +=1
+                        columnCount = 0 
+                except Exception:
+                    print(cha)
 
+            # print(emojiDictionary)
             self.verticalLayout2.addWidget(groupBox)
 
         self.widget2.setLayout(self.verticalLayout2)  
@@ -1827,10 +1944,12 @@ class listViewClass(QtWidgets.QMainWindow):
         self.SpellCheckPushButton.clicked.connect(self.spellCheckFunc)
         self.threadRunning = False
 
-        self.Settings_menu_for_completor = QMenu()
+        self.Settings_menu_for_completor = QMenu("Settings")
 
         self.dont_show_on_this_window_menu = QAction('Do not suggest for this window', self)
+        self.cancel_menu = QAction('Cancel', self)
         
+        self.Settings_menu_for_completor.addAction(self.dont_show_on_this_window_menu)
 
         self.Settings_btn.setMenu(self.Settings_menu_for_completor)
 
@@ -1874,11 +1993,11 @@ class listViewClass(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot(list)
     def populateWords(self, words):
         # self.show()
-        print(words)
+        # print(words)
         while("" in words):
             words.remove("")
         self.listWidget.clear()
-        for item in words:
+        for item in words[:10]:
             if self.listWidget.findItems(item, Qt.MatchExactly) or "েৌ" in item or "েো" in item:
                 continue
             self.listWidget.addItem(item)    
@@ -1901,14 +2020,19 @@ class listViewClass(QtWidgets.QMainWindow):
         if sig == "show":
             if self.isHidden() == True:
                 self.show()
+                global using_tab
+                global using_arrow
                 if self.comButtonsBlocked == False:
                     try:
-                        for i in [80, 72]: # 28 ,
-                            kb2.block_key(i)
+                        if using_arrow:
+                            for i in [80, 72]: # 28 ,
+                                kb2.block_key(i)
+                        if using_tab:
+                            kb2.block_key(15)     
                     except Exception as e:
                         print(traceback.format_exc()) 
                     self.comButtonsBlocked = True  
-                self.changeTheme("green")       
+                self.changeTheme("green")
         if sig == "hide":    
             if self.pined == False:
                 self.hide()
@@ -1946,7 +2070,8 @@ class listViewClass(QtWidgets.QMainWindow):
 class Ui(QtWidgets.QMainWindow):
     word_signal = pyqtSignal(str, str, str)
     initThread_signal = pyqtSignal(str)
-
+    bangla_word_signal = pyqtSignal(str)
+    initBanglaThread_signal = pyqtSignal(str)
     def __init__(self):
         super(Ui, self).__init__() 
         uic.loadUi('.//Uis//Main_GUI.ui', self) 
@@ -2024,8 +2149,8 @@ class Ui(QtWidgets.QMainWindow):
         self.exit_menu.setIcon(close_icon)
         self.Restart_menu = QAction('Restart', self)
         self.Restart_menu.triggered.connect(self.restart_function)
-        self.application_menue.addAction(self.exit_menu)
-        self.application_menue.addAction(self.Restart_menu)
+        
+
         self.Ansi_ = QAction('as ANSI', self, checkable=True, checked=False)
         self.Ansi_.triggered.connect(self.Ansi)
         self.Unicode_ = QAction('as Unicode', self, checkable=True, checked=True)
@@ -2113,25 +2238,78 @@ class Ui(QtWidgets.QMainWindow):
         self.main_timer = QTimer()
         self.main_timer.timeout.connect(self.Stop_thread)
         
-        
+
         self.settingsGUIClass = Options_UI()    # <------------------ 
         self.settingsGUIClass.RunAtAtartUpCheckBox.stateChanged.connect(self.Run_startup_fun)
         
-        self.main_settings = QSettings("MainSettings")
+        self.MainSettings = QSettings("MainSettings")
+        self.ownSettings = OwnSettings()
         self.settingsGUIClass.AutoCloseCheckBox.stateChanged.connect(self.autoCloseBra)
         self.settingsGUIClass.UseAbrisCheckBox.stateChanged.connect(self.useAbries)
         self.settingsGUIClass.ShowReacorCheckBox.stateChanged.connect(self.showAudioReactor)
         self.settingsGUIClass.NumOfWrdPredictionSpinBox.valueChanged.connect(self.predictionValueChanged)
-        try:
-            self.settingsGUIClass.RunAtAtartUpCheckBox.setChecked(bool(self.main_settings.value("runAtStartUp")))  
-            self.settingsGUIClass.AutoCloseCheckBox.setChecked(bool(self.main_settings.value("AutoCloseBrackets"))) 
-            self.AutoCloseBra = bool(self.main_settings.value("AutoCloseBrackets"))
-            self.settingsGUIClass.UseAbrisCheckBox.setChecked(bool(self.main_settings.value("UseAbries")))  
-            self.settingsGUIClass.ShowReacorCheckBox.setChecked(bool(self.main_settings.value("ShowAudioReactor")))  
-            self.ShowReactor = bool(self.main_settings.value("ShowAudioReactor"))   
-            self.settingsGUIClass.NumOfWrdPredictionSpinBox.setValue(self.main_settings.value("NumberOfPrediction"))     
-        except Exception as e:
-            print(e)
+        self.settingsGUIClass.SimiDoubleSpinBox.valueChanged.connect(self.similarityValueChanged)
+        self.settingsGUIClass.TabCheckBox.stateChanged.connect(self.using_tab_stateChanged)
+        self.settingsGUIClass.ArrowCheckBox.stateChanged.connect(self.using_arrow_stateChanged)
+        
+        with open('.//Res//SuggestBangla.txt', "r") as file:
+            self.suggestForBangla = (file.read())
+        if self.suggestForBangla == "False":
+            self.settingsGUIClass.banglaSuggestCheckBox.setChecked(False) 
+            self.suggestForBangla = False
+        else:
+            self.settingsGUIClass.banglaSuggestCheckBox.setChecked(True) 
+            self.suggestForEnglish = True
+
+        with open('.//Res//SuggestEnglish.txt', "r") as file:
+            self.suggestForEnglish = (file.read())
+
+        if self.suggestForEnglish == "False":
+            self.settingsGUIClass.EnglishSuggestCheckBox.setChecked(False)
+        else:
+            self.settingsGUIClass.EnglishSuggestCheckBox.setChecked(True)
+
+        
+        self.settingsGUIClass.banglaSuggestCheckBox.stateChanged.connect(self.banglaSuggest)
+        self.settingsGUIClass.EnglishSuggestCheckBox.stateChanged.connect(self.englishSuggest)
+        self.settingsGUIClass.SuggestEmojiesCheckBox.stateChanged.connect(self.emojiSuggest)
+        self.settingsGUIClass.SelectionRadioButton.clicked.connect(self.triggerSelectionSettingFunc2)
+        self.settingsGUIClass.EnterToSelectRadioButton.clicked.connect(self.triggerSelectionSettingFunc1)
+
+        self.settingsGUIClass.SelectionRadioButton.setChecked(self.ownSettings.value("selection_checked2"))
+        self.settingsGUIClass.EnterToSelectRadioButton.setChecked(self.ownSettings.value("selection_checked1"))
+        print(self.ownSettings.value("selection_checked1"))
+        # try:
+        self.settingsGUIClass.RunAtAtartUpCheckBox.setChecked(bool(self.MainSettings.value("runAtStartUp")))  
+
+        self.settingsGUIClass.AutoCloseCheckBox.setChecked(bool(self.MainSettings.value("AutoCloseBrackets")))
+        self.AutoCloseBra = bool(self.MainSettings.value("AutoCloseBrackets"))
+          
+        self.settingsGUIClass.ShowReacorCheckBox.setChecked(bool(self.MainSettings.value("ShowAudioReactor")))  
+        self.settingsGUIClass.NumOfWrdPredictionSpinBox.setValue(self.MainSettings.value("NumberOfPrediction"))  
+        self.settingsGUIClass.SimiDoubleSpinBox.setValue(float(self.MainSettings.value("minimumSimilarity"))) 
+        self.settingsGUIClass.ResetSimipushButton.clicked.connect(lambda: self.settingsGUIClass.SimiDoubleSpinBox.setValue(0.7))   
+
+
+        self.settingsGUIClass.UseAbrisCheckBox.setChecked((self.ownSettings.value("UseAbries"))) 
+
+
+        global suggestEmoji
+        suggestEmoji = self.ownSettings.value("suggestEmojies")
+        self.settingsGUIClass.SuggestEmojiesCheckBox.setChecked(suggestEmoji) 
+         
+        global using_tab
+        using_tab = self.ownSettings.value("using_tab")
+        self.settingsGUIClass.TabCheckBox.setChecked(using_tab)  
+            
+        global using_arrow
+        using_arrow = (self.ownSettings.value("using_arrow"))
+        self.settingsGUIClass.ArrowCheckBox.setChecked(using_arrow)
+
+        global minimun_Similarity_Ratio
+        minimun_Similarity_Ratio = float(self.MainSettings.value("minimumSimilarity"))
+        # except Exception as e:
+        #     print(e)
 
         self.current_language = "English"
         self.Lang_Button.clicked.connect(self.update_lang) 
@@ -2143,17 +2321,43 @@ class Ui(QtWidgets.QMainWindow):
         
         self.converter_gui = Converter_for_main.Ui_converter()
 
+        
+        self.show_tray_menu = QAction('Move to tray', self)
+        self.show_tray_menu.triggered.connect(self.show_tray_icon)
+        
+        self.tray_icon = QSystemTrayIcon()
+
+        self.tray_icon.activated.connect(self.tray_icon_clicked)
+
+        tray_menu = QMenu()
+        self.show_top_bar_menu = QAction('Restore top bar', self)
+        self.show_top_bar_menu.triggered.connect(self.show_top_bar)
+        tray_menu.addAction(self.show_top_bar_menu)
+        tray_menu.addMenu(self.Settings_menu)
+        tray_menu.addSeparator()
+        
+        tray_menu.addAction(self.exit_menu)
+
+        self.tray_icon.setContextMenu(tray_menu)
+
+        
+        self.application_menue.addAction(self.show_tray_menu)
+        self.application_menue.addAction(self.Restart_menu)
+        self.application_menue.addAction(self.exit_menu)
+        
+
+        
         self.numDic = {'1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯','0':'০'}
         self.qoteDic = {'(':')', '[':']', '{':'}'}
         self.karList = ["া","ি","ী","ু","ূ","ৃ","ে","ৈ","ো","ৌ"]
         self.keysToBlock = [2,3,4,5,6,7,8,9,10,11,  16,17,18,19,20,21,22,23,24,25,   30,31,32,33,34,35,36,37,38,   44,45,46,47,48,49,50,  52]    
         self.keysToUnlock = [2,3,4,5,6,7,8,9,10,11,52]
         
-        
+        self.wordSelectionKeys = [15,28,80,72]
 
         self.oskClass = OSK_UI()
         
-# osk class connectors ========================================================================>
+    # osk class connectors ========================================================================>
 
         # self.oskClass.pushButton_33.clicked.connect(self.oskClass.BackSpaceClicked)
 
@@ -2163,7 +2367,9 @@ class Ui(QtWidgets.QMainWindow):
         self.oskClass.pushButton_47.clicked.connect(self.oskClass.EnterClicked)
         self.oskClass.pushButton_64.clicked.connect(self.oskClass.tabClicked)
         self.oskClass.pushButton_19.clicked.connect(self.oskClass.escFunc)
-        self.oskClass.pushButton_52.clicked.connect(lambda: self.oskClass.spaceClicked())
+        
+        self.oskClass.pushButton_201.clicked.connect(self.spaceClicked)
+        self.oskClass.pushButton_52.clicked.connect(self.spaceClicked)
         self.oskClass.pushButton_20.clicked.connect(lambda: self.on_osk_press(str(self.oskClass.pushButton_20.text())))
         self.oskClass.pushButton_21.clicked.connect(lambda: self.on_osk_press(str(self.oskClass.pushButton_21.text())))
         self.oskClass.pushButton_22.clicked.connect(lambda: self.on_osk_press(str(self.oskClass.pushButton_22.text())))
@@ -2232,6 +2438,105 @@ class Ui(QtWidgets.QMainWindow):
 
         self.oskClass.BanglishCheckBox.stateChanged.connect(self.BanglishCheckBoxStateChanged)
         self.oskClass.OpenLayOutPushButton.clicked.connect(lambda: self.openBanglishLayout())
+
+        # bangla connectors ========================================================================
+
+        # banglakeyboard connectors ===========================
+        self.oskClass.Ao_pushButton.clicked.connect(lambda:self.logIn("অ"))
+        self.oskClass.Aa_pushButton.clicked.connect(lambda:self.logIn("আ"))
+        self.oskClass.pushButton_85.clicked.connect(lambda:self.logIn("ই"))
+        self.oskClass.pushButton_80.clicked.connect(lambda:self.logIn("ঈ"))
+        self.oskClass.pushButton_82.clicked.connect(lambda:self.logIn("উ"))
+        self.oskClass.pushButton_88.clicked.connect(lambda:self.logIn("ঊ"))
+        self.oskClass.pushButton_87.clicked.connect(lambda:self.logIn("ঋ"))
+        self.oskClass.pushButton_79.clicked.connect(lambda:self.logIn("এ"))
+        self.oskClass.pushButton_83.clicked.connect(lambda:self.logIn("ঐ"))
+        self.oskClass.pushButton_86.clicked.connect(lambda:self.logIn("ও"))
+        self.oskClass.pushButton_89.clicked.connect(lambda:self.logIn("ঔ"))
+        self.oskClass.pushButton_155.clicked.connect(lambda:self.logIn("া"))
+        self.oskClass.pushButton_156.clicked.connect(lambda:self.logIn("ি"))
+        self.oskClass.Deghi_pushButton.clicked.connect(lambda:self.logIn("ী"))
+        self.oskClass.pushButton_158.clicked.connect(lambda:self.logIn("ু"))
+        self.oskClass.pushButton_159.clicked.connect(lambda:self.logIn("ূ"))
+        self.oskClass.pushButton_160.clicked.connect(lambda:self.logIn("ৃ"))
+        self.oskClass.pushButton_161.clicked.connect(lambda:self.logIn("ে"))
+        self.oskClass.pushButton_162.clicked.connect(lambda:self.logIn("ৈ"))
+        self.oskClass.pushButton_163.clicked.connect(lambda:self.logIn("ো"))
+        self.oskClass.pushButton_164.clicked.connect(lambda:self.logIn("ৌ"))
+        self.oskClass.pushButton_101.clicked.connect(lambda:self.logIn("ক"))
+        self.oskClass.pushButton_91.clicked.connect(lambda:self.logIn("খ"))
+        self.oskClass.pushButton_96.clicked.connect(lambda:self.logIn("গ"))
+        self.oskClass.pushButton_133.clicked.connect(lambda:self.logIn("ঘ"))
+        self.oskClass.pushButton_138.clicked.connect(lambda:self.logIn("ঙ"))
+        self.oskClass.pushButton_148.clicked.connect(lambda:self.logIn("চ"))
+        self.oskClass.pushButton_93.clicked.connect(lambda:self.logIn("ছ"))
+        self.oskClass.pushButton_141.clicked.connect(lambda:self.logIn("জ"))
+        self.oskClass.pushButton_92.clicked.connect(lambda:self.logIn("ঝ"))
+        self.oskClass.pushButton_145.clicked.connect(lambda:self.logIn("ঞ"))
+        self.oskClass.pushButton_150.clicked.connect(lambda:self.logIn("ট"))
+        self.oskClass.pushButton_151.clicked.connect(lambda:self.logIn("ঠ"))
+        self.oskClass.pushButton_135.clicked.connect(lambda:self.logIn("ড"))
+        self.oskClass.pushButton_153.clicked.connect(lambda:self.logIn("ঢ"))
+        self.oskClass.pushButton_140.clicked.connect(lambda:self.logIn("ণ"))
+        self.oskClass.pushButton_143.clicked.connect(lambda:self.logIn("ত"))
+        self.oskClass.pushButton_104.clicked.connect(lambda:self.logIn("থ"))
+        self.oskClass.pushButton_132.clicked.connect(lambda:self.logIn("দ"))
+        self.oskClass.pushButton_99.clicked.connect(lambda:self.logIn("ধ"))
+        self.oskClass.pushButton_103.clicked.connect(lambda:self.logIn("ন"))
+        self.oskClass.pushButton_142.clicked.connect(lambda:self.logIn("প"))
+        self.oskClass.pushButton_131.clicked.connect(lambda:self.logIn("ফ"))
+        self.oskClass.pushButton_94.clicked.connect(lambda:self.logIn("ব"))
+        self.oskClass.pushButton_147.clicked.connect(lambda:self.logIn("ভ"))
+        self.oskClass.pushButton_100.clicked.connect(lambda:self.logIn("ম"))
+        self.oskClass.pushButton_95.clicked.connect(lambda:self.logIn("য"))
+        self.oskClass.pushButton_134.clicked.connect(lambda:self.logIn("র"))
+        self.oskClass.Lo_pushButton.clicked.connect(lambda:self.logIn("ল"))
+        self.oskClass.pushButton_90.clicked.connect(lambda:self.logIn("শ"))
+        self.oskClass.pushButton_97.clicked.connect(lambda:self.logIn("ষ"))
+        self.oskClass.pushButton_137.clicked.connect(lambda:self.logIn("স"))
+        self.oskClass.pushButton_146.clicked.connect(lambda:self.logIn("হ"))
+        self.oskClass.pushButton_149.clicked.connect(lambda:self.logIn("ড়"))
+        self.oskClass.pushButton_144.clicked.connect(lambda:self.logIn("ঢ়"))
+        self.oskClass.pushButton_98.clicked.connect(lambda:self.logIn("য়"))
+        self.oskClass.pushButton_105.clicked.connect(lambda:self.logIn("ৎ"))
+        self.oskClass.pushButton_136.clicked.connect(lambda:self.logIn("ং"))
+        self.oskClass.pushButton_139.clicked.connect(lambda:self.logIn("ঃ"))
+        self.oskClass.pushButton_152.clicked.connect(lambda:self.logIn("ঁ"))
+        self.oskClass.pushButton_154.clicked.connect(lambda:self.logIn("্"))
+        self.oskClass.pushButton_165.clicked.connect(lambda:self.logIn("্য"))
+        self.oskClass.pushButton_166.clicked.connect(lambda:self.logIn("্র"))
+        self.oskClass.pushButton_170.clicked.connect(lambda:self.logIn("০"))
+        self.oskClass.pushButton_167.clicked.connect(lambda:self.logIn("১"))
+        self.oskClass.pushButton_173.clicked.connect(lambda:self.logIn("২"))
+        self.oskClass.pushButton_169.clicked.connect(lambda:self.logIn("৩"))
+        self.oskClass.pushButton_171.clicked.connect(lambda:self.logIn("৪"))
+        self.oskClass.pushButton_172.clicked.connect(lambda:self.logIn("৫"))
+        self.oskClass.pushButton_168.clicked.connect(lambda:self.logIn("৬"))
+        self.oskClass.pushButton_175.clicked.connect(lambda:self.logIn("৭"))
+        self.oskClass.pushButton_174.clicked.connect(lambda:self.logIn("৮"))
+        self.oskClass.pushButton_176.clicked.connect(lambda:self.logIn("৯"))
+        self.oskClass.pushButton_186.clicked.connect(lambda:self.logIn("ক্ষ"))
+        self.oskClass.pushButton_193.clicked.connect(lambda:self.logIn("ঙ্ক"))
+        self.oskClass.pushButton_185.clicked.connect(lambda:self.logIn("ঙ্গ"))
+        self.oskClass.pushButton_187.clicked.connect(lambda:self.logIn("ঞ্চ"))
+        self.oskClass.pushButton_188.clicked.connect(lambda:self.logIn("ঞ্ছ"))
+        self.oskClass.pushButton_194.clicked.connect(lambda:self.logIn("ঞ্জ"))
+        self.oskClass.pushButton_191.clicked.connect(lambda:self.logIn("জ্ঞ"))
+        self.oskClass.pushButton_183.clicked.connect(lambda:self.logIn("হ্ম"))
+        self.oskClass.pushButton_190.clicked.connect(lambda:self.logIn("ষ্ণ"))
+        self.oskClass.pushButton_195.clicked.connect(lambda:self.logIn("ষ্ম"))
+        self.oskClass.pushButton_189.clicked.connect(lambda:self.logIn("ত্ত"))
+        self.oskClass.pushButton_177.clicked.connect(lambda:self.logIn("।"))
+        self.oskClass.pushButton_178.clicked.connect(lambda:self.logIn(","))
+        self.oskClass.pushButton_179.clicked.connect(lambda:self.logIn("?"))
+        self.oskClass.pushButton_180.clicked.connect(lambda:self.logIn(";"))
+        self.oskClass.pushButton_181.clicked.connect(lambda:self.logIn(":"))
+        self.oskClass.pushButton_182.clicked.connect(lambda:self.logIn("৳"))
+        self.oskClass.pushButton_192.clicked.connect(lambda:self.logIn("!"))
+        self.oskClass.pushButton_184.clicked.connect(lambda:self.logIn("@"))
+        self.oskClass.pushButton_196.clicked.connect(lambda:self.logIn("("))
+        self.oskClass.pushButton.clicked.connect(lambda:self.logIn(")"))
+
 # /osk class connectors ========================================================================>
         self.Doc_pad = Script_pad.Ui_nms_pad()
         self.lastActiveWindow = ""
@@ -2245,10 +2550,13 @@ class Ui(QtWidgets.QMainWindow):
         self.contextClass.listWidget.itemClicked.connect(self.ContextMenuClicked)
         
         kb2.on_press(self.on_press_2)
+
+        
         
         self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
         self.listener.start()
 
+        # self.blockWordSelectionKeys()
         
 
         self.MouseListener = mouse.Listener(on_click = self.on_click)
@@ -2258,11 +2566,13 @@ class Ui(QtWidgets.QMainWindow):
         self.wordThread_.matched_Word_signal.connect(self.getRecomendedWords)
         self.wordThread_.caretPosSignal.connect(self.setListPos)
         self.wordThread_.acWordSignal.connect(self.AutoCompleate)
-        self.wordThread_.hideSignal.connect(self.listClass.showHideFunc)
+        self.wordThread_.hideSignal.connect(self.listClass.showHideFunc) # self.listClass.showHideFunc
         self.wordThread_.themeSignal.connect(self.listClass.changeTheme)
         self.word_signal.connect(self.wordThread_.run)
         self.initThread_signal.connect(self.wordThread_.initFunc)
         # self.wordThread_.start()
+
+        
 
         ahk.run_script(ahkScript, blocking=False)   # <-------------- 3333333333
         self.wordManagerClass = wordManagerClass()
@@ -2275,9 +2585,151 @@ class Ui(QtWidgets.QMainWindow):
         self.reserved = ""
         self.HotKeyPressed = False
         
+        self.settingsGUIClass.OpenBanglaDic.clicked.connect(lambda: self.openDic(0))
+        self.settingsGUIClass.OpenEnglishDic.clicked.connect(lambda: self.openDic(2))
+        self.settingsGUIClass.OpenAbbris.clicked.connect(lambda: self.openDic(3))
         # kb2.unhook_all()
         self.bijoy_Uni_Map = {"q":"ঙ","w":"য","e":"ড","r":"প","t":"ট","y":"চ","u":"জ","i":"হ","o":"গ","p":"ড়","a":"ৃ","s":"ু","d":"ি","f":"া","g":"্","h":"ব","j":"ক","k":"ত","l":"দ","z":"্র","x":"ও","c":"ে","v":"র","b":"ন","n":"স","m":"ম","1":"১","2":"২","3":"৩","4":"৪","5":"৫","6":"৬","7":"৭","8":"৮","9":"৯","0":"০","Q":"ং","W":"য়","E":"ঢ","R":"ফ","T":"ঠ","Y":"ছ","U":"ঝ","I":"ঞ","O":"ঘ","P":"ঢ়","A":"র্","S":"ূ","D":"ী","F":"অ","G":"।","H":"ভ","J":"খ","K":"থ","L":"ধ","Z":"্য","X":"ৗ","C":"ৈ","V":"ল","B":"ণ","N":"ষ","M":"শ","$":"৳","&":"ঁ"}
         # ================
+
+
+        # self.BanglawordThread = BanglawordThread()
+        # self.BanglawordThread.matched_Word_signal.connect(self.oskClass.populateWords)
+        # self.bangla_word_signal.connect(self.BanglawordThread.run)
+        # self.initBanglaThread_signal.connect(self.BanglawordThread.initFunc)
+        # self.BanglawordThread.start()
+    def triggerSelectionSettingFunc2(self):
+        state = self.settingsGUIClass.SelectionRadioButton.isChecked()
+        self.ownSettings.setValue("selection_checked2", state)
+    def triggerSelectionSettingFunc1(self):
+        state = self.settingsGUIClass.EnterToSelectRadioButton.isChecked()
+        self.ownSettings.setValue("selection_checked1", state)    
+    def tempoComplition(self, current, selectedText):
+        try:
+            print(f"current: {current}, selectedText: {selectedText}")
+            times_to_tap_backspace, restOfWord = self.smertCompletor(current, selectedText) 
+            self.listener.stop()  
+            # print(f"times_to_tap_backspace: {times_to_tap_backspace}, restOfWord: {restOfWord} ")
+            
+            for i in range(times_to_tap_backspace):
+                kb.tap(Key.backspace)
+            kb.type(restOfWord)
+            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+            self.listener.start() 
+        except Exception:
+            pass
+    def stringModarator(self, current, selectedText ):
+        for i in range(current):
+            pass
+    def using_arrow_stateChanged(self):
+        global using_arrow
+        state = self.settingsGUIClass.ArrowCheckBox.isChecked()  
+        using_arrow = state
+        self.ownSettings.setValue("using_arrow", state)
+    def using_tab_stateChanged(self, state):
+        global using_tab
+        state = self.settingsGUIClass.TabCheckBox.isChecked()  
+        using_tab = state
+        self.ownSettings.setValue("using_tab", state)
+        # self.MainSettings.setValue("using_tab", str(state))
+    def logIn(self, char): # bangla cha log in  ==========================================> 
+        global wordSofar
+        global CurrentWord
+        global englishWordSofar
+        
+        self.listener.stop()
+        if self.oskClass.UnicodeRadioButton.isChecked():   
+            kb.type(char)
+            wordSofar += char  
+            englishWordSofar = ""
+        # if char == "ো":
+        #     kb.tap(Key.left)
+        #     kb.type(convert("ে"))
+        #     kb.tap(Key.right)
+        #     kb.type(convert("া"))
+        # if char == "ৌ":
+        #     kb.tap(Key.left)
+        #     kb.type(convert("ে"))
+        #     kb.tap(Key.right)
+        #     kb.type("X")  
+        if self.oskClass.ANSI_radioButton.isChecked() and char not in ["ো", "ৌ"]:  
+            # sendClip(convert(char))
+            kb.type(convert(char))  
+            pass
+        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
+        self.listener.start()  
+        # CurrentWord += char
+        
+        print(f"in {wordSofar}")
+        # self.bangla_word_signal.emit(CurrentWord)
+        
+        self.sfx()
+    def spaceClicked(self):
+        global CurrentWord
+        
+        kb.tap(Key.space)
+        if CurrentWord != "":
+            CurrentWord = ""
+            self.oskClass.recomendFunc()
+            self.oskClass.initState() 
+            self.oskClass.englishWordSofar = ""
+            self.oskClass.previous_word = ""
+            self.oskClass.formar_previous_word = ""
+            self.oskClass.previous_formar_previous_word = ""
+            self.oskClass.formar_previous_formar_previous_word = ""
+            self.initBanglaThread_signal.emit("dfdf")
+            self.oskClass.initThread_signal.emit("init") 
+        self.oskClass.cleanRecomendations()
+        initGlobal()
+    def similarityValueChanged(self, val):
+        self.MainSettings.setValue("minimumSimilarity", val)
+        global minimun_Similarity_Ratio
+        minimun_Similarity_Ratio = val
+    def openDic(self, index):
+        self.wordManagerClass.show()
+        self.wordManagerClass.tabWidget.setCurrentIndex(index)
+    def tray_icon_clicked(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick:
+            print("Tray icon was double-clicked.")
+        elif reason == QSystemTrayIcon.Trigger:
+            self.update_lang()
+            self.setTrayIcon()
+        elif reason == QSystemTrayIcon.MiddleClick:
+            print("Tray icon was middle-clicked.")
+    def show_top_bar(self):
+        self.show()
+        self.tray_icon.hide()
+        pass
+    def setTrayIcon(self):
+        try_menu_icon = QtGui.QIcon()
+        
+        if self.current_language == "English":
+            try_menu_icon.addPixmap(QtGui.QPixmap(".//Uis//Imgs//Eng.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        if self.current_language == "Bangla":        
+            try_menu_icon.addPixmap(QtGui.QPixmap(".//Uis//Imgs//Ban.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        
+        self.tray_icon.setIcon(try_menu_icon)
+    def show_tray_icon(self):
+        
+        self.setTrayIcon()
+        self.tray_icon.show()
+        self.hide()
+        pass
+    def banglaSuggest(self, state):
+        state = self.settingsGUIClass.banglaSuggestCheckBox.isChecked()
+        self.suggestForBangla = state
+        with open('.//Res//SuggestBangla.txt', "w") as UANSI:
+            UANSI.write(str(state))
+    def englishSuggest(self, state):                                                   
+        state = self.settingsGUIClass.EnglishSuggestCheckBox.isChecked()
+        self.suggestForEnglish = state
+        with open('.//Res//SuggestEnglish.txt', "w") as UANSI:
+            UANSI.write(str(state))
+    def emojiSuggest(self):
+        state = self.settingsGUIClass.SuggestEmojiesCheckBox.isChecked()
+        self.ownSettings.setValue("suggestEmojies", state)  
+        global suggestEmoji
+        suggestEmoji = state
     def DontShowFunc(self):
         print("I am here")
         pass
@@ -2325,12 +2777,18 @@ class Ui(QtWidgets.QMainWindow):
             self.wordManagerClass.search(wrd)
         if menu_tag == "Search Google":
             webbrowser.open('https://www.google.com/search?q='+wrd)
-            pass    
-           
-
-        self.contextClass.hide()   
+            pass
+        self.contextClass.hide() 
+    def sfx(self):
+        if self.oskClass.SFXcheckBox.isChecked() == True:
+            try:
+                sound_thread = threading.Thread(target=lambda:winsound.PlaySound('.//SFX//Modern UI Sound_01.wav', winsound.SND_FILENAME))
+                sound_thread.start()
+            except Exception:
+                pass 
+            pass      
     def predictionValueChanged(self, val):
-        self.main_settings.setValue("NumberOfPrediction", val)
+        self.MainSettings.setValue("NumberOfPrediction", val)
     def BanglishCheckBoxStateChanged(self):
         if self.oskClass.BanglishCheckBox.isChecked() == True:
             self.oskClass.pushButton_52.setText("বাংলা")
@@ -2338,47 +2796,60 @@ class Ui(QtWidgets.QMainWindow):
             self.oskClass.pushButton_52.setText("English")
         self.initialize()  
     def showAudioReactor(self, state):
-        self.main_settings.setValue("ShowAudioReactor", bool(state))  
-        self.ShowReactor = state
+        self.MainSettings.setValue("ShowAudioReactor", (state))  
     def autoCloseBra(self, state):
-        self.main_settings.setValue("AutoCloseBrackets", bool(state))  
+        self.MainSettings.setValue("AutoCloseBrackets", (state))  
         self.AutoCloseBra = state
     def useAbries(self, state):
-        self.main_settings.setValue("UseAbries", bool(state))  
+        state = self.settingsGUIClass.UseAbrisCheckBox.isChecked()
+        self.ownSettings.setValue("UseAbries", (state))  
     def AutoCompleate(self, theWord):
         try:
             global wordSofar
+            global ansi_wordSOFar
             if self.listClass.ACcheckBox.isChecked():
+                
                 self.listener.stop() 
-
-                times_to_tap_backspace, restOfWord = self.smertCompletor(wordSofar, theWord) 
+                if self.Unicode_.isChecked() == True:    
+                    times_to_tap_backspace, restOfWord = self.smertCompletor(wordSofar, theWord) 
+                if self.Ansi_.isChecked() == True:
+                    times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSOFar, theWord) 
                 for i in range(times_to_tap_backspace):
                     kb.tap(Key.backspace)
                 kb.type(restOfWord)
-
                 self.autoCompletedWord = theWord
                 self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
                 self.listener.start() 
                 
+
                 # print(theWord)
             pass
         except Exception:
             pass
     def smertCompletor(self, word_soFar, the_word):
         try:    
-            for i in range(len(the_word)):
+            i = 0
+            for x in range(len(the_word)):
                 try:
                     if the_word[i] == word_soFar[i]:
+                        same_index = i
                         pass
                     else:
-                        same_index = i
                         break
+                    i += 1
                 except Exception:
                     same_index = i  
-            return len(word_soFar[same_index:]), the_word[same_index:]
+            if len(word_soFar) <= len(the_word):
+                return_slot = len(word_soFar[same_index:]), the_word[same_index:]
+            else:    
+                return_slot = len(word_soFar[same_index+1:]), the_word[same_index+1:]
+
+            return return_slot
         except Exception as e:
-            print(e)
-            print(f"word_soFar: {word_soFar}, the_word: {the_word}")      
+            print(traceback.format_exc())
+            print(f"word_soFar: {word_soFar}, the_word: {the_word}") 
+
+
     def WordClickedMiddleFunc(self, item):
         # print(item.text())
         # self.WordClicked()
@@ -2386,6 +2857,15 @@ class Ui(QtWidgets.QMainWindow):
         selectedText = item.text()
 
         self.listener.stop()
+        
+        if selectedText in emoji_list:
+            sendClip(selectedText)
+            initGlobal()
+            self.listClass.showHideFunc("hide") 
+            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+            self.listener.start() 
+            return
+
         if self.Unicode_.isChecked() == True: 
             if selectedText[:len(wordSofar)] == wordSofar:  
                 kb.type(selectedText[len(wordSofar):])
@@ -2394,7 +2874,7 @@ class Ui(QtWidgets.QMainWindow):
                 for i in range(times_to_tap_backspace):
                     kb.tap(Key.backspace)
                 kb.type(restOfWord)
-        else:
+        if self.Ansi_.isChecked():
             ansi_wordSofar = convert(wordSofar)
             if convert(selectedText[:len(wordSofar)]) == ansi_wordSofar:  
                 kb.type(convert(selectedText[len(wordSofar):]))
@@ -2414,17 +2894,45 @@ class Ui(QtWidgets.QMainWindow):
         global completorTraegered
         global wordSofar
         global CurrentWord
+        global emoji_list
+        # ==========
+        # if self.Ansi_.isChecked() == True:
         
         try:
-            wordSelected = item   # this item is a string 
+            wordSelected = item   # this item is a string
+
+            if wordSelected in emoji_list:
+                self.listener.stop()
+                sendClip(wordSelected)
+                initGlobal()
+                self.listClass.showHideFunc("hide")
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                self.listener.start() 
+                return
 
             if len(wordSofar) == 0 and len(item) > 1:
                 c_wrd = CurrentWord    # this means current word is written by the OSk 
             else:
                 c_wrd = wordSofar   # current word written by keyboard 
+        
+            if self.Ansi_.isChecked() and self.current_language == "Bangla":
+                self.listener.stop() 
+                
+                ansi_wordSofar = convert(wordSofar)
+                if convert(wordSelected[:len(wordSofar)]) == ansi_wordSofar:  
+                    kb.type(convert(wordSelected[len(wordSofar):]))
+                else:
+                    times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSofar, convert(wordSelected))   
+                    for i in range(times_to_tap_backspace):
+                        kb.tap(Key.backspace)
+                    kb.type(restOfWord)
 
-            # print(wordSelected)
-            # print(c_wrd)
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                self.listener.start()  
+                initGlobal()
+                self.listClass.showHideFunc("hide") 
+                return
+
             if self.autoCompletedWord != "" and wordSofar == item: 
                 self.listener.stop() 
                 for i in range(len(self.autoCompletedWord)):
@@ -2465,7 +2973,7 @@ class Ui(QtWidgets.QMainWindow):
                 self.listener.start() 
                 completorTraegered = False 
             initGlobal()
-            self.listClass.showHideFunc("hide")  
+            # self.listClass.showHideFunc("hide")  
         except Exception:
             pass   
     
@@ -2565,7 +3073,6 @@ class Ui(QtWidgets.QMainWindow):
         if self.oskClass.BanglishCheckBox.isChecked() == False or any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
             if any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
                 kb.tap(key)  
-                
             else:
                 self.listener.stop()
                 kb.type(key)
@@ -2597,29 +3104,31 @@ class Ui(QtWidgets.QMainWindow):
             self.oskClass.initState()   
         # self.on_press(key)
             # self.listClass.showHideFunc("hide")
-        pass
+        self.sfx()
 
     def triggerAbbribiation(self, key):
-        self.listener.stop()
+        # self.listener.stop()
         for i in range(len(key)+1):  
             kb.tap(Key.backspace)
-        pyautogui.write(self.abbries_dic[key]) 
-        print(self.abbries_dic[key]) 
-        # fullVersion = (self.abbries_dic[key]).split(' ')  
-        # for w in fullVersion:
-        #     kb.type(w)  
-        #     pyautogui.write(' ')     
-        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-        self.listener.start()
+        
+        # pyautogui.write(self.abbries_dic[key]) 
+        sendClip(self.abbries_dic[key])
+        
+        # self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+        # self.listener.start()
     def on_press_2(self, event):
         pass
+    def selectNextWord(self):
+        if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
+            self.listClass.listWidget.setCurrentRow(0)
+        else:
+            self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
     def on_press(self, key):
-
+        # print(key)
         global wordSofar 
         global englishWordSofar
         global previous_word
         global formar_previous_word
-
         global ansi_wordSOFar
         try:
             if self.AutoCloseBra:
@@ -2648,56 +3157,92 @@ class Ui(QtWidgets.QMainWindow):
                 if wordSofar != "":    
                     if len(wordSofar) > 1:   
                         wordSofar = wordSofar[:-1]
+                        try:
+                            ansi_wordSOFar = ansi_wordSOFar[:-1]
+                        except Exception as e:
+                            pass    
                         englishWordSofar = englishWordSofar[:-1]
-                        self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
+                        # self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
                     else:
                         self.initialize() 
-                return        
+                     
             
-            if str(key) in ["Key.down", "Key.up", "Key.enter"]:
+            if str(key) in ["Key.down", "Key.up", "Key.enter", "Key.tab"]:
                 if self.listClass.isHidden() == False:
-                    if str(key) == "Key.down":
-                        print("i am here!")
-                        if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
-                            self.listClass.listWidget.setCurrentRow(1)
-                        else:
-                            self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
-                        try:
-                            kb2.block_key(28) # enter key
-                        except Exception as e:
-                            print(traceback.format_exc())     
+                    
+                    if str(key) in ["Key.down", "Key.tab"]:
+                        global using_tab
+                        global using_arrow
+                        if any([using_tab, using_arrow]):
+                            try:
+                                kb2.block_key(28) # enter key
+                            except Exception as e:
+                                print(traceback.format_exc()) 
 
-                    if str(key) == "Key.up":
+                            if self.listClass.listWidget.currentRow() == -1:
+                                current = wordSofar
+                            else:
+                                item = self.listClass.listWidget.currentItem()
+                                current = item.text() 
+                        if str(key) == "Key.down" and using_arrow == True:
+                            self.selectNextWord()
+                        elif str(key) == "Key.tab" and using_tab == True:
+                            self.selectNextWord()
+
+                            # ==============================================
+                            item = self.listClass.listWidget.currentItem()
+                            
+                            self.tempoComplition(current, item.text())
+                        else:
+                            self.initialize()
+                            self.initThread_signal.emit("init")    
+                            
+                    if str(key) in ["Key.up"]:
                         if self.listClass.listWidget.currentRow() == 1:
                             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
                         else:    
-                            self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1) 
+                            self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1)
 
+                        # if str(key) == "Key.up" and self.settingsGUIClass.ArrowCheckBox.isChecked():
+                        #     self.selectNextWord()
+                        # if str(key) == "Key.tab" and self.settingsGUIClass.TabCheckBox.isChecked():
+                        #     self.selectNextWord()
                     if str(key) == "Key.enter":
                         if self.listClass.listWidget.currentRow() != -1:    
                             item = self.listClass.listWidget.currentItem()
+
+                            if item.text() in emoji_list:
+                                self.listener.stop()
+                                sendClip(item.text())
+                                initGlobal()
+                                self.listClass.showHideFunc("hide") 
+                                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                                self.listener.start() 
+                                return
                             self.WordClicked(item.text())
                             self.listClass.showHideFunc("hide")
                         else:
                             self.initialize()
                             self.initThread_signal.emit("init")   
                 else:
+                    # print("in else")
+                    # self.listener.stop()
+                    # kb.tap(key)
+                    # self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                    # self.listener.start() 
                     self.initialize()
                     self.initThread_signal.emit("init")
                     return
 
-            
             if str(key) in ["Key.cmd", "Key.ctrl_l", "Key.alt_l", "Key.ctrl_r", "Key.alt_r"] and self.keysBlocked == True: 
                 if self.current_language != "English":    
                     kb2.unhook_all()
                     self.keysBlocked = False
                 self.HotKeyPressed = True    
                 self.old_initialize()
-                return
-            
+                return            
             
             if self.current_language == "English":
-                print(self.HotKeyPressed) 
                 if self.HotKeyPressed == True and stringKey in englishNumbers: 
                     self.initialize()
                     self.HotKeyPressed = False
@@ -2708,68 +3253,151 @@ class Ui(QtWidgets.QMainWindow):
                         if wordSofar[0] not in englishNumbers:
                             self.initialize()
                     wordSofar += stringKey
-                    self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
-                    # self.initialize()
-                    return    
-                if stringKey in englishAlphabets: 
-                    print("i am in english alpha")    
+                      
+                if stringKey in englishAlphabets:    
                     wordSofar += stringKey
                     englishWordSofar = wordSofar
-                    self.word_signal.emit(wordSofar, englishWordSofar, "cudirpo")
-                return
 
         # ===========================================
-            if str(key) == "Key.shift" and self.Unicode_.isChecked() == True: # and self.shiftKeyBlocked == False
-                for i in self.keysToUnlock:
-                    try:
-                        kb2.unblock_key(i)
-                    except Exception:
-                        pass
-                self.shiftKeyBlocked = True
-            if str(key) == "Key.shift" and self.Unicode_.isChecked() == False:
-                return 
-                
-            if self.keysBlocked == False:
-                return        
-            if str(key) == "'.'":
-                kb.type("।")
-                self.initialize()
-                return
-            
-            if completorTraegered == True:
-                return
-
-            if self.Unicode_.isChecked() == True:    
-                if self.Banglish_layout.isChecked() == True:    
-                    self.convertTobangla(key)
-                if self.Bijoy_layout.isChecked() == True: 
-                    self.convertToBijoy(stringKey)
-            if self.Ansi_.isChecked() == True: 
-                if stringKey not in englishLatters:
+            if self.current_language == "Bangla":
+                if str(key) == "Key.shift" and self.Unicode_.isChecked() == True: # and self.shiftKeyBlocked == False
+                    for i in self.keysToUnlock:
+                        try:
+                            kb2.unblock_key(i)
+                        except Exception:
+                            pass
+                    self.shiftKeyBlocked = True
+                if str(key) == "Key.shift" and self.Unicode_.isChecked() == False:
+                    return 
+                    
+                if self.keysBlocked == False:
+                    return        
+                if str(key) == "'.'":
+                    kb.type("।")
+                    self.initialize()
                     return
-                try:    
-                    bangla_wordSoFar_unicode = self.convertTobangla(key) 
-                    ansi_Bangla =  convert(bangla_wordSoFar_unicode)  
-                    self.listener.stop()
-                    if ansi_wordSOFar != "":    
-                        if ansi_Bangla[:len(ansi_wordSOFar)] == ansi_wordSOFar:
-                            restOfWord = ansi_Bangla[len(ansi_wordSOFar):]
-                            print("in if")
-                        else:
-                            print('in else')
-                            times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSOFar, ansi_Bangla)   
-                            for i in range(times_to_tap_backspace):
-                                kb.tap(Key.backspace)
-                    else:
-                        restOfWord = ansi_Bangla        
-                    kb2.write(restOfWord)
-                    ansi_wordSOFar = ansi_Bangla
-                    self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-                    self.listener.start()
-                except Exception as e:
-                    print(e)
+                
+                if completorTraegered == True:
+                    return
 
+                if self.Unicode_.isChecked() == True:    
+                    if self.Banglish_layout.isChecked() == True:    
+                        self.convertTobangla(key)
+                    if self.Bijoy_layout.isChecked() == True: 
+                        self.convertToBijoy(stringKey)
+                if self.Ansi_.isChecked() == True:
+                    if stringKey not in englishLatters:
+                        return
+                    
+                    if stringKey in self.numDic:
+                        self.listener.stop()
+                        kb.type(convert(self.numDic[stringKey]))
+                        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                        self.listener.start()
+                        if wordSofar != "":
+                            if wordSofar[0] not in banglaNumbs:
+                                self.initialize()
+                        wordSofar += self.numDic[stringKey]
+                        
+                    if self.Banglish_layout.isChecked() == True and stringKey not in self.numDic: 
+                        try:
+                            bangla_wordSoFar_unicode = self.convertTobangla(key) 
+                            ansi_Bangla =  convert(bangla_wordSoFar_unicode)  
+                            self.listener.stop()
+                            if ansi_wordSOFar != "":    
+                                if ansi_Bangla[:len(ansi_wordSOFar)] == ansi_wordSOFar:
+                                    restOfWord = ansi_Bangla[len(ansi_wordSOFar):]
+                                else:
+                                    times_to_tap_backspace, restOfWord = self.smertCompletor(ansi_wordSOFar, ansi_Bangla)   
+                                    for i in range(times_to_tap_backspace):
+                                        kb.tap(Key.backspace)
+                            else:
+                                restOfWord = ansi_Bangla
+                            kb2.write(restOfWord)
+                            ansi_wordSOFar = ansi_Bangla
+                            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                            self.listener.start()
+                        except Exception as e:
+                            print(e)
+                    if self.Bijoy_layout.isChecked() == True and stringKey not in self.numDic:    # < ------------------------ 
+                        if stringKey in ['d', 'c', 'C']:
+                            bijoy_unicode = ""
+                            if stringKey == 'd':
+                                bijoy_ANSI = "w"
+                            if stringKey == 'c':
+                                bijoy_ANSI = "‡" 
+                            if stringKey == 'C':
+                                bijoy_ANSI = "‰"   
+                                    
+                        else:
+                            bijoy_unicode = self.bijoy_Uni_Map[stringKey] # just a character 
+                            bijoy_ANSI = convert(bijoy_unicode) # just a character  in bijoy
+                    
+                        self.listener.stop()
+                        if len(ansi_wordSOFar) > 0:
+                            if ansi_wordSOFar[-1] == "&":
+                                if len(wordSofar) > 1:
+                                    if wordSofar[-2] in self.karList:
+                                        if len(wordSofar) > 2:     
+                                            jukto_uni = wordSofar[-3]+wordSofar[-1]+bijoy_unicode
+                                            bijoy_ANSI = convert(jukto_uni)
+                                            for i in range(2):  
+                                                kb.tap(Key.backspace)
+                                    else:
+                                        jukto_uni = wordSofar[-2:]+bijoy_unicode
+                                        bijoy_ANSI = convert(jukto_uni)
+                                        for i in range(2):  
+                                            kb.tap(Key.backspace)
+
+                        if len(wordSofar) > 0:
+                            if stringKey in ["f", 'X'] and wordSofar[-1] == "ে":
+                                wordSofar =  wordSofar[:-1]
+                                if stringKey == "f":
+                                    bijoy_unicode = "ো"
+                                if stringKey == "X":
+                                    bijoy_unicode = "ৌ"
+
+
+                        
+                        kb2.write(bijoy_ANSI)
+                        
+
+                        
+                        wordSofar += str(bijoy_unicode+self.reserved)
+                        ansi_wordSOFar += bijoy_ANSI
+                        print(wordSofar)
+                        self.formar_previous_formar_previous_word = self.previous_formar_previous_word
+                        self.previous_formar_previous_word = formar_previous_word
+                        formar_previous_word = previous_word
+                        previous_word = bijoy_unicode
+                        englishWordSofar += bijoy_unicode
+
+
+                        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                        self.listener.start()
+
+                        if stringKey in ['d', 'c', 'C']:
+                            self.reserved = self.bijoy_Uni_Map[stringKey] 
+                        else:
+                            self.reserved = ""    
+                
+            
+            if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
+                self.Doc_pad.activateWindow()
+            if self.lastActiveWindow in [self.wordManagerClass.windowTitle()]:
+                self.wordManagerClass.activateWindow()    
+            if self.lastActiveWindow in [self.converter_gui.windowTitle()]:
+                self.converter_gui.activateWindow()  
+            
+            if self.settingsGUIClass.banglaSuggestCheckBox.isChecked() == False and self.current_language == "Bangla":
+                return
+            if self.settingsGUIClass.EnglishSuggestCheckBox.isChecked() == False and self.current_language == "English":
+                return      
             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
+
+
+
+             
         except Exception as e:
             # print(e)
             print(traceback.format_exc())
@@ -2881,6 +3509,10 @@ class Ui(QtWidgets.QMainWindow):
                     bnglaKey = "ঙা"
                 else:
                     bnglaKey = "া"
+
+            if len(wordSofar) > 0:
+                if wordSofar[-1] in self.karList:
+                    bnglaKey = "আ"         
         if stringKey == "A":
             bnglaKey = "আ"
         if stringKey == "b":
@@ -3018,6 +3650,7 @@ class Ui(QtWidgets.QMainWindow):
                     bnglaKey= "ৈ"
             else:
                 bnglaKey= "ি"
+
         if stringKey == "I":
             if previous_word == "o" or previous_word == "O":
                 if formar_previous_word == "":
@@ -3060,10 +3693,10 @@ class Ui(QtWidgets.QMainWindow):
             else:
                 bnglaKey= "ল"         
         if stringKey == "m":
-            if previous_word == "h":
+            if previous_word == "h" and formar_previous_word not in ["s", "S", "k", "t", "T", "g", "G", "p", "P", "d", "D", "c", "C", "b", "B"]:
                 bnglaKey = "হ্ম"
                 self.trim(1) 
-            elif previous_word in ["d", "l", "n", "r", "s", "t", "g", "m"]:
+            elif previous_word in ["d", "l", "n", "s", "t", "g", "m", "h"]:
                 bnglaKey = "্ম" 
             else:
                 bnglaKey = "ম" 
@@ -3152,13 +3785,18 @@ class Ui(QtWidgets.QMainWindow):
             else:
                 bnglaKey = "ট"
         if stringKey == "u":
+            
             if previous_word in ["O", "o"]:
                 bnglaKey = "ঔ"
                 self.trim(1)  
             elif wordSofar == "":
                 bnglaKey = "উ"  
             else:
-                bnglaKey = "ু"      
+                bnglaKey = "ু" 
+
+            if len(wordSofar) > 0:
+                if wordSofar[-1] in self.karList:
+                    bnglaKey = "উ"         
         if stringKey == "U":
             if wordSofar == "":
                 bnglaKey = "ঊ"
@@ -3170,6 +3808,10 @@ class Ui(QtWidgets.QMainWindow):
                 self.trim(1) 
             else:
                 bnglaKey = "ূ"
+
+            if len(wordSofar) > 0:
+                if wordSofar[-1] in self.karList:
+                    bnglaKey = "ঊ"     
         if stringKey in ["v", "V"] : 
             if previous_word in ["m", "d"]:
                 bnglaKey = "্ভ"
@@ -3190,17 +3832,6 @@ class Ui(QtWidgets.QMainWindow):
         if stringKey == "Z":
             bnglaKey== "্য"   
         if bnglaKey != "" or stringKey == "o":
-            
-
-
-            if self.lastActiveWindow in [self.Doc_pad.windowTitle()]:
-                self.Doc_pad.activateWindow()
-            if self.lastActiveWindow in [self.wordManagerClass.windowTitle()]:
-                self.wordManagerClass.activateWindow()    
-            if self.lastActiveWindow in [self.converter_gui.windowTitle()]:
-                self.converter_gui.activateWindow()     
-
-            
             
             wordSofar += str(bnglaKey)
             self.formar_previous_formar_previous_word = self.previous_formar_previous_word
@@ -3578,6 +4209,9 @@ class Ui(QtWidgets.QMainWindow):
         global ruledOut 
         global CurrentWord
         global ansi_wordSOFar
+        global word_submitted_for_similarity
+        global word_submitted_lang
+        global newCharacterIsPressed
         CurrentWord = ""
         self.autoCompletedWord = ""
         previous_word = ""
@@ -3589,6 +4223,12 @@ class Ui(QtWidgets.QMainWindow):
         self.formar_previous_formar_previous_word = "" 
         ruledOut = False 
         self.listClass.initSelf()
+        self.reserved = ""
+        
+        word_submitted_for_similarity = ""
+        
+        newCharacterIsPressed = False
+
         self.blockKeys()
         self.oskClass.cleanRecomendations()
         self.contextClass.hide()   
@@ -3599,6 +4239,11 @@ class Ui(QtWidgets.QMainWindow):
         global formar_previous_word
         global ruledOut 
         global CurrentWord
+
+        global word_submitted_lang
+        global newCharacterIsPressed
+        global word_submitted_for_similarity
+
         CurrentWord = ""
         self.autoCompletedWord = ""
         previous_word = ""
@@ -3607,30 +4252,65 @@ class Ui(QtWidgets.QMainWindow):
         formar_previous_word = ""
         self.previous_formar_previous_word = ""
         self.formar_previous_formar_previous_word = "" 
+
+        word_submitted_for_similarity = ""
+        
+        newCharacterIsPressed = False
+
         ruledOut = False 
         self.listClass.initSelf()
         self.oskClass.cleanRecomendations()
         self.contextClass.hide() 
     def rb1Clicked(self):
-        self.WordClicked(str(self.oskClass.RB1.text()))
+        self.WordClicked(str(self.oskClass.RB1.text())) 
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space)
+            self.initialize()
     def rb2Clicked(self):
-        self.WordClicked(str(self.oskClass.RB2.text())) 
+        self.WordClicked(str(self.oskClass.RB2.text()))
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space)
+            self.initialize()
     def rb3Clicked(self):
         self.WordClicked(str(self.oskClass.RB3.text()))
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space)
+            self.initialize()
     def rb4Clicked(self):
         self.WordClicked(str(self.oskClass.RB4.text()))  
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space)
+            self.initialize()
     def rb5Clicked(self):
-        self.WordClicked(str(self.oskClass.RB5.text()))    
+        self.WordClicked(str(self.oskClass.RB5.text()))
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space) 
+            self.initialize()   
     def rb6Clicked(self):
-        self.WordClicked(str(self.oskClass.RB6.text()))  
+        self.WordClicked(str(self.oskClass.RB6.text())) 
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space) 
+            self.initialize()
     def rb7Clicked(self):
         self.WordClicked(str(self.oskClass.RB7.text())) 
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space)
+            self.initialize()
     def rb8Clicked(self):
-        self.WordClicked(str(self.oskClass.RB8.text()))    
+        self.WordClicked(str(self.oskClass.RB8.text())) 
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space) 
+            self.initialize()  
     def rb9Clicked(self):
         self.WordClicked(str(self.oskClass.RB9.text()))
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space)
+            self.initialize()
     def rb10Clicked(self):
-        self.WordClicked(str(self.oskClass.RB10.text()))  
+        self.WordClicked(str(self.oskClass.RB10.text()))
+        if self.oskClass.SpaceCheckBox.isChecked():    
+            kb.tap(Key.space) 
+            self.initialize() 
     
     def ShowWordManager(self):
         try:
@@ -3711,7 +4391,7 @@ class Ui(QtWidgets.QMainWindow):
             if state:
                 creat_shortcut()
                 
-                self.main_settings.setValue("runAtStartUp", True)
+                self.MainSettings.setValue("runAtStartUp", True)
 
                 msg = QMessageBox()
                 msg.setStyleSheet("QMessageBox{\n"
@@ -3834,7 +4514,8 @@ class Ui(QtWidgets.QMainWindow):
 
         return QWidget.mouseMoveEvent(self, event)
     def Mic_pressed(self):
-
+        
+        # self.listener.stop()
         CLT_pos = self.current_language
         if CLT_pos == 'English (US)':
             self.lang = 'en-US'
@@ -3856,14 +4537,14 @@ class Ui(QtWidgets.QMainWindow):
         self.thread.any_signal.connect(self.vissible_signal)
         # self.thread.finished.connect(self.thread.deleteLater)
         self.thread.start()
-        if self.ShowReactor == True:
-            print(self.ShowReactor)
+
+        if self.settingsGUIClass.ShowReacorCheckBox.isChecked() == True:
             self.progressBar.setVisible(True)
             self.reactor_thread = ThreadClass(parent=None)
             self.reactor_thread.any_signal.connect(self.update_prograss)  
             self.reactor_thread.start()
         else:
-            self.progressBar.setVisible(False)   
+            self.progressBar.setVisible(False)
         
         self.main_timer.start(int(self.settingsGUIClass.MicSettings.value('TimeOut')))
 
@@ -3971,11 +4652,14 @@ class Ui(QtWidgets.QMainWindow):
                 self.start_thread = threading.Thread(target=stop_sig)
                 self.start_thread.start()
             except Exception as e:
-                print('line 620')
                 pass
             try:
                 self.thread.stop()
-                self.reactor_thread.stop()
+                if self.settingsGUIClass.ShowReacorCheckBox.isChecked() == True:    
+                    try:    
+                        self.reactor_thread.stop()
+                    except Exception:
+                        pass
                 self.Listining_label.setVisible(False)   
                 self.Stop_btn.setVisible(False)
                 self.Mic_btn.setVisible(True)
@@ -4021,6 +4705,13 @@ class Ui(QtWidgets.QMainWindow):
             if info == 'commend compleated brauh!':
                 self.inint_cmd()
                 pass
+            if info == 'Stop':
+                self.listener.stop()
+                return
+            if info == 'Start':    
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
+                self.listener.start()
+                return
             if info == 'Listening...':    
                 self.Listining_label.setText('Listening..')
                 self.progressBar.setVisible(True)

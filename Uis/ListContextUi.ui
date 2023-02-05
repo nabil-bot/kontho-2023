@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>94</width>
-    <height>122</height>
+    <height>79</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <x>0</x>
      <y>0</y>
      <width>71</width>
-     <height>91</height>
+     <height>71</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -74,11 +74,6 @@ QListWidget::item:selected {
       <item>
        <property name="text">
         <string>Translate</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Delete</string>
        </property>
       </item>
      </widget>
