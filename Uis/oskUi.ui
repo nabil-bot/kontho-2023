@@ -27,7 +27,6 @@
 QTabWidget::tab-bar {
     left: 6px;
 	 background: transparent;
-	
 }
 
 QTabBar::tab {
@@ -37,7 +36,7 @@ QTabBar::tab {
     border-top-right-radius: 5px;
     min-width: 50px;
     padding: 2px;
-	color:white
+	color:white;
 }
 
 QTabBar::tab:selected {
@@ -104,7 +103,6 @@ QCheckBox::indicator:checked:hover {
      <string notr="true">QFrame
 {
 background-color: rgba(255, 255, 255, 100);
-
 }
 
 </string>
@@ -299,7 +297,6 @@ border: none;
 	background-color: rgba(255, 255, 255, 100);
 
 	background-color: rgb(224, 242, 241);
-
 }
 
 QPushButton{

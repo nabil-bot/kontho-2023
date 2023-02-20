@@ -52,7 +52,6 @@ class LoadWordsThreadClass(QtCore.QThread):
                     # print(main_wrd)
                     continue
             rowPosition += 1
-            
 
             self.tableWidget.insertRow(rowPosition)
             # self.insert_row_signal.emit(rowPosition)
@@ -191,10 +190,6 @@ class wordManagerClass(QMainWindow):
         
         
 
-        # self.loadWords(wordsList, self.tableWidget)   # loading bangla words
-        # self.loadWords(englaList, self.EnglaTableWidget)
-        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
-        # self.loadAbbribiations()
 
         header = self.tableWidget_3.horizontalHeader()       
         header.setSectionResizeMode(1, QHeaderView.Stretch)
@@ -230,12 +225,9 @@ class wordManagerClass(QMainWindow):
         # delegate = AbbribiationDelegate(self.tableWidget_3)
         # self.tableWidget_3.setItemDelegateForColumn(0, delegate)  # < ----------------------- 
 
+        self.tableWidget.verticalScrollBar().valueChanged.connect(self.scrollEvent)
 
-
-        self.contentWasEdited_ofTable_1 = False
-        self.contentWasEdited_ofTable_2 = False
-        self.contentWasEdited_ofTable_3 = False
-        self.contentWasEdited_ofTable_4 = False
+        
         
         self.itemChangedByUndoFunc = False
 
@@ -278,10 +270,10 @@ class wordManagerClass(QMainWindow):
         self.tabWidget.currentChanged.connect(self.TabChanged)
         self.SaveChangesPushButton.clicked.connect(self.saveChangesOfPlainTextEdit)
 
-        self.indicateTabContentChanged(0, False)
+        
         self.contentWasEdited_ofTable_1 = False
 
-        self.setUnsevedSaveButton(False)
+        
         self.ProgressGroupBox.setVisible(False)
 
         self.CancelPushButton.clicked.connect(self.stopSaveThread)
@@ -289,6 +281,7 @@ class wordManagerClass(QMainWindow):
         # self.PastePushButton.toolTip("Paste in currect cell")
         # self.plainTextEdit.keyPressEvent = self.keyPressEvent_PlainTextEdit
         self.plainTextEdit.installEventFilter(self)
+        self.stufLoaded = False
     # =-===================----..>>>>
 
         self.actionTestBanglishAlgo.triggered.connect(self.TestBanglish)
@@ -296,6 +289,31 @@ class wordManagerClass(QMainWindow):
         special_characters = '''!@#$%^&*()-_=+[{]};:'\",<.>/?\\|'''
         self.abbri_characters = [chr(i) for i in range(ord('a'), ord('z')+1)] + [chr(i) for i in range(ord('A'), ord('Z')+1)] + [chr(i) for i in range(ord('0'), ord('9')+1)] + [c for c in special_characters]
 
+        self.MatchCaseCheckBox.clicked.connect(self.search)
+        # self.loadStuff()
+    def scrollEvent(self, value):
+        # calculate the last row that is currently visible
+        lastVisibleRow = self.tableWidget.rowAt(self.tableWidget.viewport().height()) 
+        # print(lastVisibleRow)
+        # if the last visible row is within a certain threshold of the end, load more rows
+        # if lastVisibleRow >= self.table.rowCount() - 30:
+        #     self.table.setRowCount(self.table.rowCount() + 50)
+        #     self.loadRows(self.table.rowCount() - 50, self.table.rowCount())
+    
+    def loadStuff(self):
+        self.loadWords(wordsList, self.tableWidget)   # loading bangla words
+        # self.loadWords(englaList, self.EnglaTableWidget)
+        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        self.loadAbbribiations()
+        self.stufLoaded = True
+
+        self.contentWasEdited_ofTable_1 = False
+        self.contentWasEdited_ofTable_2 = False
+        self.contentWasEdited_ofTable_3 = False
+        self.contentWasEdited_ofTable_4 = False
+
+        self.indicateTabContentChanged(0, False)
+        self.setUnsevedSaveButton(False)
     def TestBanglish(self):
         row_count = self.tableWidget.rowCount()
         colum_count = self.tableWidget.columnCount()
@@ -600,6 +618,17 @@ class wordManagerClass(QMainWindow):
         self.setUnsevedSaveButton(False)  
         self.save_signal.emit("dkjf")
     def AddWordsFromFile(self):
+        
+        if any([self.contentWasEdited_ofTable_1, self.contentWasEdited_ofTable_2,self.contentWasEdited_ofTable_3,self.contentWasEdited_ofTable_4]):
+            close = QMessageBox.question(self,
+                                         "Quit?",
+                                         "Save changes before adding words from file?",
+                                         QMessageBox.Yes | QMessageBox.Cancel)
+            if close == QMessageBox.Yes:
+                self.saveFunc()
+            if close == QMessageBox.Cancel:
+                return
+
         try:
             path, _ = QFileDialog.getOpenFileName(
                 parent= self,
@@ -710,23 +739,27 @@ class wordManagerClass(QMainWindow):
         except Exception:
             pass    
     def search(self, s):
-        if not s:
-            return
+        try:
+        
+            if not s:
+                return
 
-        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+            currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
 
-        currentTable.setCurrentItem(None)
-        if self.MatchCaseCheckBox.isChecked() == False:
-            self.matching_items = currentTable.findItems(s, Qt.MatchContains)
-        else:
-            self.matching_items = currentTable.findItems(s, Qt.MatchExactly)   
-        self.MatchedNumberLineEdit.setText(str(self.currentMatchedIndex+1) + "/"+str(len(self.matching_items)))
-        if len(self.matching_items) == 0:
-            self.MatchedNumberLineEdit.setText(str(0) + "/"+str(len(self.matching_items)))
+            currentTable.setCurrentItem(None)
+            if self.MatchCaseCheckBox.isChecked() == False:
+                self.matching_items = currentTable.findItems(s, Qt.MatchContains)
+            else:
+                self.matching_items = currentTable.findItems(s, Qt.MatchExactly)   
+            self.MatchedNumberLineEdit.setText(str(self.currentMatchedIndex+1) + "/"+str(len(self.matching_items)))
+            if len(self.matching_items) == 0:
+                self.MatchedNumberLineEdit.setText(str(0) + "/"+str(len(self.matching_items)))
 
-        if self.matching_items:
-            item = self.matching_items[0] 
-            self.selectAnItem(item) 
+            if self.matching_items:
+                item = self.matching_items[0] 
+                self.selectAnItem(item) 
+        except Exception as e:
+            print(e)        
     def DownPushButtonClicked(self):
         if len(self.matching_items) != 0:
             try:    
@@ -915,7 +948,7 @@ class wordManagerClass(QMainWindow):
         self.loadTable = tableWidget
         self.loadThread = LoadWordsThreadClass(wordsList, tableWidget, adding_from_newFile)
         # self.loadThread.insert_row_signal.connect(self.insertRowFunc)
-        # self.loadThread.setRowItems_signal.connect(self.insertRowFunc)
+        # self.loadThread.setRowItems_signal.connect(self.insertRowFunc) new 
         self.loadThread.prog_signal.connect(lambda prog: self.progressBar.setValue(prog))
         self.loadThread.finished_signal.connect(self.setNewWrds)
         self.ProgressGroupBox.setVisible(True)

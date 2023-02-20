@@ -169,9 +169,7 @@ class Options_UI(QtWidgets.QMainWindow):
             msg.setIcon(QMessageBox.Information)
             msg.exec_()    
         # os.execl(sys.executable, os.path.abspath(__file__), *sys.argv) 
-        # os.execv(sys.executable, ['python'] + sys.argv)
-    def Show_settings(self):
-        self.show()    
+        # os.execv(sys.executable, ['python'] + sys.argv)   
     def settings_changed_(self):
         self.settings_changed = True 
     def closeEvent(self, event):

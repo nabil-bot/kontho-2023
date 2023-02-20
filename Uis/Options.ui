@@ -234,6 +234,26 @@ background-color: rgb(225, 225, 225);
            <enum>QFrame::Raised</enum>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
+           <item row="13" column="0">
+            <widget class="QLabel" name="label_17">
+             <property name="text">
+              <string>Key to select word:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="1">
+            <widget class="QDoubleSpinBox" name="SimiDoubleSpinBox">
+             <property name="minimum">
+              <double>0.250000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>0.900000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.010000000000000</double>
+             </property>
+            </widget>
+           </item>
            <item row="18" column="3">
             <widget class="QRadioButton" name="SelectionRadioButton">
              <property name="minimumSize">
@@ -251,26 +271,6 @@ background-color: rgb(225, 225, 225);
             <widget class="QLabel" name="label_18">
              <property name="text">
               <string>Trigger completion by</string>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="1">
-            <widget class="QDoubleSpinBox" name="SimiDoubleSpinBox">
-             <property name="minimum">
-              <double>0.250000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>0.900000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.010000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="1" colspan="3">
-            <widget class="Line" name="line_22">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -308,10 +308,10 @@ QSpinBox::edit-line:selected {
              </property>
             </widget>
            </item>
-           <item row="0" column="0" colspan="2">
-            <widget class="QCheckBox" name="RunAtAtartUpCheckBox">
-             <property name="text">
-              <string>Run automatically at startup</string>
+           <item row="7" column="1" colspan="3">
+            <widget class="Line" name="line_22">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -338,20 +338,10 @@ QSpinBox::edit-line:selected {
              </property>
             </widget>
            </item>
-           <item row="14" column="1">
-            <widget class="QCheckBox" name="TabCheckBox">
+           <item row="0" column="0" colspan="2">
+            <widget class="QCheckBox" name="RunAtAtartUpCheckBox">
              <property name="text">
-              <string>Tab key</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="19" column="0" colspan="4">
-            <widget class="Line" name="line_27">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <string>Run automatically at startup</string>
              </property>
             </widget>
            </item>
@@ -362,20 +352,44 @@ QSpinBox::edit-line:selected {
              </property>
             </widget>
            </item>
-           <item row="14" column="3">
-            <widget class="QCheckBox" name="ArrowCheckBox">
-             <property name="text">
-              <string>Arrow</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
+           <item row="19" column="0" colspan="4">
+            <widget class="Line" name="line_27">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="14" column="0">
-            <widget class="QLabel" name="label_17">
+           <item row="11" column="1">
+            <widget class="QCheckBox" name="banglaSuggestCheckBox">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>18</height>
+              </size>
+             </property>
              <property name="text">
-              <string>To select word:</string>
+              <string>Bangla</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="AutoCloseCheckBox">
+             <property name="text">
+              <string>Auto close brackets () {} []</string>
+             </property>
+            </widget>
+           </item>
+           <item row="23" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>English Dictionary:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="0">
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string> Predict words for:</string>
              </property>
             </widget>
            </item>
@@ -393,15 +407,23 @@ QSpinBox::edit-line:selected {
              </property>
             </widget>
            </item>
-           <item row="25" column="3">
-            <widget class="Line" name="line_20">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+           <item row="8" column="0">
+            <widget class="QLabel" name="label_16">
+             <property name="text">
+              <string>Minimum similarity ratio
+to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
            <item row="10" column="0">
             <widget class="Line" name="line_7">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="25" column="3">
+            <widget class="Line" name="line_20">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -414,55 +436,10 @@ QSpinBox::edit-line:selected {
              </property>
             </widget>
            </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="label_16">
-             <property name="text">
-              <string>Minimum similarity ratio
-to suggest for misspelled word:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="0">
-            <widget class="QLabel" name="label_13">
-             <property name="text">
-              <string> Predict words for:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QCheckBox" name="AutoCloseCheckBox">
-             <property name="text">
-              <string>Auto close brackets () {} []</string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="1">
-            <widget class="QCheckBox" name="banglaSuggestCheckBox">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>18</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Bangla</string>
-             </property>
-            </widget>
-           </item>
-           <item row="23" column="0">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string>English Dictionary:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="21" column="0" colspan="4">
-            <widget class="QLineEdit" name="lineEdit">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
+           <item row="22" column="0">
+            <widget class="Line" name="line_12">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -479,24 +456,20 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
+           <item row="21" column="0" colspan="4">
+            <widget class="QLineEdit" name="lineEdit">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
            <item row="23" column="1" colspan="3">
             <widget class="QPushButton" name="OpenEnglishDic">
              <property name="text">
               <string>Open</string>
-             </property>
-            </widget>
-           </item>
-           <item row="22" column="0">
-            <widget class="Line" name="line_12">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="22" column="1">
-            <widget class="Line" name="line_17">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -521,6 +494,16 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
+           <item row="22" column="1">
+            <widget class="Line" name="line_17">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="24" column="0" colspan="4">
+            <widget class="QLineEdit" name="lineEdit_2"/>
+           </item>
            <item row="7" column="0">
             <widget class="Line" name="line_21">
              <property name="orientation">
@@ -541,9 +524,6 @@ to suggest for misspelled word:</string>
              </property>
             </spacer>
            </item>
-           <item row="24" column="0" colspan="4">
-            <widget class="QLineEdit" name="lineEdit_2"/>
-           </item>
            <item row="4" column="1">
             <widget class="QPushButton" name="OpenAbbris">
              <property name="text">
@@ -555,6 +535,41 @@ to suggest for misspelled word:</string>
             <widget class="QLabel" name="label_12">
              <property name="text">
               <string>Max word prediction:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="2">
+            <widget class="Line" name="line_16">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="17" column="0" colspan="4">
+            <widget class="Line" name="line_6">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="2">
+            <widget class="Line" name="line_15">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="18" column="2">
+            <widget class="Line" name="line_30">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="2">
+            <widget class="Line" name="line_29">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
              </property>
             </widget>
            </item>
@@ -571,13 +586,6 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
-            <widget class="Line" name="line_24">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
            <item row="8" column="3">
             <widget class="QPushButton" name="ResetSimipushButton">
              <property name="text">
@@ -585,17 +593,10 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="3">
-            <widget class="QPushButton" name="ResetMaxPushButton">
-             <property name="text">
-              <string>Reset</string>
-             </property>
-            </widget>
-           </item>
-           <item row="16" column="1" colspan="3">
-            <widget class="QCheckBox" name="SuggestEmojiesCheckBox">
-             <property name="text">
-              <string>Suggest emojis</string>
+           <item row="3" column="0">
+            <widget class="Line" name="line_24">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -606,10 +607,10 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
-           <item row="14" column="2">
-            <widget class="Line" name="line_8">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
+           <item row="6" column="3">
+            <widget class="QPushButton" name="ResetMaxPushButton">
+             <property name="text">
+              <string>Reset</string>
              </property>
             </widget>
            </item>
@@ -620,39 +621,82 @@ to suggest for misspelled word:</string>
              </property>
             </widget>
            </item>
-           <item row="11" column="2">
-            <widget class="Line" name="line_15">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
+           <item row="16" column="1" colspan="3">
+            <widget class="QCheckBox" name="SuggestEmojiesCheckBox">
+             <property name="text">
+              <string>Suggest emojis</string>
              </property>
             </widget>
            </item>
-           <item row="8" column="2">
-            <widget class="Line" name="line_16">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
+           <item row="14" column="0" colspan="4">
+            <widget class="QGroupBox" name="groupBox_2">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
              </property>
-            </widget>
-           </item>
-           <item row="6" column="2">
-            <widget class="Line" name="line_29">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
+             <property name="title">
+              <string/>
              </property>
-            </widget>
-           </item>
-           <item row="17" column="0" colspan="4">
-            <widget class="Line" name="line_6">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="18" column="2">
-            <widget class="Line" name="line_30">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QCheckBox" name="TabCheckBox">
+                <property name="text">
+                 <string>Tab</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="Line" name="line_34">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="ArrowCheckBox">
+                <property name="text">
+                 <string>Arrow</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="Line" name="line_31">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="Function_checkBox">
+                <property name="text">
+                 <string>Function</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
           </layout>

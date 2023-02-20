@@ -10,7 +10,7 @@ kb = Controller()
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 import sys
 from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QRect, QTimer, QSettings, QEasingCurve, QEvent
-from PyQt5.QtWidgets import QWidget, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox, QSystemTrayIcon
+from PyQt5.QtWidgets import QWidget, QLabel, QListWidgetItem, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox, QSystemTrayIcon
 from PyQt5.QtGui import QPainter, QColor 
 import os
 import io 
@@ -40,6 +40,23 @@ import win32process
 import win32api
 import pyperclip as pc
 from num2words import num2words
+from PyQt5.QtGui import QFont
+
+from textblob import TextBlob
+
+from spellchecker import SpellChecker
+ 
+spell = SpellChecker()
+
+
+from bs4 import BeautifulSoup
+import requests, lxml
+
+headers = {
+    'User-agent':
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
+}
+
 
 User32 = ctypes.WinDLL('User32.dll')
 
@@ -57,6 +74,7 @@ formar_previous_word = ""
 previous_formar_previous_word = ""
 formar_previous_formar_previous_word = ""
 wordSofar = ""
+sentencece_sofar = ""
 englishWordSofar = ""
 shiftKeyBlocked = False
 keysBlocked = True
@@ -65,6 +83,7 @@ CurrentWord = ""
 ruledOut = False
 minimun_Similarity_Ratio = 0.70
 ansi_wordSOFar = ""
+using_functionKeys = False
 
 using_tab = True
 using_arrow = True
@@ -314,7 +333,7 @@ class Main_recognation(QtCore.QThread):
                         words[-1] = words[-1]+"?"    
                     reserved_clip = pc.paste()
                     
-                    pc.copy(txt_)
+                    pc.copy(f"{txt_} ")
                     pyautogui.hotkey('ctrl', 'v')
                     # for w in words:
                     #     # kb.type(w) 
@@ -588,101 +607,6 @@ class AdvanceSimilarityThread(QtCore.QThread):
         self.is_running = False
         self.terminate()
 
-class similarityThread(QtCore.QThread):
-    mostMatchedWords = QtCore.pyqtSignal(list)
-    ruledOutSimiSignal = QtCore.pyqtSignal(bool)            # call preventer signal 1
-    similarTheredIsRunningSignal = QtCore.pyqtSignal(bool, bool, str)  # call preventer signal 2
-    def __init__(self, englishWordSoFar = "", currentLang = "", parent=None):
-        super(similarityThread, self).__init__(parent)
-        self.is_running = True
-        
-        self.englishWordSoFar = englishWordSoFar
-        self.currentLang = currentLang
-        self.ruledOutSimi = False
-        self.brokenByNewCharacter = False
-               
-    def run(self):
-        global minimun_Similarity_Ratio
-        self.newCharacterIsPressed = False 
-        self.similarTheredIsRunningSignal.emit(True, self.brokenByNewCharacter, self.englishWordSoFar)
-        self.similarWords = []
-        self.heighestMatchedRatio = 0  
-        
-        if self.currentLang == "bangla":
-            currentwordsList = wordsList
-        else:
-            currentwordsList = EnglishwordsList
-
-        if len(self.englishWordSoFar) > 40:
-            return
-
-        for wrd in currentwordsList[:]: 
-            if self.currentLang == "bangla":
-                try:
-                    wordArray = wrd.split(",")
-                    banglaWord = wordArray[0]
-                    englishWord = wordArray[1]
-                except Exception:
-                    continue    
-                if englishWord in ["", " "]:
-                    continue
-                try:    
-                    if len(wordArray) == 1: #  or englishWord[0] != self.englishWordSofar[0]
-                        continue
-                except Exception:
-                    continue 
-            else:
-                englishWord = wrd     
-
-            # ========================================================= this block is excelerate the loop 
-            # if englishWord[0] != self.englishWordSoFar[0]:
-            #     continue
-            #  ========================================================= >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  
-            
-            similarity = self.similarity_ration_btween(englishWord, self.englishWordSoFar)   
-            if len(englishWordSofar) < 5:
-                minimumSimi = minimun_Similarity_Ratio
-            else:
-                minimumSimi = minimun_Similarity_Ratio 
-            # print(minimun_Similarity_Ratio)      
-            if similarity > minimumSimi:
-                if similarity > self.heighestMatchedRatio:
-                    if self.currentLang == "bangla":    
-                        self.similarWords.insert(0, banglaWord)
-                    else:
-                        self.similarWords.insert(0, englishWord)
-
-                    self.heighestMatchedRatio = similarity
-                else:
-                    if self.currentLang == "bangla":    
-                        self.similarWords.append(banglaWord)
-                    else:
-                        self.similarWords.append(englishWord)
-
-                        
-            if len(self.similarWords) > 9 or self.newCharacterIsPressed == True:  #<------ causing the problem      
-                if self.newCharacterIsPressed == True:  
-                    self.brokenByNewCharacter = True
-                    # print("broken By new character")
-                    return
-                break
-        if len(self.similarWords) == 0: #  and self.brokenByNewCharacter == False
-            self.ruledOutSimi = True
-            self.ruledOutSimiSignal.emit(True)
-            return
-        self.mostMatchedWords.emit(self.similarWords)
-        self.similarTheredIsRunningSignal.emit(False, self.brokenByNewCharacter, self.englishWordSoFar)
-        pass
-    def similarity_ration_btween(self, x, y):
-        seq = difflib.SequenceMatcher(None,x,y)
-        d = seq.ratio()
-        return d                
-    def newCharecterIsPressedStateChange(self, state):
-        self.newCharacterIsPressed = True
-    def stop(self):
-        self.is_running = False
-        # 
-        self.terminate()
         
 
 class similarity_While_Thread(QtCore.QThread):
@@ -698,63 +622,140 @@ class similarity_While_Thread(QtCore.QThread):
             global minimun_Similarity_Ratio
             global word_submitted_for_similarity
             global word_submitted_lang
+            global wordSofar
+            try:
+                if self.preEngWrd != word_submitted_for_similarity and word_submitted_for_similarity != "":
 
-            if self.preEngWrd != word_submitted_for_similarity and word_submitted_for_similarity != "":
-                self.similarWords = []
-                self.heighestMatchedRatio = 0   # to get the most matched wrd
+                    print("in similarity thread!")
+                    current_word = word_submitted_for_similarity # this for inconsistencie updates 
+                    self.similarWords = []
+                    self.heighestMatchedRatio = 0   # to get the most matched wrd
+
+                    if self.ruledOutSimi == False or len(word_submitted_for_similarity) < len(self.preEngWrd):
+                        if word_submitted_lang == "bangla":
+                            currentwordsList = wordsList 
+                        else:
+                            currentwordsList = EnglishwordsList
+                            # self.similarWords = self.suggest_word(word_submitted_for_similarity, currentwordsList, minimun_Similarity_Ratio)
+                        
+                        # =============
+                        # print(word_submitted_lang)
+                        
+                        # print("about to start")
+                        
+                        if word_submitted_lang == "english":
+                            b = TextBlob(word_submitted_for_similarity)
+                            corrected = str(b.correct())
+                            self.similarWords.insert(0, corrected) 
 
 
-                if self.ruledOutSimi == False or len(word_submitted_for_similarity) < len(self.preEngWrd):
-                    
-                    if word_submitted_lang == "bangla":
-                        currentwordsList = wordsList
-                        for wrd in currentwordsList[:]: 
-                            if word_submitted_lang == "bangla":
-                                try:
-                                    wordArray = wrd.split(",")
-                                    banglaWord = wordArray[0]
-                                    englishWord = wordArray[1]
-                                except Exception:
-                                    continue    
-                                if englishWord in ["", " "]:
-                                    continue
-                                try:    
-                                    if len(wordArray) == 1: #  or englishWord[0] != self.englishWordSofar[0]
-                                        continue
-                                except Exception:
-                                    continue 
-                            else:
-                                englishWord = wrd     
-                            similarity = self.similarity_ration_btween(englishWord, word_submitted_for_similarity)   
-                            minimumSimi = minimun_Similarity_Ratio 
-                            if similarity >= minimumSimi:
-                                if similarity > self.heighestMatchedRatio:
-                                    if word_submitted_lang == "bangla":    
-                                        self.similarWords.insert(0, banglaWord)
+                            if len(self.similarWords) < 2 :
+                                corrected = (spell.correction(word_submitted_for_similarity))
+                                if corrected != None and corrected not in self.similarWords: 
+                                    self.similarWords.insert(0, corrected)
+
+                            # if len(self.similarWords) == 1:
+                            if len(self.similarWords) < 2 :
+                                params = {
+                                'q' : word_submitted_for_similarity,   
+                                'hl': 'en',
+                                'gl': 'us'
+                                }
+
+                                html = requests.get('https://www.google.com/search?q=', headers=headers, params=params).text
+                                soup = BeautifulSoup(html, 'lxml')
+
+                                # print(soup)
+                                i_tag = soup.find('i')
+                                if i_tag:
+                                    text_in_i_tag = i_tag.get_text()
+                                    # print(text_in_i_tag)
+                                    if text_in_i_tag not in self.similarWords:   
+                                        self.similarWords.insert(0, text_in_i_tag) 
+
+                        if word_submitted_lang == "bangla" or len(self.similarWords) < 2:
+                            
+                            params = {
+                            'q' : wordSofar,   
+                            'hl': 'bn',
+                            'gl': 'bd'
+                            }
+
+                            html = requests.get('https://www.google.com/search?q=', headers=headers, params=params).text
+                            soup = BeautifulSoup(html, 'lxml')
+
+                            # print(soup)
+                            i_tag = soup.find('i')
+                            if i_tag:
+                                text_in_i_tag = i_tag.get_text()
+                                # print(text_in_i_tag)
+                                if text_in_i_tag not in self.similarWords:   
+                                    self.similarWords.insert(0, text_in_i_tag)
+                            
+                            if len(self.similarWords) < 2 : 
+                                for wrd in currentwordsList[:]: 
+                                    if word_submitted_lang == "bangla":
+                                        try:
+                                            wordArray = wrd.split(",")
+                                            banglaWord = wordArray[0]
+                                            englishWord = wordArray[1]
+                                        except Exception:
+                                            continue    
+                                        if englishWord in ["", " "]:
+                                            continue
+                                        try:    
+                                            if len(wordArray) == 1: #  or englishWord[0] != self.englishWordSofar[0]
+                                                continue
+                                        except Exception:
+                                            continue 
                                     else:
-                                        self.similarWords.insert(0, englishWord)
-                                    self.heighestMatchedRatio = similarity
+                                        englishWord = wrd  
 
-                            global newCharacterIsPressed            
-                            if newCharacterIsPressed == True:  #<------   # len(self.similarWords) > 30 or    
-                                if newCharacterIsPressed == True:  
-                                    self.brokenByNewCharacter = True
-                                break  
+                                    if len(current_word) > 3 and len(englishWord)<4:
+                                        continue
+
+                                    if word_submitted_for_similarity[0] not in englishLatters:
+                                        similarity = self.similarity_ration_btween(banglaWord, word_submitted_for_similarity)
+                                    else:
+                                        similarity = self.similarity_ration_btween(englishWord, word_submitted_for_similarity)   
+                                    minimumSimi = minimun_Similarity_Ratio 
+                                    if similarity >= minimumSimi:
+                                        if similarity > self.heighestMatchedRatio:
+                                            if word_submitted_lang == "bangla":    
+                                                self.similarWords.insert(0, banglaWord)
+                                            else:
+                                                self.similarWords.insert(0, englishWord)
+                                            self.heighestMatchedRatio = similarity
+
+                                    global newCharacterIsPressed            
+                                    if newCharacterIsPressed == True:  #<------   # len(self.similarWords) > 30 or    
+                                        if newCharacterIsPressed == True:  
+                                            self.brokenByNewCharacter = True
+                                        # print("bro by new")    
+                                        break 
+                            
+                                    
+                        
+                            
+
+                        # print(corrected)
+
+
+
+
+                        if len(self.similarWords) == 0: #  and self.brokenByNewCharacter == False
+                            self.ruledOutSimi = True
+
+                        else:
+                            self.ruledOutSimi = False
+                        if len(self.similarWords) != 0:    
+                            # print(f"for:{}")
+                            self.mostMatchedWords.emit(self.similarWords)
+                        self.preEngWrd = current_word
                     else:
-                        currentwordsList = EnglishwordsList
-                        self.similarWords = self.suggest_word(word_submitted_for_similarity, currentwordsList, minimun_Similarity_Ratio)
-                    
-                    if len(self.similarWords) == 0: #  and self.brokenByNewCharacter == False
-                        self.ruledOutSimi = True
-
-                    else:
-                        self.ruledOutSimi = False
-                    if len(self.similarWords) != 0:    
-                        self.mostMatchedWords.emit(self.similarWords)
-                    self.preEngWrd = word_submitted_for_similarity
-                else:
-                    self.preEngWrd = word_submitted_for_similarity
-
+                        self.preEngWrd = current_word
+            except Exception as e:
+                pass
             time.sleep(0.1)   
     def similarity_ration_btween(self, x, y):
         seq = difflib.SequenceMatcher(None,x,y)
@@ -790,6 +791,7 @@ class WhileloopThroughListThread(QtCore.QThread):
         self.preEngWrd = ""
         self.ruledOutSimi = False
         self.similarTheredIsRunning = False
+        self.mainRuledOut = False
 
         pass
     def run(self):
@@ -798,10 +800,19 @@ class WhileloopThroughListThread(QtCore.QThread):
             global englishWordSofar
             global newCherecterIspressed 
             global suggestEmoji
-            if  (self.preEngWrd != englishWordSofar and englishWordSofar != "") or (self.preWord != wordSofar and wordSofar != ""):   
+            # if ((self.preEngWrd != englishWordSofar and englishWordSofar != "") or (self.preWord != wordSofar and wordSofar != "")):
+            #     try:
+            #         lastcha = wordSofar[len(self.preWord)]
+            #         if lastcha not in englishLatters:
+            #             self.mainRuledOut = True
 
+            #         if self.mainRuledOut == True:
+            #             self.matchedWordsSignal.emit([wordSofar])
+            #     except Exception:
+            #         pass    
+                
+            if ((self.preEngWrd != englishWordSofar and englishWordSofar != "") or (self.preWord != wordSofar and wordSofar != "")) and self.mainRuledOut == False:   
                 newCherecterIspressed = True
-
                 self.matchedWords = []
                 try:
                     if wordSofar[0] not in englishLatters and wordSofar[0] not in banglaNumbs:  # for bangla lang
@@ -821,7 +832,10 @@ class WhileloopThroughListThread(QtCore.QThread):
                                 self.themeSignal.emit("blue")
 
                         if len(self.matchedWords) == 0 :  # and self.ruledOutSimi == False
-                            self.startSimilarityThread(englishWordSofar, 'bangla')   
+                            if englishWordSofar != "":    
+                                self.startSimilarityThread(englishWordSofar, 'bangla')   
+                            else:
+                                self.startSimilarityThread(wordSofar, 'bangla')   
 
                     if wordSofar[0] in englishLatters:     # for english
                         # ================================
@@ -929,34 +943,27 @@ class WhileloopThroughListThread(QtCore.QThread):
         self.ruledOutSimi = False
         # print("init signal")
     
-    # def startSimilarityThread(self,englishWordSofar_local,currentLang):
-    #     self.themeSignal.emit("yellow")
-    #     try:
-    #         self.similarityThread = similarityThread(englishWordSofar_local, currentLang)
-    #         if self.similarityThread.isRunning():
-    #             self.similarityThread.quit()
-    #             self.similarityThread.wait()
-
-    #             self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-    #             self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
-    #             self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
-    #             self.similarityThread.start() 
-    #         else:
-    #             self.similarityThread.ruledOutSimiSignal.connect(self.ruledOutSimiStateChange)
-    #             self.similarityThread.mostMatchedWords.connect(self.addSimiWordsFunc)
-    #             self.newCherecterIspressed.connect(self.similarityThread.newCharecterIsPressedStateChange)
-    #             self.similarityThread.start() 
-    #     except Exception as e:
-    #         print(e)  
     def startSimilarityThread(self,englishWordSofar_local,currentLang):
+        
+        # filter ==========
+        for i in range(len(englishWordSofar_local)):
+            if englishWordSofar_local[i] not in englishAlphabets:
+                return
+        # ============
         global word_submitted_lang
         global word_submitted_for_similarity
-        global newCherecterIspressed 
-
+        global newCherecterIspressed
+        # global wordSofar
+        self.themeSignal.emit("yellow")
         newCherecterIspressed  = False
         word_submitted_lang = currentLang
-        word_submitted_for_similarity = englishWordSofar_local
-          
+        word_submitted_for_similarity = englishWordSofar_local # this could be bangla word so far when osk is pressed!
+        
+        # if word_submitted_lang == "english":    
+        #     word_submitted_for_similarity = englishWordSofar_local # this could be bangla word so far when osk is pressed!
+        # else:
+        #     word_submitted_for_similarity = wordSofar # this could be bangla word so far when osk is pressed!
+
     def ruledOutSimiStateChange(self, state):
         self.ruledOutSimi = state
         self.similarTheredIsRunning = False
@@ -968,8 +975,9 @@ class WhileloopThroughListThread(QtCore.QThread):
         self.ruledOut = False
         self.ruledOutSimi = False
         self.ruledOutEngla = False
+        self.mainRuledOut = False
 
-        self.themeSignal.emit("yellow")
+        # self.themeSignal.emit("yellow")
         global word_submitted_lang
         global word_submitted_for_similarity
 
@@ -1197,106 +1205,24 @@ class OSK_UI(QtWidgets.QMainWindow):
 
         self.state = self.saveState()
         # self.RestoreCharacPushButton.clicked.connect(self.RestoreCharac)
+        
 
-# banglakeyboard connectors ===========================
-        # self.Ao_pushButton.clicked.connect(lambda:self.logIn("অ"))
-        # self.Aa_pushButton.clicked.connect(lambda:self.logIn("আ"))
-        # self.pushButton_85.clicked.connect(lambda:self.logIn("ই"))
-        # self.pushButton_80.clicked.connect(lambda:self.logIn("ঈ"))
-        # self.pushButton_82.clicked.connect(lambda:self.logIn("উ"))
-        # self.pushButton_88.clicked.connect(lambda:self.logIn("ঊ"))
-        # self.pushButton_87.clicked.connect(lambda:self.logIn("ঋ"))
-        # self.pushButton_79.clicked.connect(lambda:self.logIn("এ"))
-        # self.pushButton_83.clicked.connect(lambda:self.logIn("ঐ"))
-        # self.pushButton_86.clicked.connect(lambda:self.logIn("ও"))
-        # self.pushButton_89.clicked.connect(lambda:self.logIn("ঔ"))
-        # self.pushButton_155.clicked.connect(lambda:self.logIn("া"))
-        # self.pushButton_156.clicked.connect(lambda:self.logIn("ি"))
-        # self.Deghi_pushButton.clicked.connect(lambda:self.logIn("ী"))
-        # self.pushButton_158.clicked.connect(lambda:self.logIn("ু"))
-        # self.pushButton_159.clicked.connect(lambda:self.logIn("ূ"))
-        # self.pushButton_160.clicked.connect(lambda:self.logIn("ৃ"))
-        # self.pushButton_161.clicked.connect(lambda:self.logIn("ে"))
-        # self.pushButton_162.clicked.connect(lambda:self.logIn("ৈ"))
-        # self.pushButton_163.clicked.connect(lambda:self.logIn("ো"))
-        # self.pushButton_164.clicked.connect(lambda:self.logIn("ৌ"))
-        # self.pushButton_101.clicked.connect(lambda:self.logIn("ক"))
-        # self.pushButton_91.clicked.connect(lambda:self.logIn("খ"))
-        # self.pushButton_96.clicked.connect(lambda:self.logIn("গ"))
-        # self.pushButton_133.clicked.connect(lambda:self.logIn("ঘ"))
-        # self.pushButton_138.clicked.connect(lambda:self.logIn("ঙ"))
-        # self.pushButton_148.clicked.connect(lambda:self.logIn("চ"))
-        # self.pushButton_93.clicked.connect(lambda:self.logIn("ছ"))
-        # self.pushButton_141.clicked.connect(lambda:self.logIn("জ"))
-        # self.pushButton_92.clicked.connect(lambda:self.logIn("ঝ"))
-        # self.pushButton_145.clicked.connect(lambda:self.logIn("ঞ"))
-        # self.pushButton_150.clicked.connect(lambda:self.logIn("ট"))
-        # self.pushButton_151.clicked.connect(lambda:self.logIn("ঠ"))
-        # self.pushButton_135.clicked.connect(lambda:self.logIn("ড"))
-        # self.pushButton_153.clicked.connect(lambda:self.logIn("ঢ"))
-        # self.pushButton_140.clicked.connect(lambda:self.logIn("ণ"))
-        # self.pushButton_143.clicked.connect(lambda:self.logIn("ত"))
-        # self.pushButton_104.clicked.connect(lambda:self.logIn("থ"))
-        # self.pushButton_132.clicked.connect(lambda:self.logIn("দ"))
-        # self.pushButton_99.clicked.connect(lambda:self.logIn("ধ"))
-        # self.pushButton_103.clicked.connect(lambda:self.logIn("ন"))
-        # self.pushButton_142.clicked.connect(lambda:self.logIn("প"))
-        # self.pushButton_131.clicked.connect(lambda:self.logIn("ফ"))
-        # self.pushButton_94.clicked.connect(lambda:self.logIn("ব"))
-        # self.pushButton_147.clicked.connect(lambda:self.logIn("ভ"))
-        # self.pushButton_100.clicked.connect(lambda:self.logIn("ম"))
-        # self.pushButton_95.clicked.connect(lambda:self.logIn("য"))
-        # self.pushButton_134.clicked.connect(lambda:self.logIn("র"))
-        # self.Lo_pushButton.clicked.connect(lambda:self.logIn("ল"))
-        # self.pushButton_90.clicked.connect(lambda:self.logIn("শ"))
-        # self.pushButton_97.clicked.connect(lambda:self.logIn("ষ"))
-        # self.pushButton_137.clicked.connect(lambda:self.logIn("স"))
-        # self.pushButton_146.clicked.connect(lambda:self.logIn("হ"))
-        # self.pushButton_149.clicked.connect(lambda:self.logIn("ড়"))
-        # self.pushButton_144.clicked.connect(lambda:self.logIn("ঢ়"))
-        # self.pushButton_98.clicked.connect(lambda:self.logIn("য়"))
-        # self.pushButton_105.clicked.connect(lambda:self.logIn("ৎ"))
-        # self.pushButton_136.clicked.connect(lambda:self.logIn("ং"))
-        # self.pushButton_139.clicked.connect(lambda:self.logIn("ঃ"))
-        # self.pushButton_152.clicked.connect(lambda:self.logIn("ঁ"))
-        # self.pushButton_154.clicked.connect(lambda:self.logIn("্"))
-        # self.pushButton_165.clicked.connect(lambda:self.logIn("্য"))
-        # self.pushButton_166.clicked.connect(lambda:self.logIn("্র"))
-        # self.pushButton_170.clicked.connect(lambda:self.logIn("০"))
-        # self.pushButton_167.clicked.connect(lambda:self.logIn("১"))
-        # self.pushButton_173.clicked.connect(lambda:self.logIn("২"))
-        # self.pushButton_169.clicked.connect(lambda:self.logIn("৩"))
-        # self.pushButton_171.clicked.connect(lambda:self.logIn("৪"))
-        # self.pushButton_172.clicked.connect(lambda:self.logIn("৫"))
-        # self.pushButton_168.clicked.connect(lambda:self.logIn("৬"))
-        # self.pushButton_175.clicked.connect(lambda:self.logIn("৭"))
-        # self.pushButton_174.clicked.connect(lambda:self.logIn("৮"))
-        # self.pushButton_176.clicked.connect(lambda:self.logIn("৯"))
-        # self.pushButton_186.clicked.connect(lambda:self.logIn("ক্ষ"))
-        # self.pushButton_193.clicked.connect(lambda:self.logIn("ঙ্ক"))
-        # self.pushButton_185.clicked.connect(lambda:self.logIn("ঙ্গ"))
-        # self.pushButton_187.clicked.connect(lambda:self.logIn("ঞ্চ"))
-        # self.pushButton_188.clicked.connect(lambda:self.logIn("ঞ্ছ"))
-        # self.pushButton_194.clicked.connect(lambda:self.logIn("ঞ্জ"))
-        # self.pushButton_191.clicked.connect(lambda:self.logIn("জ্ঞ"))
-        # self.pushButton_183.clicked.connect(lambda:self.logIn("হ্ম"))
-        # self.pushButton_190.clicked.connect(lambda:self.logIn("ষ্ণ"))
-        # self.pushButton_195.clicked.connect(lambda:self.logIn("ষ্ম"))
-        # self.pushButton_189.clicked.connect(lambda:self.logIn("ত্ত"))
-        # self.pushButton_177.clicked.connect(lambda:self.logIn("।"))
-        # self.pushButton_178.clicked.connect(lambda:self.logIn(","))
-        # self.pushButton_179.clicked.connect(lambda:self.logIn("?"))
-        # self.pushButton_180.clicked.connect(lambda:self.logIn(";"))
-        # self.pushButton_181.clicked.connect(lambda:self.logIn(":"))
-        # self.pushButton_182.clicked.connect(lambda:self.logIn("৳"))
-        # self.pushButton_192.clicked.connect(lambda:self.logIn("!"))
-        # self.pushButton_184.clicked.connect(lambda:self.logIn("@"))
-        # self.pushButton_196.clicked.connect(lambda:self.logIn("("))
-        # self.pushButton.clicked.connect(lambda:self.logIn(")"))
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        # self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        # self.listWidget.setStyleSheet("background: transparent;")
+
+        blur = QtWidgets.QGraphicsBlurEffect()
+        blur.setBlurRadius(10)
+        # self.listWidget.setGraphicsEffect(blur)  action replay
+
+        # self.frame.setGraphicsEffect(blur)
+        # self.frame.setWindowOpacity(0.8)
+
+
 
         # self.pushButton_201.clicked.connect(self.spaceClicked)
         self.pushButton_198.clicked.connect(self.tabClicked)            
-        self.pushButton_199.clicked.connect(self.BackSpaceClicked)
+        # self.pushButton_199.clicked.connect(self.BackSpaceClicked)
         self.pushButton_200.clicked.connect(self.deleteClicked)
         self.pushButton_197.clicked.connect(self.EnterClicked)
 # /banglakeyboard connectors =========================== 
@@ -1429,7 +1355,8 @@ class OSK_UI(QtWidgets.QMainWindow):
             cha = self.CharHistory[int(ser)]
         except Exception as e:
             print(cha)
-            print(e) 
+            print(e)
+            print("i am here 1") 
             cha = ""    
 
         try:    
@@ -1623,13 +1550,12 @@ class OSK_UI(QtWidgets.QMainWindow):
                 CurrentWord = "" 
                 self.cleanRecomendations()
 
-            # self.recomendFunc()
             self.initState()
         elif wordSofar != "":
             try:
                 wordSofar = wordSofar[:-1]
             except Exception:
-                wordSofar = "" 
+                wordSofar = ""
                 self.cleanRecomendations()
 
         self.sfx()
@@ -1657,7 +1583,7 @@ class OSK_UI(QtWidgets.QMainWindow):
 
         # if CurrentWord == "":
         #     CurrentWord = wordSofar
-        print("in function")
+        
         kb.type(self.subsTrack(selectedWord, CurrentWord))
         if self.SpaceCheckBox.isChecked() == True:
             kb.type(" ")
@@ -1913,6 +1839,25 @@ class listContextClass(QtWidgets.QMainWindow):
         self.setWindowFlags(Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         User32.SetWindowLongW(int(self.winId()), -20, 134217728)
+class NumberWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.number_layout = QVBoxLayout()
+
+        self.number_layout.setContentsMargins(0, 2, 0, 2)
+
+        self.setLayout(self.number_layout)
+
+    def add_number(self, number):
+        label = QLabel(str(number))
+        self.number_layout.addWidget(label)
+
+    def clear_numbers(self):
+        while self.number_layout.count() > 0:
+            item = self.number_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
 class listViewClass(QtWidgets.QMainWindow):
     def __init__(self):
         super(listViewClass, self).__init__()
@@ -1931,8 +1876,23 @@ class listViewClass(QtWidgets.QMainWindow):
 
         self.pined = False
         self.PinPushButton.clicked.connect(self.pinStateChanged)
-        # self.listWidget.itemClicked.connect(self.WordClicked)c
+        # self.listWidget.itemClicked.connect(self.WordClicked)c   clalaustrophobic claustrophobic
         self.listWidget.setUniformItemSizes(True)
+
+
+        # self.listWidget.setWindowOpacity(0.8)
+        # self.listWidget.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        # self.listWidget.setFrameShape(QtWidgets.QFrame.NoFrame)
+        # self.listWidget.setStyleSheet("background: transparent;")
+
+        blur = QtWidgets.QGraphicsBlurEffect()
+        blur.setBlurRadius(5)
+        # self.listWidget.setGraphicsEffect(blur)  action replay
+
+        # self.frame_2.setGraphicsEffect(blur)
+        # self.frame_2.setWindowOpacity(0.9)
+
+
         self.matchedWords = []
         self.currentWords = []
         self.clicked = False
@@ -1946,12 +1906,16 @@ class listViewClass(QtWidgets.QMainWindow):
 
         self.Settings_menu_for_completor = QMenu("Settings")
 
-        self.dont_show_on_this_window_menu = QAction('Do not suggest for this window', self)
+        self.dont_show_on_this_window_menu = QAction('Do not suggest for this window', self) # can you here me bro
         self.cancel_menu = QAction('Cancel', self)
         
         self.Settings_menu_for_completor.addAction(self.dont_show_on_this_window_menu)
 
         self.Settings_btn.setMenu(self.Settings_menu_for_completor)
+
+        self.number_widget = NumberWidget()
+        self.verticalLayout.addWidget(self.number_widget)
+        self.listWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
     def action1_triggered(self):
         # selected_item = self.listWidget.currentItem()
@@ -1994,18 +1958,44 @@ class listViewClass(QtWidgets.QMainWindow):
     def populateWords(self, words):
         # self.show()
         # print(words)
-        while("" in words):
-            words.remove("")
-        self.listWidget.clear()
-        for item in words[:10]:
-            if self.listWidget.findItems(item, Qt.MatchExactly) or "েৌ" in item or "েো" in item:
-                continue
-            self.listWidget.addItem(item)    
+        global using_functionKeys
+        try:
+            while("" in words):
+                words.remove("")
+            self.listWidget.clear()
+            c = 0
+            self.number_widget.clear_numbers()
+            for item in words[:10]:
+                if self.listWidget.findItems(item, Qt.MatchExactly) or "েৌ" in item or "েো" in item:
+                    continue
+                
+                if c== 1:
+                    bold_font = QFont()
+                    bold_font.setBold(True)
+                    item1 = QListWidgetItem(item)
+                    item1.setFont(bold_font)
+                    self.listWidget.addItem(item)    
+                else:
+                    self.listWidget.addItem(item)    
+                
+
+                c += 1
+                if using_functionKeys:    
+                    self.number_widget.add_number(c)
+                # self.listWidget.addItems(words)  action peplay why are action action
+            self.currentRow = 0
             
-            # self.listWidget.addItems(words)
-        self.currentRow = 0
-        self.listWidget.setFixedSize(self.listWidget.sizeHintForColumn(0) + 10 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 2 * self.listWidget.frameWidth())   
-        # self.GetCaretPosInWindow()
+            # self.listWidget.setFixedSize(self.listWidget.sizeHintForColumn(0) + 8 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 2 * self.listWidget.frameWidth()+ 8)   
+            # self.frame_2.setFixedSize(self.listWidget.sizeHintForColumn(0) + 5 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 2 * self.listWidget.frameWidth()) 
+            
+            self.listWidget.setFixedSize(self.listWidget.sizeHintForColumn(0) + 12 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 4 * self.listWidget.frameWidth()+ 14)   
+            self.frame_2.setFixedSize(self.listWidget.sizeHintForColumn(0) + 12 * self.listWidget.frameWidth(), self.listWidget.sizeHintForRow(0) * self.listWidget.count() + 4 * self.listWidget.frameWidth()) 
+            
+
+            # self.GetCaretPosInWindow()
+
+        except Exception as e:
+            print(f"{e} , in populate words function listview")    
     @QtCore.pyqtSlot(list)
     def populateSimilarWords(self, simiWords):
         self.listWidget.addItems(simiWords)
@@ -2045,15 +2035,16 @@ class listViewClass(QtWidgets.QMainWindow):
         pass
     @QtCore.pyqtSlot(str)
     def changeTheme(self, theme):
-        
+        # print(theme)
+        # return
         if theme == "green":
-            self.listWidget.setStyleSheet(DefultTheme)
+            self.frame_2.setStyleSheet(DefultTheme)
         if theme == "red":
-            self.listWidget.setStyleSheet(RedTheme)
+            self.frame_2.setStyleSheet(RedTheme)
         if theme == "blue":
-            self.listWidget.setStyleSheet(BlueTheme)  
+            self.frame_2.setStyleSheet(BlueTheme)  
         if theme == "yellow":
-            self.listWidget.setStyleSheet(YellowTheme)
+            self.frame_2.setStyleSheet(YellowTheme)
     def paintEvent(self, event):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor(128, 128, 128, 0))
@@ -2251,7 +2242,8 @@ class Ui(QtWidgets.QMainWindow):
         self.settingsGUIClass.SimiDoubleSpinBox.valueChanged.connect(self.similarityValueChanged)
         self.settingsGUIClass.TabCheckBox.stateChanged.connect(self.using_tab_stateChanged)
         self.settingsGUIClass.ArrowCheckBox.stateChanged.connect(self.using_arrow_stateChanged)
-        
+        self.settingsGUIClass.Function_checkBox.stateChanged.connect(self.using_funcKeys_stateChanged)
+
         with open('.//Res//SuggestBangla.txt', "r") as file:
             self.suggestForBangla = (file.read())
         if self.suggestForBangla == "False":
@@ -2269,7 +2261,6 @@ class Ui(QtWidgets.QMainWindow):
         else:
             self.settingsGUIClass.EnglishSuggestCheckBox.setChecked(True)
 
-        
         self.settingsGUIClass.banglaSuggestCheckBox.stateChanged.connect(self.banglaSuggest)
         self.settingsGUIClass.EnglishSuggestCheckBox.stateChanged.connect(self.englishSuggest)
         self.settingsGUIClass.SuggestEmojiesCheckBox.stateChanged.connect(self.emojiSuggest)
@@ -2359,7 +2350,7 @@ class Ui(QtWidgets.QMainWindow):
         
     # osk class connectors ========================================================================>
 
-        # self.oskClass.pushButton_33.clicked.connect(self.oskClass.BackSpaceClicked)
+        self.oskClass.pushButton_199.clicked.connect(self.OSKBackSpaceClicked)
 
         self.oskClass.pushButton_33.clicked.connect(lambda: self.on_osk_press(str("key.backspace")))
 
@@ -2598,6 +2589,26 @@ class Ui(QtWidgets.QMainWindow):
         # self.bangla_word_signal.connect(self.BanglawordThread.run)
         # self.initBanglaThread_signal.connect(self.BanglawordThread.initFunc)
         # self.BanglawordThread.start()
+        self.using_funcKeys_stateChanged()
+    def using_funcKeys_stateChanged(self):
+        global using_functionKeys
+        using_functionKeys = self.settingsGUIClass.Function_checkBox.isChecked()
+        self.listClass.groupBox_3.setVisible(using_functionKeys)
+        print(self.listClass.groupBox_3.isVisible())
+    def OSKBackSpaceClicked(self):
+        self.listener.stop()
+        kb.tap(Key.backspace)
+        global wordSofar
+        if wordSofar != "":
+            try:
+                wordSofar = wordSofar[:-1]
+            except Exception:
+                wordSofar = ""
+                self.oskClass.cleanRecomendations()
+        
+        self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)
+        self.listener.start()  
+        self.sfx()
     def triggerSelectionSettingFunc2(self):
         state = self.settingsGUIClass.SelectionRadioButton.isChecked()
         self.ownSettings.setValue("selection_checked2", state)
@@ -2640,7 +2651,7 @@ class Ui(QtWidgets.QMainWindow):
         self.listener.stop()
         if self.oskClass.UnicodeRadioButton.isChecked():   
             kb.type(char)
-            wordSofar += char  
+            wordSofar += char
             englishWordSofar = ""
         # if char == "ো":
         #     kb.tap(Key.left)
@@ -2660,7 +2671,6 @@ class Ui(QtWidgets.QMainWindow):
         self.listener.start()  
         # CurrentWord += char
         
-        print(f"in {wordSofar}")
         # self.bangla_word_signal.emit(CurrentWord)
         
         self.sfx()
@@ -2686,6 +2696,8 @@ class Ui(QtWidgets.QMainWindow):
         global minimun_Similarity_Ratio
         minimun_Similarity_Ratio = val
     def openDic(self, index):
+        if self.wordManagerClass.stufLoaded == False:
+            self.wordManagerClass.loadStuff()
         self.wordManagerClass.show()
         self.wordManagerClass.tabWidget.setCurrentIndex(index)
     def tray_icon_clicked(self, reason):
@@ -2763,16 +2775,16 @@ class Ui(QtWidgets.QMainWindow):
             self.contextClass.show()
             self.contextClass.setGeometry(x, y, 100, 100)
     def ContextMenuClicked(self, item):
-        print(item.text())  # menu clicked 
         c_i = self.listClass.listWidget.currentItem()
-        print(c_i.text()) # the word 
-        
+
         menu_tag = item.text()
         wrd = c_i.text()
 
         if menu_tag == "Copy":
             pc.copy(wrd) 
         if menu_tag == "Edit":
+            if self.wordManagerClass.stufLoaded == False:
+                self.wordManagerClass.loadStuff()    
             self.wordManagerClass.show()
             self.wordManagerClass.search(wrd)
         if menu_tag == "Search Google":
@@ -2829,6 +2841,7 @@ class Ui(QtWidgets.QMainWindow):
     def smertCompletor(self, word_soFar, the_word):
         try:    
             i = 0
+            same_index = 0
             for x in range(len(the_word)):
                 try:
                     if the_word[i] == word_soFar[i]:
@@ -2870,6 +2883,8 @@ class Ui(QtWidgets.QMainWindow):
             if selectedText[:len(wordSofar)] == wordSofar:  
                 kb.type(selectedText[len(wordSofar):])
             else:
+                print(wordSofar)
+                print(selectedText)
                 times_to_tap_backspace, restOfWord = self.smertCompletor(wordSofar, selectedText)   
                 for i in range(times_to_tap_backspace):
                     kb.tap(Key.backspace)
@@ -3085,7 +3100,7 @@ class Ui(QtWidgets.QMainWindow):
             return   
         if self.oskClass.BanglishCheckBox.isChecked() == True:
             if key in englishLatters:   
-                # self.listener.stop()
+                self.listener.stop()
                 # print("I am still here")
                 global completorTraegered
                 completorTraegered = True
@@ -3093,8 +3108,8 @@ class Ui(QtWidgets.QMainWindow):
                 completorTraegered = False
 
                 # self.listClass.showHideFunc("hide")
-                # self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-                # self.listener.start() 
+                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+                self.listener.start() 
                 # self.listClass.showHideFunc("hide") 
             else:
                 self.listener.stop()
@@ -3130,6 +3145,9 @@ class Ui(QtWidgets.QMainWindow):
         global previous_word
         global formar_previous_word
         global ansi_wordSOFar
+        global sentencece_sofar
+        global using_functionKeys
+
         try:
             if self.AutoCloseBra:
                 qote = (str(key)).replace("'", "")
@@ -3143,14 +3161,18 @@ class Ui(QtWidgets.QMainWindow):
             if GetWindowText(GetForegroundWindow()) in ["Word manager"]:
                 # print("i am here!")
                 return  
-                        
+
             # ====================================
             stringKey = (str(key)).replace("'","")
-            if str(key) == "Key.space" or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]:
+            
+            if str(key) == "Key.space" : # or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]
                 if wordSofar in self.abbries_dic and self.settingsGUIClass.UseAbrisCheckBox.isChecked() == True:
                     self.triggerAbbribiation(wordSofar)
+                sentencece_sofar += f"{wordSofar} "
                 self.initialize()
                 self.initThread_signal.emit("init")
+
+                # print(sentencece_sofar)
                 return
             
             if str(key) == "Key.backspace":
@@ -3166,7 +3188,17 @@ class Ui(QtWidgets.QMainWindow):
                     else:
                         self.initialize() 
                      
-            
+            if stringKey in ["Key.f1","Key.f2","Key.f3","Key.f4","Key.f5","Key.f6","Key.f7","Key.f8","Key.f9","Key.f10","Key.f11","Key.f12"] and  using_functionKeys == True and self.listClass.isHidden() == False:
+                try:
+                    fun_no = stringKey[5:]
+                    item = self.listClass.listWidget.item(int(fun_no)-1)
+
+                    self.WordClicked(item.text())
+                    self.listClass.showHideFunc("hide")
+                except Exception as e:
+                    print(e)    
+                pass
+
             if str(key) in ["Key.down", "Key.up", "Key.enter", "Key.tab"]:
                 if self.listClass.isHidden() == False:
                     
@@ -3186,6 +3218,7 @@ class Ui(QtWidgets.QMainWindow):
                                 current = item.text() 
                         if str(key) == "Key.down" and using_arrow == True:
                             self.selectNextWord()
+                            return
                         elif str(key) == "Key.tab" and using_tab == True:
                             self.selectNextWord()
 
@@ -3193,6 +3226,7 @@ class Ui(QtWidgets.QMainWindow):
                             item = self.listClass.listWidget.currentItem()
                             
                             self.tempoComplition(current, item.text())
+                            return
                         else:
                             self.initialize()
                             self.initThread_signal.emit("init")    
@@ -3222,8 +3256,10 @@ class Ui(QtWidgets.QMainWindow):
                             self.WordClicked(item.text())
                             self.listClass.showHideFunc("hide")
                         else:
+                            sentencece_sofar = ""
                             self.initialize()
-                            self.initThread_signal.emit("init")   
+                            self.initThread_signal.emit("init")
+                            
                 else:
                     # print("in else")
                     # self.listener.stop()
@@ -3240,7 +3276,7 @@ class Ui(QtWidgets.QMainWindow):
                     self.keysBlocked = False
                 self.HotKeyPressed = True    
                 self.old_initialize()
-                return            
+                return
             
             if self.current_language == "English":
                 if self.HotKeyPressed == True and stringKey in englishNumbers: 
@@ -3249,15 +3285,17 @@ class Ui(QtWidgets.QMainWindow):
                     return
 
                 if stringKey in englishNumbers:
-                    if wordSofar != "":
-                        if wordSofar[0] not in englishNumbers:
-                            self.initialize()
+                    # if wordSofar != "":
+                    #     if wordSofar[0] not in englishNumbers:
+                    #         self.initialize()
                     wordSofar += stringKey
                       
                 if stringKey in englishAlphabets:    
                     wordSofar += stringKey
                     englishWordSofar = wordSofar
-
+                if stringKey in special_characters_of_keyboard:
+                    wordSofar += stringKey
+                    # print("i am here bro!")
         # ===========================================
             if self.current_language == "Bangla":
                 if str(key) == "Key.shift" and self.Unicode_.isChecked() == True: # and self.shiftKeyBlocked == False
@@ -3393,11 +3431,12 @@ class Ui(QtWidgets.QMainWindow):
                 return
             if self.settingsGUIClass.EnglishSuggestCheckBox.isChecked() == False and self.current_language == "English":
                 return      
+            
+            
+            if stringKey not in englishLatters and stringKey not in special_characters_of_keyboard:
+                return
             self.word_signal.emit(wordSofar, englishWordSofar, "bangla")
 
-
-
-             
         except Exception as e:
             # print(e)
             print(traceback.format_exc())
@@ -3407,6 +3446,8 @@ class Ui(QtWidgets.QMainWindow):
         if GetWindowText(WindowFromPoint(GetCursorPos())) not in [self.listClass.windowTitle(), self.oskClass.windowTitle(), self.contextClass.windowTitle()]:
             self.lastActiveWindow = GetWindowText(WindowFromPoint(GetCursorPos()))
             self.initialize()
+            global sentencece_sofar
+            sentencece_sofar = ""
 
     def on_release(self, key):
         global block_up_down
@@ -3732,9 +3773,9 @@ class Ui(QtWidgets.QMainWindow):
                 pass 
             else:
                 if wordSofar[-1] in self.karList:    
-                    bnglaKey = "ো"
-                else:    
                     bnglaKey = "ও"
+                else:    
+                    bnglaKey = "ো"
         if stringKey == "O":
             if wordSofar == "":
                 bnglaKey = "ও"
@@ -3842,7 +3883,7 @@ class Ui(QtWidgets.QMainWindow):
 
             if self.Ansi_.isChecked() == True:
                 return wordSofar
-            kb.type(str(bnglaKey))    
+            kb.type(str(bnglaKey))
 
     def convertTo_ANSI(self, key):
         
@@ -4314,6 +4355,8 @@ class Ui(QtWidgets.QMainWindow):
     
     def ShowWordManager(self):
         try:
+            if self.wordManagerClass.stufLoaded == False:
+                self.wordManagerClass.loadStuff()
             self.wordManagerClass.show()
         except Exception as e:
             self.showError(e)
@@ -4462,18 +4505,21 @@ class Ui(QtWidgets.QMainWindow):
             self.showError(e)     
     def Open_doc_pad(self):
         try:    
+            self.showActive(self.Doc_pad)
             try:
                 sound_thread = threading.Thread(target=lambda:winsound.PlaySound('.//SFX//Modern UI Sound_01.wav', winsound.SND_FILENAME))
                 sound_thread.start()
             except Exception:
                 pass 
-            
-            self.Doc_pad.Show_self()
-
         except Exception as e: 
             self.showError(e)       
     def showSettings(self):
-        self.settingsGUIClass.Show_settings()
+        self.showActive(self.settingsGUIClass)
+    def showActive(self, obj):
+        if obj.isHidden():
+            obj.show()
+        else:
+            obj.activateWindow()        
     def Ansi(self):
         self.Ansi_.setChecked(True)
         self.Unicode_.setChecked(False)
@@ -4842,6 +4888,7 @@ class Ui(QtWidgets.QMainWindow):
 
             self.initialize()
     
+            self.listClass.listWidget.setStyleSheet(EnglishTheme)
 
         else:
             self.current_language = "Bangla"
@@ -4855,6 +4902,9 @@ class Ui(QtWidgets.QMainWindow):
             self.listener.start()
             self.listClass.hide()
             self.initialize()
+
+            self.listClass.listWidget.setStyleSheet(BanglaTheme)
+
 
             pass
         try:

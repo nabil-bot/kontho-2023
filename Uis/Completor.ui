@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>849</width>
-    <height>409</height>
+    <width>807</width>
+    <height>551</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -29,8 +29,8 @@
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
-      <x>6</x>
-      <y>2</y>
+      <x>180</x>
+      <y>550</y>
       <width>102</width>
       <height>22</height>
      </rect>
@@ -155,9 +155,9 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
      <property name="geometry">
       <rect>
        <x>33</x>
-       <y>3</y>
+       <y>0</y>
        <width>42</width>
-       <height>17</height>
+       <height>20</height>
       </rect>
      </property>
      <property name="toolTip">
@@ -208,44 +208,11 @@ QCheckBox::indicator:checked:hover {
      </property>
     </widget>
    </widget>
-   <widget class="QListWidget" name="listWidget">
-    <property name="geometry">
-     <rect>
-      <x>3</x>
-      <y>25</y>
-      <width>131</width>
-      <height>210</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QListWidget{
-	font: 12pt &quot;Kalpurush&quot;;
-	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));
-	border: 2px solid rgb(89, 48, 255);
-	border-color: rgb(255, 0, 0);
-	border-color: rgb(0, 255, 0);
-
-	border-bottom-left-radius:16px;
-	border-top-right-radius: 16px;
-	border-bottom-right-radius: 2px;
-	border-top-left-radius:2px;
-}
-QListWidget::item:selected {
-    background-color: #ADD8E6;
-    color: black;
-}
-QListWidget::item:hover {
-    background-color: #87CEFA; 
-    color: black;
-    cursor: pointer;
-}</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="Settings_btn">
     <property name="geometry">
      <rect>
-      <x>110</x>
-      <y>2</y>
+      <x>310</x>
+      <y>560</y>
       <width>22</width>
       <height>22</height>
      </rect>
@@ -310,6 +277,118 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
      </size>
     </property>
    </widget>
+   <widget class="QFrame" name="frame_2">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>20</y>
+      <width>276</width>
+      <height>192</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QFrame{
+background-color: rgb(255, 255, 255);
+background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));
+border-bottom-left-radius:12px;
+border-top-right-radius: 12px;
+border-bottom-right-radius: 2px;
+border-top-left-radius:2px;
+border: 2px solid rgb(89, 48, 255);
+border-color: rgb(255, 0, 0);
+border-color: rgb(0, 255, 0);
+padding: 3px;
+}
+</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <layout class="QGridLayout" name="gridLayout">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item row="0" column="1">
+      <widget class="QListWidget" name="listWidget">
+       <property name="minimumSize">
+        <size>
+         <width>30</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QListWidget{
+	font: 12pt &quot;Kalpurush&quot;;
+	background-color:qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(0, 244, 255, 255), stop:1 rgba(2,200,255,255));
+	background: transparent;
+	border:none;
+	font: 12pt &quot;MS Shell Dlg 2&quot;;
+}
+QListWidget::item:selected {
+    background-color: #ADD8E6;
+    color: black;
+}
+QListWidget::item:hover {
+    background-color: #87CEFA; 
+    color: black;
+}</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QGroupBox" name="groupBox_3">
+       <property name="styleSheet">
+        <string notr="true">border:none;</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <property name="horizontalSpacing">
+         <number>0</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>2</number>
+        </property>
+        <item row="0" column="0">
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <property name="spacing">
+           <number>1</number>
+          </property>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <zorder>frame_2</zorder>
+   <zorder>frame</zorder>
+   <zorder>Settings_btn</zorder>
   </widget>
  </widget>
  <resources/>
