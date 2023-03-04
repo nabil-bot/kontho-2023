@@ -10,8 +10,8 @@ kb = Controller()
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 import sys
 from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QRect, QTimer, QSettings, QEasingCurve, QEvent
-from PyQt5.QtWidgets import QWidget, QLabel, QListWidgetItem, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox, QSystemTrayIcon
-from PyQt5.QtGui import QPainter, QColor 
+from PyQt5.QtWidgets import QFrame, QWidget, QLabel, QListWidgetItem, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox, QSystemTrayIcon, QGraphicsBlurEffect, QGraphicsOpacityEffect
+from PyQt5.QtGui import QPainter, QColor , QBrush
 import os
 import io 
 import threading
@@ -41,7 +41,7 @@ import win32api
 import pyperclip as pc
 from num2words import num2words
 from PyQt5.QtGui import QFont
-
+from BlurWindow.blurWindow import blur
 from textblob import TextBlob
 
 from spellchecker import SpellChecker
@@ -97,6 +97,7 @@ word_submitted_lang = ""
 newCharacterIsPressed = False
 
 block_up_down = False
+
 
 def initGlobal():
     global previous_word 
@@ -272,7 +273,7 @@ class Main_recognation(QtCore.QThread):
             if self.UANSI_pos == 'False':    
                 if self.lang == 'bn-BD':
                     # for word, initial in {"1":"১", "2":"২", "3":"৩", "4":"৪", "5":"৫", "6":"৬", "7":"৭", "8":"৮", "9": "৯", "0": "০"  }.items():
-                    #     text = text.replace(word, initial)
+                    #     text = text.replace(word, initial) 
                     for word, initial in {"পর‍্যায় ":"পর্যায়"}.items():
                         text = text.replace(word, initial)
                     if 'র্যা' in text:
@@ -325,22 +326,18 @@ class Main_recognation(QtCore.QThread):
                         text = text.replace(' comma mark', ',')
                     if ' colon' in text:
                         text = text.replace(' comma', ':')
-                phase = text 
-                txt_ = phase
+                txt_ = text
                 try:    
+                    
                     words = txt_.split(' ')
                     if words[-1] in ["কি", "কেন", "কীভাবে", "কোথায়", "কোথাকার"]: 
-                        words[-1] = words[-1]+"?"    
-                    reserved_clip = pc.paste()
+                        words[-1] = words[-1]+"?"
                     
-                    pc.copy(f"{txt_} ")
+                    reserved_clip = pc.paste()
+                    pc.copy(f"{txt_}")
                     pyautogui.hotkey('ctrl', 'v')
-                    # for w in words:
-                    #     # kb.type(w) 
-                    #     pc.copy(w)
-                    #     pyautogui.hotkey('ctrl', 'v')
-                    #     pyautogui.write(' ') 
-                    pc.copy(reserved_clip)    
+                    pyautogui.write(' ')
+                    pc.copy(reserved_clip)
                     
                 except Exception as e:
                     print('type error; UANSI_pos == False')
@@ -354,11 +351,10 @@ class Main_recognation(QtCore.QThread):
                     reserved_clip = pc.paste()
                     pc.copy(toPrint)
                     pyautogui.hotkey('ctrl', 'v')
+                    pyautogui.write(' ')
+
                     pc.copy(reserved_clip)
-                    # words = toPrint.split(' ')
-                    # for w in words:
-                    #     kb.type(w)
-                    #     pyautogui.write(' ')  
+                     
                 except Exception as e:
                     print('type error; UANSI_pos == True')
                     print(e)
@@ -1323,7 +1319,9 @@ class OSK_UI(QtWidgets.QMainWindow):
         self.loadCharacters()
         self.loadEmojies()
 
-
+        # hWnd = self.winId()
+        # print(hWnd)
+        # blur(hWnd)
 
     def on_click(self, x, y, button, pressed):
         # print("I am here!")
@@ -1780,6 +1778,10 @@ class OSK_UI(QtWidgets.QMainWindow):
                     chaParts = cha.split(",")
 
                     emoji = chaParts[0]
+                    
+                    if len(emoji) != 1 and groupName != "flag":
+                        continue
+
                     name = chaParts[1].replace("\n", "")
 
                     emoji_propa = []
@@ -1858,6 +1860,9 @@ class NumberWidget(QWidget):
             widget = item.widget()
             if widget:
                 widget.deleteLater()
+
+
+
 class listViewClass(QtWidgets.QMainWindow):
     def __init__(self):
         super(listViewClass, self).__init__()
@@ -1889,8 +1894,14 @@ class listViewClass(QtWidgets.QMainWindow):
         blur.setBlurRadius(5)
         # self.listWidget.setGraphicsEffect(blur)  action replay
 
-        # self.frame_2.setGraphicsEffect(blur)
+        # self.frame_2.setGraphicsEffect(blur) 
         # self.frame_2.setWindowOpacity(0.9)
+
+
+        # Make the list widget text clearly readable
+        # opacity_effect = QGraphicsOpacityEffect()
+        # opacity_effect.setOpacity(0.9)
+        # self.frame_2.setGraphicsEffect(opacity_effect)
 
 
         self.matchedWords = []
@@ -2269,7 +2280,6 @@ class Ui(QtWidgets.QMainWindow):
 
         self.settingsGUIClass.SelectionRadioButton.setChecked(self.ownSettings.value("selection_checked2"))
         self.settingsGUIClass.EnterToSelectRadioButton.setChecked(self.ownSettings.value("selection_checked1"))
-        print(self.ownSettings.value("selection_checked1"))
         # try:
         self.settingsGUIClass.RunAtAtartUpCheckBox.setChecked(bool(self.MainSettings.value("runAtStartUp")))  
 
@@ -2296,6 +2306,16 @@ class Ui(QtWidgets.QMainWindow):
         global using_arrow
         using_arrow = (self.ownSettings.value("using_arrow"))
         self.settingsGUIClass.ArrowCheckBox.setChecked(using_arrow)
+
+        try:
+            global using_functionKeys
+            using_functionKeys = (self.ownSettings.value("using_functionKeys"))
+            
+            self.settingsGUIClass.Function_checkBox.setChecked(using_functionKeys)
+
+
+        except Exception:
+            pass
 
         global minimun_Similarity_Ratio
         minimun_Similarity_Ratio = float(self.MainSettings.value("minimumSimilarity"))
@@ -2342,8 +2362,8 @@ class Ui(QtWidgets.QMainWindow):
         self.qoteDic = {'(':')', '[':']', '{':'}'}
         self.karList = ["া","ি","ী","ু","ূ","ৃ","ে","ৈ","ো","ৌ"]
         self.keysToBlock = [2,3,4,5,6,7,8,9,10,11,  16,17,18,19,20,21,22,23,24,25,   30,31,32,33,34,35,36,37,38,   44,45,46,47,48,49,50,  52]    
-        self.keysToUnlock = [2,3,4,5,6,7,8,9,10,11,52]
-        
+        self.keysToUnlock = [2,3,4,5,6,8,9,10,11,52]   # this keys are unlocked when shift is pressed 
+        self.keysToBlockWhenShiftKeyIsPressed = [7, 16,17,18,19,20,21,22,23,24,25,   30,31,32,33,34,35,36,37,38,   44,45,46,47,48,49,50]
         self.wordSelectionKeys = [15,28,80,72]
 
         self.oskClass = OSK_UI()
@@ -2589,12 +2609,15 @@ class Ui(QtWidgets.QMainWindow):
         # self.bangla_word_signal.connect(self.BanglawordThread.run)
         # self.initBanglaThread_signal.connect(self.BanglawordThread.initFunc)
         # self.BanglawordThread.start()
-        self.using_funcKeys_stateChanged()
+        # self.using_funcKeys_stateChanged()
+
     def using_funcKeys_stateChanged(self):
         global using_functionKeys
         using_functionKeys = self.settingsGUIClass.Function_checkBox.isChecked()
         self.listClass.groupBox_3.setVisible(using_functionKeys)
-        print(self.listClass.groupBox_3.isVisible())
+        # print(self.listClass.groupBox_3.isVisible())
+        self.ownSettings.setValue("using_functionKeys", using_functionKeys)
+
     def OSKBackSpaceClicked(self):
         self.listener.stop()
         kb.tap(Key.backspace)
@@ -2696,8 +2719,14 @@ class Ui(QtWidgets.QMainWindow):
         global minimun_Similarity_Ratio
         minimun_Similarity_Ratio = val
     def openDic(self, index):
-        if self.wordManagerClass.stufLoaded == False:
-            self.wordManagerClass.loadStuff()
+        # if self.wordManagerClass.stufLoaded == False:
+            # self.wordManagerClass.loadStuff()
+        if index == 0 and self.wordManagerClass.banglaWordsLoaded == False:
+            self.wordManagerClass.loadCompleteBanglaWordList()
+        if index == 1 and self.wordManagerClass.englishWordsLoaded == False:
+            self.wordManagerClass.loadCompleteEnglaWordList()    
+        if index == 2 and self.wordManagerClass.englishWordsLoaded == False:
+            self.wordManagerClass.loadCompleteEnglishWordList()  
         self.wordManagerClass.show()
         self.wordManagerClass.tabWidget.setCurrentIndex(index)
     def tray_icon_clicked(self, reason):
@@ -2783,10 +2812,24 @@ class Ui(QtWidgets.QMainWindow):
         if menu_tag == "Copy":
             pc.copy(wrd) 
         if menu_tag == "Edit":
-            if self.wordManagerClass.stufLoaded == False:
-                self.wordManagerClass.loadStuff()    
-            self.wordManagerClass.show()
+            # if self.wordManagerClass.stufLoaded == False:
+            #     self.wordManagerClass.loadStuff() excellent 
+            
+            if wrd[0] in englishAlphabets:
+                if self.wordManagerClass.englishWordsLoaded == False:
+                    self.wordManagerClass.loadCompleteEnglishWordList()
+                self.wordManagerClass.tabWidget.setCurrentIndex(2)
+            else:
+                if self.wordManagerClass.banglaWordsLoaded == False:
+                    self.wordManagerClass.loadCompleteBanglaWordList()
+                self.wordManagerClass.tabWidget.setCurrentIndex(0)
+            
             self.wordManagerClass.search(wrd)
+            self.showActive(self.wordManagerClass)
+
+            # if wrd in EnglishwordsList:
+
+            
         if menu_tag == "Search Google":
             webbrowser.open('https://www.google.com/search?q='+wrd)
             pass
@@ -3086,16 +3129,15 @@ class Ui(QtWidgets.QMainWindow):
                     self.oskClass.cleanRecomendations()
             return
         if self.oskClass.BanglishCheckBox.isChecked() == False or any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
+            self.listener.stop()
             if any([self.oskClass.ctrlState, self.oskClass.altState, self.oskClass.winState]):
                 kb.tap(key)  
             else:
-                self.listener.stop()
                 kb.type(key)
                 if key in englishLatters:    
                     wordSofar += key
-                # print(wordSofar)
-                self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
-                self.listener.start()
+            self.listener = keyboard.Listener(on_press= self.on_press, on_release= self.on_release)    
+            self.listener.start()
             self.oskClass.initState()    
             return   
         if self.oskClass.BanglishCheckBox.isChecked() == True:
@@ -3135,9 +3177,10 @@ class Ui(QtWidgets.QMainWindow):
         pass
     def selectNextWord(self):
         if self.listClass.listWidget.currentRow() == -1 or self.listClass.listWidget.currentRow() == self.listClass.listWidget.count()-1:
-            self.listClass.listWidget.setCurrentRow(0)
+            self.listClass.listWidget.setCurrentRow(1)
         else:
             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()+1) 
+    
     def on_press(self, key):
         # print(key)
         global wordSofar 
@@ -3162,7 +3205,7 @@ class Ui(QtWidgets.QMainWindow):
                 # print("i am here!")
                 return  
 
-            # ====================================
+            # ==================================== !!! 
             stringKey = (str(key)).replace("'","")
             
             if str(key) == "Key.space" : # or (str(key)).replace("'", "") in ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "-", "=", "`", "~"]
@@ -3218,31 +3261,35 @@ class Ui(QtWidgets.QMainWindow):
                                 current = item.text() 
                         if str(key) == "Key.down" and using_arrow == True:
                             self.selectNextWord()
-                            return
                         elif str(key) == "Key.tab" and using_tab == True:
-                            self.selectNextWord()
-
-                            # ==============================================
-                            item = self.listClass.listWidget.currentItem()
-                            
-                            self.tempoComplition(current, item.text())
-                            return
+                            self.selectNextWord()  
                         else:
                             self.initialize()
-                            self.initThread_signal.emit("init")    
+                            self.initThread_signal.emit("init") 
+                            return
+                        
+                        if self.settingsGUIClass.SelectionRadioButton.isChecked():
+                            item = self.listClass.listWidget.currentItem()
+                            self.tempoComplition(current, item.text())
+                            return
                             
-                    if str(key) in ["Key.up"]:
+                    if str(key) in ["Key.up"] and using_arrow == True:
                         if self.listClass.listWidget.currentRow() == 1:
                             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.count()-1)
                         else:    
                             self.listClass.listWidget.setCurrentRow(self.listClass.listWidget.currentRow()-1)
 
+                        if self.settingsGUIClass.SelectionRadioButton.isChecked():
+                            item = self.listClass.listWidget.currentItem()
+                            self.tempoComplition(current, item.text())
+                            return
+                        
                         # if str(key) == "Key.up" and self.settingsGUIClass.ArrowCheckBox.isChecked():
                         #     self.selectNextWord()
                         # if str(key) == "Key.tab" and self.settingsGUIClass.TabCheckBox.isChecked():
                         #     self.selectNextWord()
                     if str(key) == "Key.enter":
-                        if self.listClass.listWidget.currentRow() != -1:    
+                        if self.listClass.listWidget.currentRow() != -1 and self.settingsGUIClass.EnterToSelectRadioButton.isChecked() == True:    
                             item = self.listClass.listWidget.currentItem()
 
                             if item.text() in emoji_list:
@@ -3299,9 +3346,16 @@ class Ui(QtWidgets.QMainWindow):
         # ===========================================
             if self.current_language == "Bangla":
                 if str(key) == "Key.shift" and self.Unicode_.isChecked() == True: # and self.shiftKeyBlocked == False
-                    for i in self.keysToUnlock:
-                        try:
-                            kb2.unblock_key(i)
+                    # for i in self.keysToUnlock:
+                    #     try:
+                    #         kb2.unblock_key(i)
+                    #     except Exception:
+                    #         pass
+                    # kb2.unblock_key(2)
+                    kb2.unhook_all()
+                    for i in self.keysToBlockWhenShiftKeyIsPressed:
+                        try: 
+                            kb2.block_key(i)
                         except Exception:
                             pass
                     self.shiftKeyBlocked = True
@@ -3319,6 +3373,7 @@ class Ui(QtWidgets.QMainWindow):
                     return
 
                 if self.Unicode_.isChecked() == True:    
+                    # print("i am here!")
                     if self.Banglish_layout.isChecked() == True:    
                         self.convertTobangla(key)
                     if self.Bijoy_layout.isChecked() == True: 
@@ -3395,15 +3450,12 @@ class Ui(QtWidgets.QMainWindow):
                                 if stringKey == "X":
                                     bijoy_unicode = "ৌ"
 
-
                         
                         kb2.write(bijoy_ANSI)
-                        
 
-                        
                         wordSofar += str(bijoy_unicode+self.reserved)
                         ansi_wordSOFar += bijoy_ANSI
-                        print(wordSofar)
+                        # print(wordSofar)
                         self.formar_previous_formar_previous_word = self.previous_formar_previous_word
                         self.previous_formar_previous_word = formar_previous_word
                         formar_previous_word = previous_word
@@ -3526,6 +3578,7 @@ class Ui(QtWidgets.QMainWindow):
         global formar_previous_word
         bnglaKey = ""
         stringKey = (str(key)).replace("'", "")
+
         # takes english characters one by one as banglish word latters and types bangla
         if stringKey in self.numDic:
             kb.type(self.numDic[stringKey])
@@ -3534,8 +3587,13 @@ class Ui(QtWidgets.QMainWindow):
                 if wordSofar[0] not in banglaNumbs:
                     self.initialize()
             wordSofar += self.numDic[stringKey]
-            # self.initialize()
+            # self.initialize()   
             return
+        
+
+        if stringKey == '^':
+            bnglaKey = "ঁ"
+            print(f"init: {bnglaKey}")
         if stringKey == "a":
             if wordSofar == "":
                 bnglaKey = "আ"
@@ -3691,7 +3749,6 @@ class Ui(QtWidgets.QMainWindow):
                     bnglaKey= "ৈ"
             else:
                 bnglaKey= "ি"
-
         if stringKey == "I":
             if previous_word == "o" or previous_word == "O":
                 if formar_previous_word == "":
@@ -3871,7 +3928,8 @@ class Ui(QtWidgets.QMainWindow):
             else:
                 bnglaKey = "য"
         if stringKey == "Z":
-            bnglaKey== "্য"   
+            bnglaKey== "্য"  
+                 
         if bnglaKey != "" or stringKey == "o":
             
             wordSofar += str(bnglaKey)
@@ -4253,6 +4311,11 @@ class Ui(QtWidgets.QMainWindow):
         global word_submitted_for_similarity
         global word_submitted_lang
         global newCharacterIsPressed
+        
+        # saving new word +++++++++++++++++++++++++++
+
+        # if len(wordSofar) > 2 and wordSofar not in englishDictionaryPath:
+        
         CurrentWord = ""
         self.autoCompletedWord = ""
         previous_word = ""
@@ -4355,9 +4418,10 @@ class Ui(QtWidgets.QMainWindow):
     
     def ShowWordManager(self):
         try:
-            if self.wordManagerClass.stufLoaded == False:
-                self.wordManagerClass.loadStuff()
-            self.wordManagerClass.show()
+            # if self.wordManagerClass.stufLoaded == False:
+            #     self.wordManagerClass.loadStuff() excelent
+            self.showActive(self.wordManagerClass)
+            # self.wordManagerClass.show()
         except Exception as e:
             self.showError(e)
     def GetCaretPosInWindow(self):
@@ -4504,7 +4568,7 @@ class Ui(QtWidgets.QMainWindow):
         except Exception as e:
             self.showError(e)     
     def Open_doc_pad(self):
-        try:    
+        try:
             self.showActive(self.Doc_pad)
             try:
                 sound_thread = threading.Thread(target=lambda:winsound.PlaySound('.//SFX//Modern UI Sound_01.wav', winsound.SND_FILENAME))

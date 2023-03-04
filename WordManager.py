@@ -2,7 +2,7 @@
 from importlib.resources import path
 from os import stat
 from shutil import ExecError
-from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QTableWidgetItem, QFileDialog, QTableWidget, QStyledItemDelegate, QLineEdit, QPlainTextEdit
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QGridLayout, QPushButton, QTableWidgetItem, QFileDialog, QTableWidget, QStyledItemDelegate, QLineEdit, QPlainTextEdit, QAbstractItemView
 from PyQt5.QtCore import Qt, QSettings, pyqtSignal, QItemSelectionModel, QEvent, QRegExp
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QMainWindow, QHeaderView, QMessageBox, QGraphicsDropShadowEffect
@@ -188,7 +188,10 @@ class wordManagerClass(QMainWindow):
         self.changes_for_tab_4 = []
         self.redoReserve_for_tab_4 = []
         
-        
+        self.contentWasEdited_ofTable_1 = False
+        self.contentWasEdited_ofTable_2 = False
+        self.contentWasEdited_ofTable_3 = False
+        self.contentWasEdited_ofTable_4 = False
 
 
         header = self.tableWidget_3.horizontalHeader()       
@@ -198,9 +201,6 @@ class wordManagerClass(QMainWindow):
 
         self.plainTextEdit.textChanged.connect(self.plainEditTextChanged) 
 
-
-        self.tableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
-        self.tableWidget.itemChanged.connect(self.itemChangedFunc)
         
         self.Bangla_Delegate = BanglaDelegate(self.tableWidget)
         self.English_Delegate = EnglishDelegate(self.tableWidget)
@@ -210,12 +210,12 @@ class wordManagerClass(QMainWindow):
         # self.tableWidget.setItemDelegateForRow(0, delegate)
 
 
-        self.EnglaTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
-        self.EnglaTableWidget.itemChanged.connect(self.itemChangedFunc)
+        # self.EnglaTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        # self.EnglaTableWidget.itemChanged.connect(self.itemChangedFunc)
 
         
-        self.EnglishTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
-        self.EnglishTableWidget.itemChanged.connect(self.itemChangedFunc)
+        # self.EnglishTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        # self.EnglishTableWidget.itemChanged.connect(self.itemChangedFunc)
         self.EnglishTableWidget.setItemDelegate(self.English_Delegate)  
 
 
@@ -225,9 +225,12 @@ class wordManagerClass(QMainWindow):
         # delegate = AbbribiationDelegate(self.tableWidget_3)
         # self.tableWidget_3.setItemDelegateForColumn(0, delegate)  # < ----------------------- 
 
-        self.tableWidget.verticalScrollBar().valueChanged.connect(self.scrollEvent)
-
+        # self.tableWidget.verticalScrollBar().valueChanged.connect(self.scrollEvent_bangla)
+        # self.EnglishTableWidget.verticalScrollBar().valueChanged.connect(self.scrollEvent_english)
         
+        self.tableWidget.verticalScrollBar().valueChanged.connect(self.scrollEvent)
+        # self.EnglishTableWidget.verticalScrollBar().valueChanged.connect(self.scrollEvent)
+        # self.EnglaTableWidget.verticalScrollBar().valueChanged.connect(self.scrollEvent)
         
         self.itemChangedByUndoFunc = False
 
@@ -291,15 +294,146 @@ class wordManagerClass(QMainWindow):
 
         self.MatchCaseCheckBox.clicked.connect(self.search)
         # self.loadStuff()
-    def scrollEvent(self, value):
-        # calculate the last row that is currently visible
-        lastVisibleRow = self.tableWidget.rowAt(self.tableWidget.viewport().height()) 
-        # print(lastVisibleRow)
-        # if the last visible row is within a certain threshold of the end, load more rows
-        # if lastVisibleRow >= self.table.rowCount() - 30:
-        #     self.table.setRowCount(self.table.rowCount() + 50)
-        #     self.loadRows(self.table.rowCount() - 50, self.table.rowCount())
+
+        
+        
+        self.loadThres = 130
+        self.my_bangla_list = wordsList
+        self.total_bangla_num = len(self.my_bangla_list)
+        
+        self.banglaWordsLoaded = False
+        self.englaWordsLoaded = False
+        self.englishWordsLoaded = False
+
+        # self.my_engla_list = englaList
+        # print(len(self.my_engla_list))
+        # self.total_engla_num = len(self.my_engla_list)
+
+        # self.my_english_list = EnglishwordsList
+        # self.total_english_num = len(self.my_english_list)
+        # self.Load_parcial_bangla()
+        # self.Load_parcial_English()
+
+        self.Load_parcial(self.tableWidget)
+        # self.Load_parcial(self.EnglaTableWidget)
+        # print(len(self.my_engla_list))
+        # self.Load_parcial(self.EnglishTableWidget)
+        self.itemChangedByUndoFunc = True
+        self.loadAbbribiations()
+        self.itemChangedByUndoFunc = False
+
+
+        self.tableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        self.tableWidget.itemChanged.connect(self.itemChangedFunc)
+
+        # print(f"before len of self.my_bangla_list:{len(self.my_bangla_list)}")
+        
+        # print(f"After len of self.my_bangla_list:{len(self.my_bangla_list)}")
+
+        # self.my_engla_list = self.Load_parcial(self.my_engla_list, self.EnglaTableWidget, loadThres=100)
+        # self.my_english_list = self.Load_parcial(self.my_english_list, self.EnglishTableWidget, loadThres=100) 
+
+        self.LoadBanglaListPushBtn.clicked.connect(self.loadCompleteBanglaWordList)
+        
+        self.LoadEnglishPushButton.clicked.connect(self.loadCompleteEnglishWordList)
+        
+        self.LoadEnglaPushButton.clicked.connect(self.loadCompleteEnglaWordList)
+        
+        # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        # self.groupBox_7.setVisible(False) 
+    def loadCompleteBanglaWordList(self):
+        self.loadWords(self.my_bangla_list, self.tableWidget)
+        self.my_bangla_list = []
+        self.groupBox_6.setVisible(False) 
+        self.banglaWordsLoaded = True
+    def loadCompleteEnglaWordList(self):
+        self.loadWords(englaList, self.EnglaTableWidget)
+        self.groupBox_8.setVisible(False)
+        self.EnglaTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        self.EnglaTableWidget.itemChanged.connect(self.itemChangedFunc)
+
+        self.englaWordsLoaded = True
+
+    def loadCompleteEnglishWordList(self):
+        self.loadWords(EnglishwordsList, self.EnglishTableWidget)
+        self.groupBox_7.setVisible(False)  
+        self.EnglishTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        self.EnglishTableWidget.itemChanged.connect(self.itemChangedFunc)
+
+        self.englishWordsLoaded = True
     
+    def scrollEvent(self, value=0):
+        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+        
+        lastVisibleRow = currentTable.rowAt(currentTable.viewport().height()) 
+
+        if lastVisibleRow >= currentTable.rowCount() - 30 and len(self.my_bangla_list) !=0:
+            self.Load_parcial(currentTable)
+    
+    def Load_parcial(self, c_table, loadThres=250):
+        
+        self.itemChangedByUndoFunc = True
+        if c_table == self.tableWidget:
+            c_list = self.my_bangla_list
+        if c_table == self.EnglaTableWidget:
+            c_list = self.my_engla_list     
+        if c_table == self.EnglishTableWidget:
+            c_list = self.my_english_list    
+
+        w_c=0
+        for wrd in c_list[:]:
+            wordArray = wrd.split(",")
+            if wrd in [" ", ""]:  # < we have to put the if condition in here তত্তাবধায়ক
+                continue
+            
+            rowPosition = c_table.rowCount()
+            c_table.insertRow(rowPosition)
+
+            c = 0
+            for w in wordArray[:5]:
+                item = QTableWidgetItem(w.format(0, 0))
+                c_table.setItem(rowPosition,c, item)
+                c+=1
+            w_c+= 1
+            c_table.item(rowPosition, 0).setBackground(QColor(1, 87, 155, 255)) 
+            
+            if c_table == self.tableWidget:
+                self.my_bangla_list.remove(wrd)
+            if c_table == self.EnglaTableWidget:
+                self.my_engla_list.remove(wrd)
+            if c_table == self.EnglishTableWidget:
+                self.my_english_list.remove(wrd)
+
+            if w_c >= loadThres:
+                break
+
+        if c_table == self.tableWidget:
+            if len(self.my_bangla_list) == 0:
+                self.groupBox_6.setVisible(False) 
+                self.banglaWordsLoaded = True
+            self.banglaLabel.setText(f"Showing {self.tableWidget.rowCount()} of {self.total_bangla_num} words")
+            if self.contentWasEdited_ofTable_1 == False:
+                self.contentWasEdited_ofTable_1 = False
+                self.indicateTabContentChanged(0, False)
+                self.setUnsevedSaveButton(False)
+        if c_table == self.EnglaTableWidget:
+            if len(self.my_engla_list) == 0:
+                self.groupBox_8.setVisible(False) 
+            # self.EnglaLabel.setText(f"Showing {c_table.rowCount()} of {self.total_engla_num} words")
+            if self.contentWasEdited_ofTable_2 == False:
+                self.contentWasEdited_ofTable_2 = False
+                self.indicateTabContentChanged(1, False)
+                self.setUnsevedSaveButton(False)
+        if c_table == self.EnglishTableWidget:
+            if len(self.my_english_list) == 0:
+                self.groupBox_7.setVisible(False) 
+            # self.EnglishLabel.setText(f"Showing {c_table.rowCount()} of {self.total_english_num} words")
+            if self.contentWasEdited_ofTable_3 == False:
+                self.contentWasEdited_ofTable_3 = False
+                self.indicateTabContentChanged(2, False)
+                self.setUnsevedSaveButton(False)        
+        self.itemChangedByUndoFunc = False 
+
     def loadStuff(self):
         self.loadWords(wordsList, self.tableWidget)   # loading bangla words
         # self.loadWords(englaList, self.EnglaTableWidget)
@@ -363,8 +497,27 @@ class wordManagerClass(QMainWindow):
         return super().eventFilter(obj, event)
 
     def saveCurrentTableFunc(self):
+        
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+
         txt = self.getTextFormTable(currentTable)
+
+        # check if the list is fully loaded, if not the do this =====
+        textFromList = ''
+        if currentTable == self.tableWidget and len(self.my_bangla_list) != 0: # that's mean the list is not fully loaded
+            for wrd in self.my_bangla_list[:]:
+                textFromList += f"|{wrd}"
+            txt = txt+textFromList
+        # if currentTable == self.EnglaTableWidget and len(self.my_engla_list) != 0:
+        #     for wrd in self.my_engla_list[:]:
+        #         textFromList += f"|{wrd}"
+        #     txt = txt+textFromList    
+        # if currentTable == self.EnglishTableWidget and len(self.my_english_list) != 0:
+        #     for wrd in self.my_english_list[:]:
+        #         textFromList += f"|{wrd}"
+        #     txt = txt+textFromList
+        # =================================
+
         if txt == "":
             self.showError("No content to save!")
             return
@@ -519,7 +672,7 @@ class wordManagerClass(QMainWindow):
                     text_ += f"{wordStr[:-2]}\n"
                 else:    
                     text_ += f"{wordStr[:-1]}|"
-        return text_[:-1] 
+        return text_[:-1]
     def saveAsFunction(self):
         save_as_path, _ = QFileDialog.getSaveFileName(
             parent=self,
@@ -668,13 +821,23 @@ class wordManagerClass(QMainWindow):
             self.loadWords(wrdList,currentTable)   
             self.itemChangedByUndoFunc = False
     def addFunc(self):
+        self.itemChangedByUndoFunc = True
         currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
 
         rowPosition = currentTable.currentRow() + 1
+        if currentTable == self.tableWidget:
+            if rowPosition < 12:
+                rowPosition = 12
+        if rowPosition > self.tableWidget.rowCount() - 50:
+            self.Load_parcial_bangla()
+
         currentTable.insertRow(rowPosition)
-        # currentTable.scrollToItem(item)
-        
+        currentTable.setItem(rowPosition,0, QTableWidgetItem(""))
+        currentTable.scrollToItem(currentTable.item(rowPosition, 0))
+        currentTable.setCurrentItem(currentTable.item(rowPosition, 0))
+
         self.addRowUnDoReserveFunc(rowPosition, Current_changes_list, currentTable)  # , Current_changes_list, currentTable
+        self.itemChangedByUndoFunc = False
     def addRowUnDoReserveFunc(self, rowPosition, changes, currentTable): # , changes, currentTable
         try:
             changedData = []
@@ -1019,13 +1182,13 @@ class wordManagerClass(QMainWindow):
                 continue
 
             # this code prevents adding dublicate words ==========
-            if adding_from_newFile == True:
+            # if adding_from_newFile == True:
 
-                main_wrd = wordArray[0]
-                found_items = tableWidget.findItems(main_wrd, Qt.MatchContains)
-                if len(found_items) > 1:
-                    # print(main_wrd)
-                    continue
+            #     main_wrd = wordArray[0]
+            #     found_items = tableWidget.findItems(main_wrd, Qt.MatchContains)
+            #     if len(found_items) > 1:
+            #         # print(main_wrd)
+            #         continue
 
             rowPosition = tableWidget.rowCount()
             tableWidget.insertRow(rowPosition)
@@ -1264,19 +1427,22 @@ class wordManagerClass(QMainWindow):
     # def closeEvent(self, event):
     #     self.close()  
     def closeEvent(self, event):
-        if any([self.contentWasEdited_ofTable_1, self.contentWasEdited_ofTable_2,self.contentWasEdited_ofTable_3,self.contentWasEdited_ofTable_4]):
-            close = QMessageBox.question(self,
-                                         "Quit?",
-                                         "Do you want to save changes to this file?",
-                                         QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-            if close == QMessageBox.Yes:
-                self.saveFunc()
-            if close == QMessageBox.No:
-                pass
-            if close == QMessageBox.Cancel:
-                event.ignore() 
-                return
-        event.accept()       
+        try:
+            if any([self.contentWasEdited_ofTable_1, self.contentWasEdited_ofTable_2,self.contentWasEdited_ofTable_3,self.contentWasEdited_ofTable_4]):
+                close = QMessageBox.question(self,
+                                            "Quit?",
+                                            "Do you want to save changes to this file?",
+                                            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                if close == QMessageBox.Yes:
+                    self.saveFunc()
+                if close == QMessageBox.No:
+                    pass
+                if close == QMessageBox.Cancel:
+                    event.ignore() 
+                    return
+            event.accept() 
+        except Exception as e:
+            print(traceback.format_exc())        
              
 if __name__ == "__main__":
     try:

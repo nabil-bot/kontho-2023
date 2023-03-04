@@ -162,11 +162,12 @@ def convert_to_banglish(bangla_word):
                 condition = 8        
  
             banglish += value 
-            # try:    
-            #     print(f"index:{i},condition = {condition}, {banglish}")
-            # except Exception:
-            #     print(latter)
-            #     pass    
+
+            try:    
+                print(f"index:{i},condition = {condition}, {banglish}")
+            except Exception:
+                print(latter)
+                pass    
             former_previous_value = previous_value
             previous_value = value
             
@@ -450,10 +451,10 @@ def convert_to_banglish_old_algo(bangla_word):
     banglish = banglish.replace("Ngk", "Nk")
     return(banglish)     
 
-# print(convert_to_banglish_old_algo("হয়রান"))
+# print(convert_to_banglish_old_algo("হয়রান")) 
 
 
-wrd = "পদ্মাসেতু"
+wrd = "তত্ত্বাবধায়ক"
 
 def main_banglish_converter(wrd):
     conv_1  = convert_to_banglish(wrd)
@@ -465,4 +466,4 @@ def main_banglish_converter(wrd):
             return_list.append(w)
     else:
         return [conv_1]
-print(main_banglish_converter(wrd))
+# print(main_banglish_converter(wrd))

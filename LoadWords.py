@@ -10,7 +10,8 @@ englaDictionaryPath = './/Res//Dictionaries//engla.txt' #  result.txt
 with io.open(englaDictionaryPath, "r", encoding="utf-8") as wordTxt:
     wordsSTR = wordTxt.read()
 englaList = wordsSTR.split("|")
-
+# englaList = englaList[:36000]
+# englaList = wordsList
 
 englishDictionaryPath = './/Res//Dictionaries//EnglishWords.txt'
 with io.open(englishDictionaryPath, "r", encoding="utf-8") as wordTxt:

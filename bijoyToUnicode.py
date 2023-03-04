@@ -155,39 +155,47 @@
 # with io.open(englishDictionaryPath, "w", encoding="utf-8") as wordTxt:
 #     wordTxt.write(toWrite)
 
-from bs4 import BeautifulSoup
-import requests, lxml
+# from bs4 import BeautifulSoup
+# import requests, lxml
 
 
-# Send a GET request to Google.com
-# response = requests.get('https://www.google.com')
+# # Send a GET request to Google.com
+# # response = requests.get('https://www.google.com')
 
-# cookies = response.cookies.get_dict()
+# # cookies = response.cookies.get_dict()
 
 
-headers = {
-    'User-agent':
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
-}
+# headers = {
+#     'User-agent':
+#     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
+# }
 
-params = {
-  'q': 'ব্রাহ্মানবারিয়া',
-  'hl': 'bn',
-  'gl': 'bd'
-}
+# params = {
+#   'q': 'ব্রাহ্মানবারিয়া',
+#   'hl': 'bn',
+#   'gl': 'bd'
+# }
 
-html = requests.get('https://www.google.com/search?q=', headers=headers, params=params).text # , cookies=cookies
-soup = BeautifulSoup(html, 'lxml')
+# html = requests.get('https://www.google.com/search?q=', headers=headers, params=params).text # , cookies=cookies ব্রাহ্মণবাড়িয়া
+# soup = BeautifulSoup(html, 'lxml')
 
-# print(soup)
-i_tag = soup.find('i')
-if i_tag:
-    text_in_i_tag = i_tag.get_text()
-    print(text_in_i_tag)
+# # print(soup)
+# i_tag = soup.find('i')
+# if i_tag:
+#     text_in_i_tag = i_tag.get_text()
+#     print(text_in_i_tag)
 # corrected_word = soup.select_one('a.gL9Hy').text
 # corrected_word_link = f"https://www.google.com{soup.select_one('a.gL9Hy')['href']}"
 # search_instead_for = soup.select_one('a.spell_orig').text
 # search_instead_for_link = f"https://www.google.com{soup.select_one('a.spell_orig')['href']}"
 # print(f'\n\nSearch instead: {search_instead_for}\n{search_instead_for_link}') # {corrected_word} {corrected_word_link}
 
+
+# from os import rename
+
+
+a_list = [1,2,5, 8,9, 5,1,3,4,5,6,7,8,9]
+for i in a_list[:4]:
+    a_list.remove(i)
+print(a_list)    
 
