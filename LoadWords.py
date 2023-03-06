@@ -49,14 +49,6 @@ EnglishwordsList = EnglishWordsSTR.split("|")
 # print("finish!")
 
 
-
-
-
-
-
-
-
-
 Word_list = []
 for w in wordsList:
     wrd_array = w.split(",")
@@ -68,6 +60,12 @@ AbbreviationsPath = './/Res//Abbreviations.txt'
 with io.open(AbbreviationsPath, "r", encoding="utf-8") as RKS:
     abriStr = RKS.read()
 abris = abriStr.split("\n")
+
+
+CustomWordsPath = './/Res//CustomWords.txt'
+with io.open(CustomWordsPath, "r", encoding="utf-8") as RKS:
+    abriStr = RKS.read()
+CustomWords = abriStr.split("\n")
 
 
 englishLatter = "qwertyuiopasdfghjklzxcvbnm"

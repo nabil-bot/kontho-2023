@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>807</width>
-    <height>551</height>
+    <width>962</width>
+    <height>407</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -29,8 +29,8 @@
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
-      <x>180</x>
-      <y>550</y>
+      <x>10</x>
+      <y>0</y>
       <width>102</width>
       <height>22</height>
      </rect>
@@ -57,9 +57,9 @@ border-radius: 10px;
     <widget class="QPushButton" name="PinPushButton">
      <property name="geometry">
       <rect>
-       <x>74</x>
+       <x>72</x>
        <y>1</y>
-       <width>26</width>
+       <width>28</width>
        <height>20</height>
       </rect>
      </property>
@@ -71,7 +71,7 @@ border-radius: 10px;
      </property>
      <property name="maximumSize">
       <size>
-       <width>26</width>
+       <width>28</width>
        <height>23</height>
       </size>
      </property>
@@ -156,7 +156,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
       <rect>
        <x>33</x>
        <y>0</y>
-       <width>42</width>
+       <width>37</width>
        <height>20</height>
       </rect>
      </property>
@@ -211,8 +211,8 @@ QCheckBox::indicator:checked:hover {
    <widget class="QPushButton" name="Settings_btn">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>560</y>
+      <x>110</x>
+      <y>600</y>
       <width>22</width>
       <height>22</height>
      </rect>
@@ -281,7 +281,7 @@ background-color: qlineargradient(spread:pad, x1:0.767, y1:1, x2:1, y2:0, stop:0
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>20</y>
+      <y>22</y>
       <width>276</width>
       <height>192</height>
      </rect>

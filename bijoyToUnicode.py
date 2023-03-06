@@ -2,9 +2,44 @@
 # import keyboard as kb2
 
 
-# kb2.block_key(15)
+# kb2.block_key(39)
 
 # time.sleep(10)
+
+print(len("প্রিন্ত"))
+
+
+
+def smertCompletor(word_soFar, the_word):
+    try:    
+        i = 0
+        same_index = 0
+        for x in range(len(the_word)):
+            try:
+                if the_word[i] == word_soFar[i]:
+                    same_index = i
+                    pass
+                else:
+                    break
+                i += 1
+            except Exception:
+                same_index = i  
+        if len(word_soFar) <= len(the_word):
+            return_slot = len(word_soFar[same_index:]), the_word[same_index:]
+        else: 
+            print("i am actually here!")   
+            return_slot = len(word_soFar[same_index+1:]), the_word[same_index+1:]
+
+        return return_slot
+    except Exception as e:
+        print(f"word_soFar: {word_soFar}, the_word: {the_word}") 
+
+
+word_soFar = "প্রিন্ত"
+the_word = "print"
+
+print(smertCompletor(word_soFar, the_word))
+
 
 
 # class MultiCursorPlainTextEdit(QPlainTextEdit):
@@ -192,10 +227,4 @@
 
 
 # from os import rename
-
-
-a_list = [1,2,5, 8,9, 5,1,3,4,5,6,7,8,9]
-for i in a_list[:4]:
-    a_list.remove(i)
-print(a_list)    
 

@@ -187,11 +187,15 @@ class wordManagerClass(QMainWindow):
 
         self.changes_for_tab_4 = []
         self.redoReserve_for_tab_4 = []
+
+        self.changes_for_tab_5 = []
+        self.redoReserve_for_tab_5 = []
         
         self.contentWasEdited_ofTable_1 = False
         self.contentWasEdited_ofTable_2 = False
         self.contentWasEdited_ofTable_3 = False
         self.contentWasEdited_ofTable_4 = False
+        self.contentWasEdited_ofTable_5 = False
 
 
         header = self.tableWidget_3.horizontalHeader()       
@@ -202,7 +206,7 @@ class wordManagerClass(QMainWindow):
         self.plainTextEdit.textChanged.connect(self.plainEditTextChanged) 
 
         
-        self.Bangla_Delegate = BanglaDelegate(self.tableWidget)
+        # self.Bangla_Delegate = BanglaDelegate(self.tableWidget)
         self.English_Delegate = EnglishDelegate(self.tableWidget)
 
         self.plainTextEdit_English_Delegate = PlainTextEditEnglishDelegate(self.plainTextEdit) 
@@ -221,6 +225,9 @@ class wordManagerClass(QMainWindow):
 
         self.tableWidget_3.currentItemChanged.connect(self.currentItemChangedFunc)
         self.tableWidget_3.itemChanged.connect(self.itemChangedFunc)
+
+        self.CustomTableWidget.currentItemChanged.connect(self.currentItemChangedFunc)
+        self.CustomTableWidget.itemChanged.connect(self.itemChangedFunc)
 
         # delegate = AbbribiationDelegate(self.tableWidget_3)
         # self.tableWidget_3.setItemDelegateForColumn(0, delegate)  # < ----------------------- 
@@ -341,6 +348,8 @@ class wordManagerClass(QMainWindow):
         
         # self.loadWords(EnglishwordsList, self.EnglishTableWidget)
         # self.groupBox_7.setVisible(False) 
+        self.loadCustom()
+
     def loadCompleteBanglaWordList(self):
         self.loadWords(self.my_bangla_list, self.tableWidget)
         self.my_bangla_list = []
@@ -481,7 +490,7 @@ class wordManagerClass(QMainWindow):
 
     def eventFilter(self, obj, event):
         
-        
+        return super().eventFilter(obj, event)
         if obj is self.plainTextEdit:
             if event.type() == QtCore.QEvent.KeyPress:
                 currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
@@ -493,7 +502,7 @@ class wordManagerClass(QMainWindow):
                     return True 
                 elif event.text() not in self.abbri_characters and event.key() not in (Qt.Key_Backspace, Qt.Key_Delete) and currentTable.currentColumn() == 0 and currentTable in [self.tableWidget_3]:   
                     event.ignore()
-                    return True            
+                    return True
         return super().eventFilter(obj, event)
 
     def saveCurrentTableFunc(self):
@@ -508,15 +517,6 @@ class wordManagerClass(QMainWindow):
             for wrd in self.my_bangla_list[:]:
                 textFromList += f"|{wrd}"
             txt = txt+textFromList
-        # if currentTable == self.EnglaTableWidget and len(self.my_engla_list) != 0:
-        #     for wrd in self.my_engla_list[:]:
-        #         textFromList += f"|{wrd}"
-        #     txt = txt+textFromList    
-        # if currentTable == self.EnglishTableWidget and len(self.my_english_list) != 0:
-        #     for wrd in self.my_english_list[:]:
-        #         textFromList += f"|{wrd}"
-        #     txt = txt+textFromList
-        # =================================
 
         if txt == "":
             self.showError("No content to save!")
@@ -533,7 +533,9 @@ class wordManagerClass(QMainWindow):
         elif currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == True:
             path = AbbreviationsPath
             self.contentWasEdited_ofTable_4 = False  
-
+        elif currentTable == self.CustomTableWidget and self.contentWasEdited_ofTable_5 == True:
+            path = CustomWordsPath
+            self.contentWasEdited_ofTable_5 = False
         else:
             return          
         self.writeDownContentsToFile(path, txt) 
@@ -562,13 +564,16 @@ class wordManagerClass(QMainWindow):
             self.plainTextEdit.setStyleSheet('QPlainTextEdit{\n	background-color: rgb(1, 22, 39);\n	color: white;\n	font: 57 14pt "Hind Siliguri Medium";\n}')
 
     def TabChanged(self, index):
-        self.currentItem = ""
-        currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
-        currentTable.setCurrentCell(0, 0, QItemSelectionModel.Current)
-        if index == 0 and self.contentWasEdited_ofTable_1 == True or index == 1 and self.contentWasEdited_ofTable_2 == True or index == 2 and self.contentWasEdited_ofTable_3 == True or index == 3 and self.contentWasEdited_ofTable_4 == True:
-            self.setUnsevedSaveButton(True)
-        else:
-            self.setUnsevedSaveButton(False)
+        try:
+            self.currentItem = ""
+            currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
+            currentTable.setCurrentCell(0, 0, QItemSelectionModel.Current)
+            if index == 0 and self.contentWasEdited_ofTable_1 == True or index == 1 and self.contentWasEdited_ofTable_2 == True or index == 2 and self.contentWasEdited_ofTable_3 == True or index == 3 and self.contentWasEdited_ofTable_4 == True:
+                self.setUnsevedSaveButton(True)
+            else:
+                self.setUnsevedSaveButton(False)
+        except Exception:
+            pass        
 
     def setUnsevedSaveButton(self, state):
         if state == True:
@@ -648,8 +653,8 @@ class wordManagerClass(QMainWindow):
         if self.tabWidget.currentIndex() == 3:
             return self.tableWidget_3,self.changes_for_tab_4,self.redoReserve_for_tab_4 
         if self.tabWidget.currentIndex() == 4:
-            return None,self.changes_for_tab_4,self.redoReserve_for_tab_4         
-    
+            return self.CustomTableWidget, self.changes_for_tab_5, self.redoReserve_for_tab_5              
+
     def getTextFormTable(self, table):
         row_count = table.rowCount()
         colum_count = table.columnCount()
@@ -665,12 +670,16 @@ class wordManagerClass(QMainWindow):
                 if txtFromColumn != "": 
                     if table == self.tableWidget_3:
                         wordStr += f"{txtFromColumn}::"
-                    else:    
+                    elif table == self.CustomTableWidget:
+                        wordStr += f"{txtFromColumn}"    
+                    else:
                         wordStr += f"{txtFromColumn},"
             if wordStr != "":    
                 if table == self.tableWidget_3:
                     text_ += f"{wordStr[:-2]}\n"
-                else:    
+                elif table == self.CustomTableWidget:
+                    text_ += f"{wordStr}\n"   
+                else:
                     text_ += f"{wordStr[:-1]}|"
         return text_[:-1]
     def saveAsFunction(self):
@@ -719,6 +728,17 @@ class wordManagerClass(QMainWindow):
     def setProgress(self, progress):
         pass            
 
+    def loadCustom(self):
+        for wrd in CustomWords:
+            if wrd in ["", " "]:
+                continue
+            
+            r = self.CustomTableWidget.rowCount()
+            self.CustomTableWidget.insertRow(r)
+
+            item = QTableWidgetItem(wrd.format(0, 0))
+            self.CustomTableWidget.setItem(r,0, item)
+
     def loadAbbribiations(self):
         
         for ab in abris[:]:
@@ -765,10 +785,16 @@ class wordManagerClass(QMainWindow):
             self.contentWasEdited_ofTable_4 = False  
             txt = self.getTextFormTable(self.tableWidget_3)
             self.writeDownContentsToFile(path, txt)  
-            self.indicateTabContentChanged(2, False)
+            self.indicateTabContentChanged(3, False)
             self.recognize_Changes(self.tableWidget_3, False)
-
-        self.setUnsevedSaveButton(False)  
+        elif self.contentWasEdited_ofTable_5 == True:
+            path = CustomWordsPath
+            self.contentWasEdited_ofTable_5 = False  
+            txt = self.getTextFormTable(self.CustomTableWidget)
+            self.writeDownContentsToFile(path, txt)  
+            self.indicateTabContentChanged(4, False)
+            self.recognize_Changes(self.CustomTableWidget, False)
+        self.setUnsevedSaveButton(False)
         self.save_signal.emit("dkjf")
     def AddWordsFromFile(self):
         
@@ -903,7 +929,6 @@ class wordManagerClass(QMainWindow):
             pass    
     def search(self, s):
         try:
-        
             if not s:
                 return
 
@@ -922,7 +947,21 @@ class wordManagerClass(QMainWindow):
                 item = self.matching_items[0] 
                 self.selectAnItem(item) 
         except Exception as e:
-            print(e)        
+            print(e)  
+
+    def search2(self, s):
+        try:
+            if not s:
+                return
+            currentTable, Current_changes_list, curren_redoReserve = self.currentTable() 
+            currentTable.setCurrentItem(None)
+            self.matching_items = currentTable.findItems(s, Qt.MatchExactly) 
+            if self.matching_items:
+                item = self.matching_items[0] 
+                self.selectAnItem(item)
+        except Exception:
+            pass        
+
     def DownPushButtonClicked(self):
         if len(self.matching_items) != 0:
             try:    
@@ -1034,6 +1073,9 @@ class wordManagerClass(QMainWindow):
             if currentTable == self.tableWidget_3 and self.contentWasEdited_ofTable_4 == False:
                 self.contentWasEdited_ofTable_4 = True        
                 self.indicateTabContentChanged(3,True)
+            if currentTable == self.CustomTableWidget and self.contentWasEdited_ofTable_5 == False:
+                self.contentWasEdited_ofTable_5 = True        
+                self.indicateTabContentChanged(4,True)    
             self.setUnsevedSaveButton(True)
         else:
             if currentTable == self.tableWidget and self.contentWasEdited_ofTable_1 == True:
@@ -1049,13 +1091,11 @@ class wordManagerClass(QMainWindow):
                 self.contentWasEdited_ofTable_4 = False        
                 self.indicateTabContentChanged(3,False)
             self.setUnsevedSaveButton(False)    
-
     def indicateTabContentChanged(self, index, state):
         if state:
             self.tabWidget.setTabText(index, self.tabWidget.tabText(index)+"*")
-        else:  
+        else:
             self.tabWidget.setTabText(index, self.tabWidget.tabText(index).replace("*", ""))
-
     def setEnglaWord(self, currentTable):
         if currentTable == self.tableWidget and currentTable.currentColumn() == 0:
             try:
@@ -1105,8 +1145,6 @@ class wordManagerClass(QMainWindow):
                 self.tableWidget_3.setItemDelegate(AbbribiationDelegate(currentTable))
             if currentTable.currentColumn() != 0:
                 self.tableWidget_3.setItemDelegate(AbbribiationContentDelegate(currentTable))
-                
-
     def loadWords_from_thread(self, wordsList, tableWidget, adding_from_newFile = False):
         self.loadTable = tableWidget
         self.loadThread = LoadWordsThreadClass(wordsList, tableWidget, adding_from_newFile)
@@ -1120,7 +1158,6 @@ class wordManagerClass(QMainWindow):
 
         self.CancelPushButton.setEnabled(True)
         self.CancelPushButton.clicked.connect(lambda:self.loadThread.stop())
-
     def setNewWrds(self,changedData):
         # print(changedData)
         multiDimenArray = changedData[1]  # [[row_pos,[c1_content, c2_content,..]],[row_pos,[row_contents]]]
@@ -1159,12 +1196,10 @@ class wordManagerClass(QMainWindow):
             self.changes_for_tab_4 = self.changes_for_tab_4[:50]         
         self.itemChangedByUndoFunc = False
         self.CancelPushButton.setEnabled(False)    
-
     def insertRowFunc(self, wrd):
         # currentTable, Current_changes_list, curren_redoReserve = self.currentTable()
         # self.loadTable.insertRow(self.loadTable.rowCount())
         self.Progresslabel.setText(wrd)
-
     def loadWords(self, wordsList, tableWidget, adding_from_newFile = False):
         self.itemChangedByUndoFunc = True
         
