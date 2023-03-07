@@ -6,39 +6,6 @@
 
 # time.sleep(10)
 
-print(len("প্রিন্ত"))
-
-
-
-def smertCompletor(word_soFar, the_word):
-    try:    
-        i = 0
-        same_index = 0
-        for x in range(len(the_word)):
-            try:
-                if the_word[i] == word_soFar[i]:
-                    same_index = i
-                    pass
-                else:
-                    break
-                i += 1
-            except Exception:
-                same_index = i  
-        if len(word_soFar) <= len(the_word):
-            return_slot = len(word_soFar[same_index:]), the_word[same_index:]
-        else: 
-            print("i am actually here!")   
-            return_slot = len(word_soFar[same_index+1:]), the_word[same_index+1:]
-
-        return return_slot
-    except Exception as e:
-        print(f"word_soFar: {word_soFar}, the_word: {the_word}") 
-
-
-word_soFar = "প্রিন্ত"
-the_word = "print"
-
-print(smertCompletor(word_soFar, the_word))
 
 
 
@@ -227,4 +194,20 @@ print(smertCompletor(word_soFar, the_word))
 
 
 # from os import rename
+
+
+import pyperclip
+import datetime
+
+while True:
+    # Wait for changes to the clipboard
+    current_clipboard = pyperclip.waitForNewPaste()
+    print("I am here")
+    # Get the current date and time
+    current_time = datetime.datetime.now()
+    formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Write the copied text and the formatted time to a text file
+    with open("clipboard.txt", "a") as file:
+        file.write(f"{formatted_time}: {current_clipboard}\n")
 

@@ -11,7 +11,7 @@ kb = Controller()
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 import sys
 from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QRect, QTimer, QSettings, QEasingCurve, QEvent
-from PyQt5.QtWidgets import QFrame, QWidget, QLabel, QListWidgetItem, QMenu, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox, QSystemTrayIcon, QGraphicsBlurEffect, QGraphicsOpacityEffect
+from PyQt5.QtWidgets import QFrame, QWidget, QLabel, QListWidgetItem, QMenu, QTableWidgetItem, QAction, QApplication, QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QGridLayout, QPushButton, QGroupBox, QSystemTrayIcon, QGraphicsBlurEffect, QGraphicsOpacityEffect
 from PyQt5.QtGui import QPainter, QColor , QBrush
 import os
 import io 
@@ -44,7 +44,7 @@ from num2words import num2words
 from PyQt5.QtGui import QFont
 from BlurWindow.blurWindow import blur
 from textblob import TextBlob
-
+import datetime
 from spellchecker import SpellChecker
  
 spell = SpellChecker()
@@ -88,7 +88,7 @@ using_functionKeys = False
 
 currentWrdOutOfDic = False
 
-
+selfCopyFuncCalled = False
 
 using_tab = True
 using_arrow = True
@@ -124,10 +124,14 @@ def initGlobal():
     keysBlocked = True
 
 def sendClip(txt):
+    global selfCopyFuncCalled
+    selfCopyFuncCalled = True
     reserved_clip = pc.paste()         
     pc.copy(txt)
     pyautogui.hotkey('ctrl', 'v')
-    pc.copy(reserved_clip)  
+    pc.copy(reserved_clip) 
+    selfCopyFuncCalled = False
+
 
 
 ahkScript = "global pinedState := 0 \nreviousXPos := 0\npreviousYPos := 0\nSetTimer, setPos, 100\nsetPos:\nglobal pinedState\nif pinedState = 0\n{\n	WinGetActiveTitle, wintitle\n	WinGetPos, perant_X, perant_Y,,, %wintitle%\n	position_X := A_CaretX + perant_X\n	position_Y := A_CaretY + perant_Y\n	if position_X != previousXPos and position_Y != previousYPos\n		WinMove, Nms_completer,, position_X, position_Y\n		previousXPos = %position_X%\n		previousYPos = %position_Y%\n}\nIfWinNotExist, Nms Voice pad\n{\n	ExitApp\n}\nreturn\nF23::\nglobal pinedState\nif pinedState = 0\n{\n	pinedState = 1\n	return\n}\nif pinedState = 1\n{\n	pinedState = 0\n}\nreturn"
@@ -216,6 +220,40 @@ def convert(text):
     return toPrint 
 
 
+class ClipBoardThreadClass(QtCore.QThread):	
+    copy_signal = QtCore.pyqtSignal(str)
+    def __init__(self, parent=None):
+        super(ClipBoardThreadClass, self).__init__(parent)
+        self.is_running = True
+        
+    def run(self):
+        while True:
+            current_clipboard = pc.waitForNewPaste()
+            global selfCopyFuncCalled
+            if selfCopyFuncCalled == False:    
+                current_time = datetime.datetime.now()
+                formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+
+                currentClip = f"{formatted_time}|*|\n{current_clipboard[:600]}"
+
+                with io.open(".//Res//clipboard.txt", "r", encoding="utf-8") as file:
+                    clipHis = file.read()
+                preClips = clipHis.split("|@|\n")[:99]
+
+                for c in preClips:
+                    if len(c) == 0:
+                        preClips.remove(c)
+
+                preClips.insert(0, currentClip)
+
+                txt_tosave = ""
+                for clip in preClips:
+                    txt_tosave += f"{clip}|@|\n"
+                txt_tosave = txt_tosave[:-4]
+                with io.open(".//Res//clipboard.txt", "w", encoding="utf-8") as file:
+                    file.write(txt_tosave)
+                self.copy_signal.emit("check clipboard")
+
 class ThreadClass(QtCore.QThread):	
     any_signal = QtCore.pyqtSignal(int)
     def __init__(self, parent=None):
@@ -275,6 +313,9 @@ class Main_recognation(QtCore.QThread):
         r = sr.Recognizer()
         try:
             text = r.recognize_google(self.audio, language= self.lang)
+            global selfCopyFuncCalled
+            
+            
             if self.UANSI_pos == 'False':    
                 if self.lang == 'bn-BD':
                     # for word, initial in {"1":"১", "2":"২", "3":"৩", "4":"৪", "5":"৫", "6":"৬", "7":"৭", "8":"৮", "9": "৯", "0": "০"  }.items():
@@ -339,10 +380,12 @@ class Main_recognation(QtCore.QThread):
                         words[-1] = words[-1]+"?"
                     
                     reserved_clip = pc.paste()
+                    selfCopyFuncCalled = True
                     pc.copy(f"{txt_}")
                     pyautogui.hotkey('ctrl', 'v')
                     pyautogui.write(' ')
                     pc.copy(reserved_clip)
+                    selfCopyFuncCalled = False
                     
                 except Exception as e:
                     print('type error; UANSI_pos == False')
@@ -354,11 +397,13 @@ class Main_recognation(QtCore.QThread):
                     toPrint = text
                 try:
                     reserved_clip = pc.paste()
+                    selfCopyFuncCalled = True
                     pc.copy(toPrint)
                     pyautogui.hotkey('ctrl', 'v')
                     pyautogui.write(' ')
 
                     pc.copy(reserved_clip)
+                    selfCopyFuncCalled = False
                      
                 except Exception as e:
                     print('type error; UANSI_pos == True')
@@ -820,7 +865,7 @@ class WhileloopThroughListThread(QtCore.QThread):
                 try:
                     if wordSofar[0] not in englishLatters and wordSofar[0] not in banglaNumbs:  # for bangla lang
                         if self.ruledOut == False or len(englishWordSofar) < len(self.preWord):  
-                            self.loopThroughList(wordsList,wordSofar,englishWordSofar)    # this gonna check in main dictionary
+                            self.loopThroughList(wordsList, wordSofar,englishWordSofar)    # this gonna check in main dictionary
                             if len(self.matchedWords) == 0:
                                 self.ruledOut = True
                             elif len(self.matchedWords) != 0 and self.ruledOut == True: 
@@ -920,9 +965,10 @@ class WhileloopThroughListThread(QtCore.QThread):
         # print(self.matchedWords)
         for wrd in wordList[:]:
             wordArray = wrd.split(",")
-            if len(wordArray) == 1 and wordSofar !=englishWordSofar_local:
+            if len(wordArray) == 1 and wordSofar != englishWordSofar_local:
                 continue
             mainWord = wordArray[0]
+
             index = 0
             for wrd in wordArray[:]:
                 if mainWord in self.matchedWords:
@@ -2622,7 +2668,6 @@ class Ui(QtWidgets.QMainWindow):
 
         # self.blockWordSelectionKeys()
         
-
         self.MouseListener = mouse.Listener(on_click = self.on_click)
         self.MouseListener.start()
 
@@ -2636,7 +2681,15 @@ class Ui(QtWidgets.QMainWindow):
         self.initThread_signal.connect(self.wordThread_.initFunc)
         # self.wordThread_.start()
 
+        self.trackingClipBoard = self.ownSettings.value("ClipBoardTracker_checked")
+        self.settingsGUIClass.ClipBoardCheckBox.setChecked(self.trackingClipBoard) 
         
+        self.clipThread = ClipBoardThreadClass()
+        self.clipThread.copy_signal.connect(self.updateClipboard)
+
+        if self.trackingClipBoard:
+            self.clipThread.start()
+        self.settingsGUIClass.ClipBoardCheckBox.stateChanged.connect(self.clipBoardTracker_stateChanged)    
 
         ahk.run_script(ahkScript, blocking=False)   # <-------------- 3333333333
         self.wordManagerClass = wordManagerClass()
@@ -2666,6 +2719,18 @@ class Ui(QtWidgets.QMainWindow):
         self.listClass.ACcheckBox.setChecked(self.ownSettings.value("AC_checked"))
         self.listClass.ACcheckBox.clicked.connect(self.ACBtnStateChanged)
 
+    def clipBoardTracker_stateChanged(self):
+        self.trackingClipBoard = self.settingsGUIClass.ClipBoardCheckBox.isChecked()
+        self.ownSettings.setValue("ClipBoardTracker_checked", self.trackingClipBoard)
+
+        if self.trackingClipBoard:
+            self.clipThread.start()
+        else:
+            self.clipThread.stop()
+
+    def updateClipboard(self, sig):
+        if self.wordManagerClass.isHidden() == False:
+            self.wordManagerClass.loadClip()
     def ACBtnStateChanged(self):
         self.ownSettings.setValue("AC_checked", self.listClass.ACcheckBox.isChecked())
     def using_funcKeys_stateChanged(self):
@@ -2844,7 +2909,9 @@ class Ui(QtWidgets.QMainWindow):
                 englaList = STR.split("|")    
             if path == englaDictionaryPath:
                 global EnglishwordsList
-                EnglishwordsList = STR.split("|") 
+                with io.open(englishDictionaryPath, "r", encoding="utf-8") as wordTxt:
+                    EnglishWordsSTR = wordTxt.read()
+                EnglishwordsList = EnglishWordsSTR.split("|")
             if path == AbbreviationsPath:
                 self.loadAbbribiations()  
 
@@ -2878,7 +2945,7 @@ class Ui(QtWidgets.QMainWindow):
 
         menu_tag = item.text()
         wrd = c_i.text()
-        print(menu_tag)
+        # print(menu_tag)
         if menu_tag == "Copy":
             pc.copy(wrd) 
         if menu_tag == "Edit":
@@ -2903,6 +2970,24 @@ class Ui(QtWidgets.QMainWindow):
                 self.showActive(self.wordManagerClass)
             except Exception as e:
                 print(traceback.format_exc())    
+        if menu_tag == "Save":
+            if self.current_language == "English":
+                pureWord = True
+                for i in range(len(wrd)):
+                    if wrd[i] not in englishAlphabets:
+                        pureWord = False
+                if pureWord:
+                    EnglishwordsList.append(wrd)
+                    with io.open(englishDictionaryPath, "a", encoding="utf-8") as wordTxt:
+                        wordTxt.write(f"|{wrd}")
+                    if self.wordManagerClass.englishWordsLoaded:
+                        
+                        self.wordManagerClass.itemChangedByUndoFunc = True
+                        r_pos = self.wordManagerClass.EnglishTableWidget.rowCount()
+                        self.wordManagerClass.EnglishTableWidget.insertRow(r_pos)
+                        item = QTableWidgetItem(wrd.format(0, 0))
+                        self.wordManagerClass.EnglishTableWidget.setItem(r_pos, 0, item)
+                        self.wordManagerClass.itemChangedByUndoFunc = False
 
             # if wrd in EnglishwordsList:
         if menu_tag == "Search Google":
@@ -2965,7 +3050,7 @@ class Ui(QtWidgets.QMainWindow):
             same_index = 0
             for x in range(len(the_word)):
                 try:
-                    if the_word[i] == word_soFar[i]:
+                    if (the_word[i]).lower() == (word_soFar[i]).lower():
                         same_index = i
                         pass
                     else:
@@ -4147,11 +4232,10 @@ class Ui(QtWidgets.QMainWindow):
         if self.oskClass.SpaceCheckBox.isChecked():    
             kb.tap(Key.space) 
             self.initialize() 
-    
     def ShowWordManager(self):
         try:
-            # if self.wordManagerClass.stufLoaded == False:
-            #     self.wordManagerClass.loadStuff() excelent
+            if self.wordManagerClass.banglaWordsLoaded == False:
+                self.wordManagerClass.loadCompleteBanglaWordList()
             self.showActive(self.wordManagerClass)
             # self.wordManagerClass.show()
         except Exception as e:

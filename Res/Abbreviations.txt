@@ -1,5 +1,6 @@
 ht::How to 
 dr::doctor
+nm::Nabil Mostofa
 idk::I don't know
 ur::you are 
 asap::as soon as possible

@@ -1,0 +1,92 @@
+2023-03-08 00:45:43|*|
+with io.open(englishDictionaryPath, "r", encoding="utf-8") as wordTxt:
+    EnglishWordsSTR = wordTxt.read()
+EnglishwordsList = EnglishWordsSTR.split("|")|@|
+2023-03-08 00:45:37|*|
+with io.open(englishDictionaryPath, "r", encoding="utf-8") as wordTxt:
+
+    EnglishWordsSTR = wordTxt.read()
+
+EnglishwordsList = EnglishWordsSTR.split("|")|@|
+2023-03-08 00:42:57|*|
+with io.open(englishDictionaryPath, "r", encoding="utf-8") as wordTxt:
+
+    EnglishWordsSTR = wordTxt.read()
+
+EnglishwordsList = EnglishWordsSTR.split("|")|@|
+2023-03-08 00:39:29|*|
+save_signal|@|
+2023-03-08 00:34:06|*|
+groupBox_6|@|
+2023-03-08 00:32:22|*|
+LoadBanglaListPushBtn|@|
+2023-03-08 00:07:53|*|
+wordsList|@|
+2023-03-08 00:06:20|*|
+mainWord|@|
+2023-03-07 23:59:52|*|
+অঘটনঘটনপটীয়সী|@|
+2023-03-07 23:55:22|*|
+wordSofar|@|
+2023-03-07 23:49:15|*|
+oghoTonoghoTonopTIyosI|@|
+2023-03-07 23:49:11|*|
+oghoTonoghoTonopTIyosI|@|
+2023-03-07 23:49:08|*|
+oghoTonoghoTonopTIyosI|@|
+2023-03-07 23:48:21|*|
+oghoTonoghoTonopTIyosI|@|
+2023-03-07 22:31:47|*|
+self.savedBGColor|@|
+2023-03-07 22:31:22|*|
+QColor(1, 87, 155, 255)|@|
+2023-03-07 22:26:22|*|
+EnglishwordsList|@|
+2023-03-07 22:21:22|*|
+pureWord = True|@|
+2023-03-07 22:21:08|*|
+englishAlphabets|@|
+2023-03-07 22:18:58|*|
+wrd|@|
+2023-03-07 22:06:56|*|
+nadul|@|
+2023-03-07 18:53:26|*|
+35 from 65 balls (53.85 S.R.) 
+
+Tamim Iqbal failed to accelerate while chasing 327|@|
+2023-03-07 18:53:18|*|
+First e ekto prblm hobe.. but ekbar shikhe felle onek easy 🫠|@|
+2023-03-07 18:53:10|*|
+Lasith Malinga's four-ball 4-wicket hat-trick|@|
+2023-03-07 18:49:52|*|
+self.itemChangedByUndoFunc == False|@|
+2023-03-07 18:49:45|*|
+if self.itemChangedByUndoFunc == False|@|
+2023-03-07 18:45:45|*|
+পুতিনকে আমি বললেই যু দ্ধ থামিয়ে দেবে : ডোনাল্ড ট্রাম্প|@|
+2023-03-07 18:43:06|*|
+.setRowCount(0)|@|
+2023-03-07 18:42:59|*|
+self.ClipBoardtableWidget.|@|
+2023-03-07 18:34:45|*|
+লো ফ্যাট না কি প্রোবায়োটিক? আড়ং ডেইরির কোন ইয়োগার্টটি আপনার পছন্দ? জানিয়ে দিন কমেন্টে।|@|
+2023-03-07 18:29:41|*|
+होली पर पर क्यों ट्रेंड हो रहा #HinduPhobicSwiggy? क्यों उठ रही Uninstall करने की मांग ? क्या सोचते हैं Swiggy के Ad पर ? #HOLI|@|
+2023-03-07 18:21:24|*|
+It is very easy to perform copy/paste operations of Clipboard using ctrl+c and ctrl+v , you may think that performing clipboard operations using programming language may be difficult, but we can do this very easily with few lines of code using python. Python have libraries which is only dedicated for clipboard operations. In this short article, we will see three such python libraries.|@|
+2023-03-07 18:20:48|*|
+35 from 65 balls (53.85 S.R.) 
+
+Tamim Iqbal failed to accelerate while chasing 327|@|
+2023-03-07 18:19:49|*|
+First e ekto prblm hobe.. but ekbar shikhe felle onek easy 🫠|@|
+2023-03-07 18:16:50|*|
+On February 6th, a 7.8-magnitude earthquake struck Turkiye and Syria, killing and injuring thousands. 
+
+Muslim Hands teams are working against the clock to provide emergency shelter, water, food, and medical supplies to the survivors. 
+
+Donate today to provide life-saving essentials during these difficult times.|@|
+2023-03-07 18:16:12|*|
+This landing page was designed for an Indian Company. They provide all email receiving to one platform service. Please feel free to send your love.|@|
+2023-03-07 18:15:27|*|
+First e ekto prblm hobe.. but ekbar shikhe felle onek easy 🫠

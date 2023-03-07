@@ -1,0 +1,3 @@
+2023-03-07 14:59:40: # Write the copied text and the formatted time to a text file
+2023-03-07 14:59:43: # Wait for changes to the clipboard
+2023-03-07 15:07:32: {search_instead_for}\n{search_instead_for_link}') # {corrected_word} {corrected_word_link}

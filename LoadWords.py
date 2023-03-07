@@ -67,6 +67,11 @@ with io.open(CustomWordsPath, "r", encoding="utf-8") as RKS:
     abriStr = RKS.read()
 CustomWords = abriStr.split("\n")
 
+clipBoardPath = './/Res//clipboard.txt'
+with io.open(clipBoardPath, "r", encoding="utf-8") as RKS:
+    clips = RKS.read()
+clipboard = clips.split("|@|")
+
 
 englishLatter = "qwertyuiopasdfghjklzxcvbnm"
 englishLatterUpper = englishLatter.upper()
@@ -132,3 +137,9 @@ with io.open(getCaretPosPath, "r", encoding="utf-8") as wordTxt:
     getCaretPos_Script = wordTxt.read()            
 
 
+# print(f"len {len(wordsList)}")
+# for wrd in wordsList[:]:
+#     wordArray = wrd.split(",")
+#     mainWord = wordArray[0]
+#     if mainWord == "অঘটনঘটনপটীয়সী":
+#         print("word is found")
